@@ -270,7 +270,7 @@ macro_rules! spin_server_main {
     (use_db = $use_db:expr,
      static_config = $staticconfig:expr,
      devtypes = [$($dtype:ident => $dconstr:expr),*]) => {
-        match ::spin::server::Server::from_args($use_db, $staticconfig) {
+        match $crate::server::Server::from_args($use_db, $staticconfig) {
             None => return,
             Some(mut server) => {
                 info!("creating devices...");

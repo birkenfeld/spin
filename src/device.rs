@@ -188,7 +188,7 @@ macro_rules! spin_device_impl {
 
         impl $crate::device::Device for $clsname {
 
-            fn init_device(&mut self) -> $crate::error::SpinResult<()> {
+            fn init_device(&mut self) -> $crate::SpinResult<()> {
                 debug!("{}: initializing device", self.get_name());
                 if let Err(err) = $clsname::init(self) {
                     error!("{}: could not initialize: {}", self.get_name(), err);
@@ -223,15 +223,14 @@ macro_rules! spin_device_impl {
             }
 
             #[allow(unused_variables)]
-            fn exec_cmd(&mut self, cmd: &str, arg: $crate::arg::Value)
-                        -> $crate::error::SpinResult<$crate::arg::Value>
-            {
+            fn exec_cmd(&mut self, cmd: &str, arg: $crate::Value)
+                        -> $crate::SpinResult<$crate::Value> {
                 if !self.props._initialized {
                     self.init_device()?;
                 }
                 debug!("{}: executing command {}({:?})", self.get_name(), cmd, arg);
                 let res = match cmd {
-                    $(stringify!($cname) => self.$cfunc(arg.extract()?).map($crate::arg::Value::from),)*
+                    $(stringify!($cname) => self.$cfunc(arg.extract()?).map($crate::Value::from),)*
                     _ => spin_err!($crate::error::API_ERROR, "No such command"),
                 };
                 debug!("   ... result: {:?}", res);
@@ -239,13 +238,13 @@ macro_rules! spin_device_impl {
             }
 
             #[allow(unused_variables)]
-            fn read_attr(&mut self, attr: &str) -> $crate::error::SpinResult<$crate::arg::Value> {
+            fn read_attr(&mut self, attr: &str) -> $crate::SpinResult<$crate::Value> {
                 if !self.props._initialized {
                     self.init_device()?;
                 }
                 debug!("{}: reading attribute {}", self.get_name(), attr);
                 let res = match attr {
-                    $(stringify!($aname) => self.$arfunc().map($crate::arg::Value::from),)*
+                    $(stringify!($aname) => self.$arfunc().map($crate::Value::from),)*
                     _ => spin_err!($crate::error::API_ERROR, "No such attribute"),
                 };
                 debug!("   ... result: {:?}", res);
@@ -253,9 +252,7 @@ macro_rules! spin_device_impl {
             }
 
             #[allow(unused_variables)]
-            fn write_attr(&mut self, attr: &str, val: $crate::arg::Value)
-                          -> $crate::error::SpinResult<()>
-            {
+            fn write_attr(&mut self, attr: &str, val: $crate::Value) -> $crate::SpinResult<()> {
                 if !self.props._initialized {
                     self.init_device()?;
                 }
@@ -269,13 +266,13 @@ macro_rules! spin_device_impl {
             }
 
             #[allow(unused_variables, unused_mut)]
-            fn init_props(&mut self, mut cfg_prop_map: ::std::collections::HashMap<String, $crate::arg::Value>) {
+            fn init_props(&mut self, mut cfg_prop_map: ::std::collections::HashMap<String, $crate::Value>) {
                 debug!("{}: init properties", self.get_name());
                 $(
                     self.props._descriptions.push(
                         $crate::arg::prop_info(stringify!($pname), $pdoc,
                                                $crate::arg::DataType::$ptype,
-                                               $crate::arg::Value::from($pdef)));
+                                               $crate::Value::from($pdef)));
                     self.props.$pname = $pdef;
                     if let Some(cfg_value) = cfg_prop_map.remove(stringify!($pname)) {
                         if let Some(value) = cfg_value.convert($crate::arg::DataType::$ptype) {
@@ -294,20 +291,18 @@ macro_rules! spin_device_impl {
             }
 
             #[allow(unused_variables)]
-            fn get_prop(&mut self, prop: &str) -> $crate::error::SpinResult<$crate::arg::Value> {
+            fn get_prop(&mut self, prop: &str) -> $crate::SpinResult<$crate::Value> {
                 debug!("{}: get property {}", self.get_name(), prop);
                 $(
                     if prop == stringify!($pname) {
-                        return Ok($crate::arg::Value::from(self.props.$pname));
+                        return Ok($crate::Value::from(self.props.$pname));
                     }
                 )*;
                 spin_err!($crate::error::API_ERROR, "No such property")
             }
 
             #[allow(unused_variables)]
-            fn set_prop(&mut self, prop: &str, val: $crate::arg::Value)
-                        -> $crate::error::SpinResult<()>
-            {
+            fn set_prop(&mut self, prop: &str, val: $crate::Value) -> $crate::SpinResult<()> {
                 debug!("{}: set property {} = {:?}", self.get_name(), prop, val);
                 $(
                     if prop == stringify!($pname) {
