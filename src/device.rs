@@ -13,7 +13,7 @@ use spin_proto as pr;
 
 use arg::*;
 use config::DevProp;
-use error::{SpinResult, spin_err};
+use error::{SpinResult, spin_err, API_ERROR};
 use util;
 
 pub type PropDescMap = HashMap<String, pr::PropDesc>;
@@ -66,7 +66,7 @@ pub trait Device : Sync + Send {
 
     fn get_prop(&mut self, prop: &str) -> SpinResult<Value> {
         match self.get_props().get(prop) {
-            None => spin_err("PropertyError", "No such property"),
+            None => spin_err(API_ERROR, "No such property"),
             Some(val) => Ok(val.clone())
         }
     }
@@ -75,13 +75,13 @@ pub trait Device : Sync + Send {
     fn set_prop(&mut self, prop: &str, val: Value) -> SpinResult<()> {
         let (propmap, descs) = self.mut_props();
         match descs.get(prop) {
-            None => spin_err("PropertyError", "No such property"),
+            None => spin_err(API_ERROR, "No such property"),
             Some(desc) => {
                 if let Some(val) = val.convert(desc.get_field_type()) {
                     propmap.insert(prop.to_owned(), val);
                     Ok(())
                 } else {
-                    spin_err("PropertyError", "Wrong property type")
+                    spin_err(API_ERROR, "Wrong property type")
                 }
             }
         }
@@ -243,26 +243,26 @@ macro_rules! device_impl {
             }
 
             #[allow(unused_variables)]
-            fn exec_cmd(&mut self, cmd: &str, arg: Value) -> SpinResult<Value> {
+            fn exec_cmd(&mut self, cmd: &str, arg: $crate::arg::Value) -> $crate::error::SpinResult<Value> {
                 match cmd {
                     $(stringify!($cname) => self.$cfunc(arg),)*
-                    _ => ::spin::error::spin_err("CommandError", "No such command"),
+                    _ => ::spin::error::spin_err($crate::error::API_ERROR, "No such command"),
                 }
             }
 
             #[allow(unused_variables)]
-            fn read_attr(&mut self, attr: &str) -> SpinResult<Value> {
+            fn read_attr(&mut self, attr: &str) -> $crate::error::SpinResult<Value> {
                 match attr {
                     $(stringify!($aname) => self.$arfunc(),)*
-                    _ => ::spin::error::spin_err("AttributeError", "No such attribute"),
+                    _ => ::spin::error::spin_err($crate::error::API_ERROR, "No such attribute"),
                 }
             }
 
             #[allow(unused_variables)]
-            fn write_attr(&mut self, attr: &str, val: Value) -> SpinResult<()> {
+            fn write_attr(&mut self, attr: &str, val: $crate::arg::Value) -> $crate::error::SpinResult<()> {
                 match attr {
                     $(stringify!($aname) => self.$awfunc(val),)*
-                    _ => ::spin::error::spin_err("AttributeError", "No such attribute"),
+                    _ => ::spin::error::spin_err($crate::error::API_ERROR, "No such attribute"),
                 }
             }
         }

@@ -1,12 +1,16 @@
-.PHONY: all proto demo
-MODE = release
-MARG := $(if $(filter release,$(MODE)),--release,)
+.PHONY: all release proto demo
 
 all:
+	cargo build
+
+release:
 	cargo build --release
 
 proto:
 	(cd src/proto; protoc --rust_out=. msg.proto)
+
+MODE = release
+MARG := $(if $(filter release,$(MODE)),--release,)
 
 demo:
 	cargo build $(MARG) --bin=spin_db

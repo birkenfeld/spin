@@ -13,7 +13,7 @@ use arg::*;
 use config::{ServerConfig, DevConfig};
 use client::Client;
 use device::{Device, run_device, general_error_reply};
-use error::{SpinResult, spin_err};
+use error::{SpinResult, spin_err, SOCKET_ERROR};
 use util;
 
 pub type DevConstructor = fn(String) -> Box<Device>;
@@ -87,7 +87,7 @@ impl Server {
                     Err(e) => return Err(e.into()),
                 }
                 if port > MAX_PORT {
-                    return spin_err("SocketError", "cannot find free port");
+                    return spin_err(SOCKET_ERROR, "cannot find free port");
                 }
             }
         } else {

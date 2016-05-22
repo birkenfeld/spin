@@ -9,7 +9,7 @@ use zmq;
 use spin_proto as pr;
 
 use arg::*;
-use error::{SpinResult, spin_err, Error};
+use error::{SpinResult, spin_err, Error, TIMEOUT_ERROR, API_ERROR};
 use util;
 
 
@@ -60,19 +60,19 @@ impl Client {
 
         let num = zmq::poll(&mut [self.socket.as_poll_item(zmq::POLLIN)], self.timeout)?;
         if num == 0 {
-            return spin_err("TimeoutError", "no reply within client timeout");
+            return spin_err(TIMEOUT_ERROR, "no reply within client timeout");
         }
         let reply = util::recv_message(&mut self.socket)?;
 
         let mut rsp: pr::Response = protobuf::parse_from_bytes(&reply[1])?;
 
         if rsp.get_seqno() != req.get_seqno() {
-            return spin_err("APIError", "sequence numbers do not match");
+            return spin_err(API_ERROR, "sequence numbers do not match");
         }
         if rsp.get_rtype() == pr::RespType::RespError {
             Err(Error::from_proto(rsp.take_error()))
         } else if rsp.get_rtype() != exp_type {
-            spin_err("APIError", "wrong type of response received")
+            spin_err(API_ERROR, "wrong type of response received")
         } else {
             Ok(rsp)
         }

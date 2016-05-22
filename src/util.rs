@@ -13,7 +13,7 @@ use zmq;
 use url;
 
 use db;
-use error::{SpinResult, spin_err};
+use error::{SpinResult, spin_err, ADDRESS_ERROR};
 
 /// Make it easier to write our signatures.
 pub type ZmqResult<T> = Result<T, zmq::Error>;
@@ -163,15 +163,15 @@ impl DeviceAddress {
         let mut parser = url::UrlParser::new();
         parser.scheme_type_mapper(DeviceAddress::scheme_mapper);
         match parser.parse(uri) {
-            Err(_)  => spin_err("AddressError", "invalid device address"),
+            Err(_)  => spin_err(ADDRESS_ERROR, "invalid device address"),
             Ok(uri) => {
                 if uri.scheme != "spin" && uri.scheme != "spindb" {
-                    return spin_err("AddressError", "invalid scheme");
+                    return spin_err(ADDRESS_ERROR, "invalid scheme");
                 }
                 let host = uri.domain().unwrap_or("localhost");
                 let port = uri.port().unwrap_or(9999);
                 let path = match uri.serialize_path() {
-                    None => return spin_err("AddressError", "no devname found"),
+                    None => return spin_err(ADDRESS_ERROR, "no devname found"),
                     Some(ser) => String::from(&ser[1..])
                 };
                 Ok(DeviceAddress {

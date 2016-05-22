@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use spin::arg::*;
 use spin::config::{ServerConfig, DevConfig};
 use spin::device::{Device, DeviceInner};
-use spin::error::{SpinResult, spin_err};
+use spin::error::{SpinResult, spin_err, DB_ERROR};
 
 
 struct DbDevice {
@@ -39,7 +39,7 @@ impl DbDevice {
     fn cmd_register(&mut self, arg: Value) -> SpinResult<Value> {
         let mut s: Vec<String> = FromValue::from_value(arg)?;
         if s.len() < 3 {
-            return spin_err("DbError", "need to have at least one devname");
+            return spin_err(DB_ERROR, "need to have at least one devname");
         }
         let address = s.swap_remove(0);
         let srvname = s.swap_remove(1);
@@ -56,9 +56,9 @@ impl DbDevice {
         let devname = String::from_value(arg)?;
         info!("requested {}", devname);
         match self.devmap.get(&devname) {
-            None => spin_err("DbError", "device not found"),
+            None => spin_err(DB_ERROR, "device not found"),
             Some(srvname) => match self.srvmap.get(srvname) {
-                None => spin_err("DbError", "server not found"),
+                None => spin_err(DB_ERROR, "server not found"),
                 Some(srvaddr) => {
                     info!("   ... is at {}", srvaddr);
                     Ok(Value::from(srvaddr.clone()))

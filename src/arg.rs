@@ -11,7 +11,7 @@ pub use spin_proto::CmdDesc;
 pub use spin_proto::AttrDesc;
 pub use spin_proto::PropDesc;
 
-use error::{SpinResult, spin_err};
+use error::{SpinResult, spin_err, ARG_ERROR};
 
 
 pub fn cmd_info(name: &str, doc: &str, intype: DataType, outtype: DataType) -> CmdDesc {
@@ -170,7 +170,7 @@ impl FromValue for String {
             Ok(v.0.take_string().pop().unwrap())
         } else {
             let msg = format!("wrong type: {:?}, expected String", v.0.get_vtype());
-            spin_err("ArgumentError", &msg)
+            spin_err(ARG_ERROR, &msg)
         }
     }
 }
@@ -190,7 +190,7 @@ impl FromValue for Vec<String> {
             Ok(v.0.take_string().to_vec())
         } else {
             let msg = format!("wrong type: {:?}, expected StringArray", v.0.get_vtype());
-            spin_err("ArgumentError", &msg)
+            spin_err(ARG_ERROR, &msg)
         }
     }
 }
@@ -211,7 +211,7 @@ impl FromValue for (Vec<i32>, Vec<String>) {
             Ok((v.0.take_int32(), v.0.take_string().to_vec()))
         } else {
             let msg = format!("wrong type: {:?}, expected Int32StringArray", v.0.get_vtype());
-            spin_err("ArgumentError", &msg)
+            spin_err(ARG_ERROR, &msg)
         }
     }
 }
@@ -232,7 +232,7 @@ impl FromValue for (Vec<f64>, Vec<String>) {
             Ok((v.0.take_double(), v.0.take_string().to_vec()))
         } else {
             let msg = format!("wrong type: {:?}, expected DoubleStringArray", v.0.get_vtype());
-            spin_err("ArgumentError", &msg)
+            spin_err(ARG_ERROR, &msg)
         }
     }
 }
@@ -252,7 +252,7 @@ impl FromValue for Vec<u8> {
             Ok(v.0.take_bytes())
         } else {
             let msg = format!("wrong type: {:?}, expected ByteArray", v.0.get_vtype());
-            spin_err("ArgumentError", &msg)
+            spin_err(ARG_ERROR, &msg)
         }
     }
 }
@@ -275,7 +275,7 @@ macro_rules! impl_traits {
                 } else {
                     let msg = format!("wrong type: {:?}, expected {:?}",
                                       v.0.get_vtype(), DataType::$dtype);
-                    spin_err("ArgumentError", &msg)
+                    spin_err(ARG_ERROR, &msg)
                 }
             }
         }
@@ -295,7 +295,7 @@ macro_rules! impl_traits {
                 } else {
                     let msg = format!("wrong type: {:?}, expected {:?}",
                                       v.0.get_vtype(), DataType::$vectype);
-                    spin_err("ArgumentError", &msg)
+                    spin_err(ARG_ERROR, &msg)
                 }
             }
         }

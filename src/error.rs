@@ -10,6 +10,13 @@ use protobuf;
 
 use spin_proto as pr;
 
+pub const DB_ERROR:       &'static str = "DbError";
+pub const ARG_ERROR:      &'static str = "ArgError";
+pub const TIMEOUT_ERROR:  &'static str = "TimeoutError";
+pub const API_ERROR:      &'static str = "APIError";
+pub const SOCKET_ERROR:   &'static str = "SocketError";
+pub const ADDRESS_ERROR:  &'static str = "AddressError";
+
 
 #[derive(Debug)]
 pub enum Error {
