@@ -67,16 +67,16 @@ impl<'srv> Server<'srv> {
         self.devmap.insert(name, dev_const);
     }
 
-    const MIN_PORT: u16 = 11000;
-    const MAX_PORT: u16 = 65000;
-
     /// Bind the external socket.
     fn bind_external(&mut self) -> SpinResult<zmq::Socket> {
+        const MIN_PORT: u16 = 11000;
+        const MAX_PORT: u16 = 65000;
+
         // external socket that takes requests
         let mut sock = util::create_socket(&self.context, zmq::ROUTER)?;
         if self.address.use_random_port {
             // random port!
-            let mut port = Server::MIN_PORT;
+            let mut port = MIN_PORT;
             loop {
                 self.address.port = port;
                 match sock.bind(&self.address.get_endpoint()) {
@@ -84,7 +84,7 @@ impl<'srv> Server<'srv> {
                     Err(zmq::Error::EADDRINUSE) => port += 1,
                     Err(e) => return Err(e.into()),
                 }
-                if port > Server::MAX_PORT {
+                if port > MAX_PORT {
                     return spin_err("SocketError", "cannot find free port");
                 }
             }

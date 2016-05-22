@@ -86,10 +86,10 @@ impl From<String> for Value {
 
 impl FromValue for String {
     fn from_value(mut v: Value) -> SpinResult<String> {
-        if (v.0).get_vtype() == pr::DataType::String {
-            Ok((v.0).take_string().pop().unwrap())  // XXX
+        if v.0.get_vtype() == pr::DataType::String {
+            Ok(v.0.take_string().pop().unwrap())
         } else {
-            let msg = format!("wrong type: {:?}, expected String", (v.0).get_vtype());
+            let msg = format!("wrong type: {:?}, expected String", v.0.get_vtype());
             spin_err("ArgumentError", &msg)
         }
     }
@@ -106,10 +106,10 @@ impl From<Vec<String>> for Value {
 
 impl FromValue for Vec<String> {
     fn from_value(mut v: Value) -> SpinResult<Vec<String>> {
-        if (v.0).get_vtype() == pr::DataType::StringArray {
-            Ok((v.0).take_string().to_vec())
+        if v.0.get_vtype() == pr::DataType::StringArray {
+            Ok(v.0.take_string().to_vec())
         } else {
-            let msg = format!("wrong type: {:?}, expected StringArray", (v.0).get_vtype());
+            let msg = format!("wrong type: {:?}, expected StringArray", v.0.get_vtype());
             spin_err("ArgumentError", &msg)
         }
     }
@@ -128,11 +128,11 @@ macro_rules! impl_traits {
         impl FromValue for $ty {
             #[allow(unused_mut)]
             fn from_value(mut v: Value) -> SpinResult<$ty> {
-                if (v.0).get_vtype() == pr::DataType::$dtype {
+                if v.0.get_vtype() == pr::DataType::$dtype {
                     Ok((v.0).$getter()[0])
                 } else {
                     let msg = format!("wrong type: {:?}, expected {:?}",
-                                      (v.0).get_vtype(), pr::DataType::$dtype);
+                                      v.0.get_vtype(), pr::DataType::$dtype);
                     spin_err("ArgumentError", &msg)
                 }
             }
@@ -148,11 +148,11 @@ macro_rules! impl_traits {
         impl FromValue for Vec<$ty> {
             #[allow(unused_mut)]
             fn from_value(mut v: Value) -> SpinResult<Vec<$ty>> {
-                if (v.0).get_vtype() == pr::DataType::$vectype {
+                if v.0.get_vtype() == pr::DataType::$vectype {
                     Ok((v.0).$getter())
                 } else {
                     let msg = format!("wrong type: {:?}, expected {:?}",
-                                      (v.0).get_vtype(), pr::DataType::$vectype);
+                                      v.0.get_vtype(), pr::DataType::$vectype);
                     spin_err("ArgumentError", &msg)
                 }
             }
@@ -167,3 +167,45 @@ impl_traits!(i32, Int32, Int32Array, set_int32, take_int32);
 impl_traits!(i64, Int64, Int64Array, set_int64, take_int64);
 impl_traits!(u32, UInt32, UInt32Array, set_uint32, take_uint32);
 impl_traits!(u64, UInt64, UInt64Array, set_uint64, take_uint64);
+
+impl From<(Vec<i32>, Vec<String>)> for Value {
+    fn from((ival, sval): (Vec<i32>, Vec<String>)) -> Value {
+        let mut v = pr::Value::new();
+        v.set_vtype(pr::DataType::Int32StringArray);
+        v.set_int32(ival);
+        v.set_string(RepeatedField::from_vec(sval));
+        Value(v)
+    }
+}
+
+impl FromValue for (Vec<i32>, Vec<String>) {
+    fn from_value(mut v: Value) -> SpinResult<(Vec<i32>, Vec<String>)> {
+        if v.0.get_vtype() == pr::DataType::Int32StringArray {
+            Ok((v.0.take_int32(), v.0.take_string().to_vec()))
+        } else {
+            let msg = format!("wrong type: {:?}, expected Int32StringArray", v.0.get_vtype());
+            spin_err("ArgumentError", &msg)
+        }
+    }
+}
+
+impl From<(Vec<f64>, Vec<String>)> for Value {
+    fn from((fval, sval): (Vec<f64>, Vec<String>)) -> Value {
+        let mut v = pr::Value::new();
+        v.set_vtype(pr::DataType::DoubleStringArray);
+        v.set_double(fval);
+        v.set_string(RepeatedField::from_vec(sval));
+        Value(v)
+    }
+}
+
+impl FromValue for (Vec<f64>, Vec<String>) {
+    fn from_value(mut v: Value) -> SpinResult<(Vec<f64>, Vec<String>)> {
+        if v.0.get_vtype() == pr::DataType::DoubleStringArray {
+            Ok((v.0.take_double(), v.0.take_string().to_vec()))
+        } else {
+            let msg = format!("wrong type: {:?}, expected DoubleStringArray", v.0.get_vtype());
+            spin_err("ArgumentError", &msg)
+        }
+    }
+}
