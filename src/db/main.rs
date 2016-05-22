@@ -83,6 +83,17 @@ impl DbDevice {
             }
         }
     }
+
+    fn cmd_list(&self, _: ()) -> SpinResult<Vec<String>> {
+        info!("list requested");
+        let mut result = Vec::with_capacity(self.devmap.len() * 3);
+        for (dev, srv) in &self.devmap {
+            result.push(dev.clone());
+            result.push(srv.clone());
+            result.push(self.srvmap[srv].clone());
+        }
+        Ok(result)
+    }
 }
 
 device_impl!(
@@ -94,7 +105,9 @@ device_impl!(
         Unregister => ("Unregister a server and its devices.",
                        DataType::StringArray, DataType::Void, cmd_unregister),
         Query      => ("Query information about a device.",
-                       DataType::String, DataType::String, cmd_query)
+                       DataType::String, DataType::String, cmd_query),
+        List       => ("List all devices, their server names and addresses.",
+                       DataType::Void, DataType::StringArray, cmd_list)
     ],
     attrs [
     ],
