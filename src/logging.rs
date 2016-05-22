@@ -19,7 +19,6 @@ use log4rs::encode::pattern::PatternEncoder;
 use log4rs::encode::writer::SimpleWriter;
 use log4rs::config::{Config, Root, Appender};
 use ansi_term::Colour::{Red, White, Purple};
-use ansi_term::ANSIString;
 
 use util::{ensure_dir, open_file};
 
@@ -53,7 +52,7 @@ impl Append for ConsoleAppender {
                 format!("[{:-10}] WARNING: {}", self.prefix, record.args())),
             LogLevel::Debug => White.paint(
                 format!("[{:-10}] {}", self.prefix, record.args())),
-            _ => ANSIString::from(
+            _ => From::from(
                 format!("[{:-10}] {}", self.prefix, record.args())),
         };
         writeln!(stdout, "{} {}", White.paint(time_str), msg)?;
