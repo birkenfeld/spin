@@ -11,7 +11,10 @@ use spin::arg;
 
 
 fn mains() {
-    let mut clnt = client::Client::new("tcp://localhost:1123", "test/dev/echo").unwrap();
+    let mut clnt = match client::Client::new("spindb://localhost:9999/test/dev/echo") {
+        Err(e) => { println!("no connect: {:?}", e); return; },
+        Ok(clnt) => clnt,
+    };
     let val = arg::Value::new("Hello, world!");
     let exc: Result<String, _> = clnt.exec_cmd_as("Echo", val);
     println!("exc: {:?}", exc);

@@ -6,6 +6,7 @@
 
 #[macro_use]
 extern crate log;
+extern crate url;
 extern crate zmq;
 extern crate fern;
 extern crate time;

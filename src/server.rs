@@ -94,11 +94,20 @@ impl<'srv> Server<'srv> {
 
     fn register_to_db(&mut self) -> SpinResult<()> {
         if let Some((ref host, ref port)) = self.address.db_addr {
-            let db_addr = format!("tcp://{}:{}", host, port);
-            debug!("{:?}", db_addr);
-            let mut db_cl = try!(Client::new(&db_addr, "sys/spin/db"));
-            let my_addr = format!("tcp://{}:{}", self.address.srv_host, self.address.srv_port);
-            try!(db_cl.exec_cmd("Register", Value::from(my_addr)));
+            let db_addr = format!("spin://{}:{}", host, port);
+            debug!("connecting to database: {:?}", db_addr);
+            let mut db_cl = try!(Client::new(&(db_addr + "/sys/spin/db")));
+            let ad_host = &self.address.srv_host;
+            let localhost = String::from("localhost");
+            let host = if ad_host == "*" { &localhost } else { ad_host };
+            let my_addr = format!("tcp://{}:{}", host, self.address.srv_port);
+            let mut my_devs = vec![my_addr, self.name.clone()];
+            for (name, _dev) in &self.devmap {
+                my_devs.push(name.clone());
+            }
+            debug!("db register: {:?}", my_devs);
+            try!(db_cl.exec_cmd("Register", Value::from(my_devs)));
+            debug!("done");
         }
         Ok(())
     }

@@ -16,6 +16,7 @@ path = "src/echo/main.rs"
 
 [dependencies]
 log = "*"
+url = "*"
 zmq = "*"
 fern = "*"
 time = "*"

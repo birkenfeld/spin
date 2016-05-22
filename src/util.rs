@@ -10,8 +10,10 @@ use log::LogLevelFilter::*;
 use fern;
 use time;
 use zmq;
+use url;
 
 use db;
+use error::{SpinResult, spin_err};
 
 /// Make it easier to write our signatures.
 pub type ZmqResult<T> = Result<T, zmq::Error>;
@@ -103,6 +105,49 @@ impl ServerAddress {
                 Some((host.into(), port))
             }
             None => None,
+        }
+    }
+}
+
+/// Helper object for client -> device addresses
+#[derive(Debug)]
+pub struct DeviceAddress {
+    pub devname: String,
+    pub endpoint: String,
+    pub use_db: bool,
+}
+
+impl DeviceAddress {
+    fn scheme_mapper(scheme: &str) -> url::SchemeType {
+        match scheme {
+            "spin" => url::SchemeType::Relative(0),
+            "spindb" => url::SchemeType::Relative(9999),
+            _ => url::SchemeType::NonRelative,
+        }
+    }
+    
+    /// Parse a connection URI.
+    pub fn parse_uri(uri: &str) -> SpinResult<DeviceAddress> {
+        let mut parser = url::UrlParser::new();
+        parser.scheme_type_mapper(DeviceAddress::scheme_mapper);
+        match parser.parse(uri) {
+            Err(_)  => spin_err("AddressError", "invalid device address"),
+            Ok(uri) => {
+                if uri.scheme != "spin" && uri.scheme != "spindb" {
+                    return spin_err("AddressError", "invalid scheme");
+                }
+                let host = uri.domain().unwrap_or("localhost");
+                let port = uri.port().unwrap_or(9999);
+                let path = match uri.serialize_path() {
+                    None => return spin_err("AddressError", "no devname found"),
+                    Some(ser) => String::from(&ser[1..])
+                };
+                Ok(DeviceAddress {
+                    devname: path,
+                    endpoint: format!("tcp://{}:{}", host, port),
+                    use_db: uri.scheme == "spindb",
+                })
+            }
         }
     }
 }

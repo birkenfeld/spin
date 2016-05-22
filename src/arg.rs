@@ -1,7 +1,8 @@
 // Spin RPC library, copyright 2015 Georg Brandl.
 //
-//! Argument type library, wrapper around the protobuf Value.
+//! Argument type library, wrapper around some protobuf types.
 
+use protobuf::RepeatedField;
 use spin_proto as pr;
 
 pub use spin_proto::DataType;
@@ -76,6 +77,25 @@ macro_rules! impl_traits {
             }
         }
     };
+    (Vec<$ty:ty>, $mutarr:ident, $setter:ident, $getarr:ident, $checkarr:ident, $getter:ident) => {
+        impl From<Vec<$ty>> for Value {
+            fn from(val: Vec<$ty>) -> Value {
+                let mut v = pr::Value::new();
+                v.$mutarr().$setter(RepeatedField::from_vec(val));
+                Value(v)
+            }
+        }
+        impl FromValue for Vec<$ty> {
+            #[allow(unused_mut)]
+            fn from_value(mut v: Value) -> SpinResult<Vec<$ty>> {
+                if (v.0).$checkarr() {
+                    Ok((v.0).$getarr().$getter().to_vec())
+                } else {
+                    spin_err("ArgumentError", "wrong type")
+                }
+            }
+        }
+    };
     ($ty:ty, $setter:ident, $getter:ident, $checker:ident) => {
         impl From<$ty> for Value {
             fn from(val: $ty) -> Value {
@@ -106,3 +126,6 @@ impl_traits!(u32, set_uint32, get_uint32, has_uint32);
 impl_traits!(u64, set_uint64, get_uint64, has_uint64);
 impl_traits!(String, set_string, take_string, has_string);
 impl_traits!(&'static str, set_string);
+
+//impl_traits!(Vec<bool>, mut_bool_arr, set_bool, take_bool_arr, has_bool_arr, take_bool);
+impl_traits!(Vec<String>, mut_string_arr, set_string, take_string_arr, has_string_arr, take_string);

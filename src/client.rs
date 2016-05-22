@@ -21,14 +21,28 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new(addr: &str, devname: &str) -> Result<Client, zmq::Error> {
+    pub fn new(uri: &str) -> SpinResult<Client> {
         let mut ctx = zmq::Context::new();
         let mut sock = try!(ctx.socket(zmq::REQ));
-        try!(sock.connect(addr));
+        let addr = try!(util::DeviceAddress::parse_uri(uri));
+        let endpoint = if addr.use_db {
+            try!(Client::query_db(&addr))
+        } else {
+            addr.endpoint
+        };
+        println!("endpoint = {}", endpoint);
+        try!(sock.connect(&endpoint));
         Ok(Client { _context: ctx,
                      socket:  sock,
-                     devname: String::from(devname).into_bytes(),
+                     devname: String::from(addr.devname).into_bytes(),
                      seqno:   0 })
+    }
+
+    fn query_db(addr: &util::DeviceAddress) -> SpinResult<String> {
+        let db_addr = format!("spin://{}/sys/spin/db", &addr.endpoint[6..]);
+        let mut db_cl = try!(Client::new(&db_addr));
+        let srv_addr = try!(db_cl.exec_cmd("Query", Value::from(addr.devname.clone())));
+        String::from_value(srv_addr)
     }
 
     fn do_request(&mut self, mut req: pr::Request) -> SpinResult<pr::Response> {
