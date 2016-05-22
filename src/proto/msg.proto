@@ -12,6 +12,7 @@ enum DataType {
     UInt32 = 6;
     UInt64 = 7;
     String = 8;
+    ByteArray   = 10;
     BoolArray	= 11;
     DoubleArray = 12;
     FloatArray	= 13;
@@ -25,15 +26,16 @@ enum DataType {
 }
 
 message Value {
-    required DataType vtype = 9;
-    repeated bool   bool   = 1 [packed=true];
-    repeated double double = 2 [packed=true];
-    repeated float  float  = 3 [packed=true];
-    repeated sint32 int32  = 4 [packed=true];
-    repeated sint64 int64  = 5 [packed=true];
-    repeated uint32 uint32 = 6 [packed=true];
-    repeated uint64 uint64 = 7 [packed=true];
-    repeated string string = 8;
+    required DataType vtype   = 10;
+    repeated bool     bool    = 1 [packed=true];
+    repeated double   double  = 2 [packed=true];
+    repeated float    float   = 3 [packed=true];
+    repeated sint32   int32   = 4 [packed=true];
+    repeated sint64   int64   = 5 [packed=true];
+    repeated uint32   uint32  = 6 [packed=true];
+    repeated uint64   uint64  = 7 [packed=true];
+    repeated string   string  = 8;
+    optional bytes    bytes   = 9;
 }
 
 message Error {
