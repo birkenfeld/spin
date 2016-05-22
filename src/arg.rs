@@ -53,15 +53,37 @@ impl Value {
         self.0
     }
 
-    pub fn from_toml(val: &toml::Value) -> Option<Value> {
-        match *val {
-            toml::Value::String(ref s) => Some(Value::from(s.clone())),
+    pub fn from_toml(val: toml::Value) -> Option<Value> {
+        macro_rules! arr_impl {
+            ($arr:ident, $el:ident, $variant:ident) => {{
+                let mut all = Vec::with_capacity($arr.len() + 1);
+                for el in $arr {
+                    match el {
+                        toml::Value::$variant(s) => all.push(s),
+                        _ => {}
+                    }
+                }
+                all.push($el);
+                Some(Value::from(all))
+            }}
+        }
+        match val {
+            toml::Value::String(s) => Some(Value::from(s)),
             toml::Value::Integer(i) => Some(Value::from(i)),
             toml::Value::Float(f) => Some(Value::from(f)),
             toml::Value::Boolean(b) => Some(Value::from(b)),
-            toml::Value::Array(_) => {
-                // TODO
-                None
+            toml::Value::Array(mut arr) => match arr.pop() {
+                None => Some(Value::from(())),  // we don't know a type
+                // All array elements have the same TOML type. (This is not
+                // encoded in the datatype.) Therefore we can just switch on
+                // the last value.
+                Some(last) => match last {
+                    toml::Value::String(s) => arr_impl!(arr, s, String),
+                    toml::Value::Integer(i) => arr_impl!(arr, i, Integer),
+                    toml::Value::Float(f) => arr_impl!(arr, f, Float),
+                    toml::Value::Boolean(b) => arr_impl!(arr, b, Boolean),
+                    _ => None
+                },
             },
             _ => None
         }
@@ -76,10 +98,15 @@ impl Value {
     }
 
     pub fn convert(self, newtype: DataType) -> Option<Value> {
+        macro_rules! conv_arr {
+            ($arr:expr, $ty:ty) => {
+                Some(Value::from($arr.into_iter().map(|v| v as $ty).collect::<Vec<_>>()))
+            }
+        }
         if self.0.get_vtype() == newtype {
             return Some(self);
         }
-        let inner = self.into_inner();
+        let mut inner = self.into_inner();
         match inner.get_vtype() {
             DataType::Double => match newtype {
                 DataType::Float => Some(Value::from(inner.get_double()[0] as f32)),
@@ -121,7 +148,46 @@ impl Value {
                 DataType::Double => Some(Value::from(inner.get_uint64()[0] as f64)),
                 _ => None
             },
-            // TODO: arrays
+            DataType::DoubleArray => match newtype {
+                DataType::FloatArray => conv_arr!(inner.take_double(), f32),
+                _ => None
+            },
+            DataType::FloatArray => match newtype {
+                DataType::DoubleArray => conv_arr!(inner.take_float(), f64),
+                _ => None
+            },
+            DataType::Int32Array => match newtype {
+                DataType::Int64Array => conv_arr!(inner.take_int32(), i64),
+                DataType::UInt32Array => conv_arr!(inner.take_int32(), u32),
+                DataType::UInt64Array => conv_arr!(inner.take_int32(), u64),
+                DataType::FloatArray => conv_arr!(inner.take_int32(), f32),
+                DataType::DoubleArray => conv_arr!(inner.take_int32(), f64),
+                _ => None
+            },
+            DataType::Int64Array => match newtype {
+                DataType::Int32Array => conv_arr!(inner.take_int64(), i32),
+                DataType::UInt32Array => conv_arr!(inner.take_int64(), u32),
+                DataType::UInt64Array => conv_arr!(inner.take_int64(), u64),
+                DataType::FloatArray => conv_arr!(inner.take_int64(), f32),
+                DataType::DoubleArray => conv_arr!(inner.take_int64(), f64),
+                _ => None
+            },
+            DataType::UInt32Array => match newtype {
+                DataType::Int32Array => conv_arr!(inner.take_uint32(), i32),
+                DataType::Int64Array => conv_arr!(inner.take_uint32(), i64),
+                DataType::UInt64Array => conv_arr!(inner.take_uint32(), u64),
+                DataType::FloatArray => conv_arr!(inner.take_uint32(), f32),
+                DataType::DoubleArray => conv_arr!(inner.take_uint32(), f64),
+                _ => None
+            },
+            DataType::UInt64Array => match newtype {
+                DataType::Int32Array => conv_arr!(inner.take_uint64(), i32),
+                DataType::Int64Array => conv_arr!(inner.take_uint64(), i64),
+                DataType::UInt32Array => conv_arr!(inner.take_uint64(), u32),
+                DataType::FloatArray => conv_arr!(inner.take_uint64(), f32),
+                DataType::DoubleArray => conv_arr!(inner.take_uint64(), f64),
+                _ => None
+            },
             _ => None
         }
     }

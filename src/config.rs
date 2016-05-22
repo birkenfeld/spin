@@ -48,13 +48,13 @@ impl ServerConfig {
             None => return Err(parser.errors.pop().unwrap().into()),
         };
         let mut devices = Vec::with_capacity(parsed.len());
-        for (key, value) in &parsed {
+        for (key, value) in parsed {
             let mut devtype = None;
             let mut devprops = Vec::new();
-            if let toml::Value::Table(ref props) = *value {
+            if let toml::Value::Table(props) = value {
                 for (prop, value) in props {
                     if prop == "type" {
-                        devtype = value.as_str();
+                        devtype = value.as_str().map(ToOwned::to_owned);
                         continue;
                     }
                     if let Some(arg_value) = Value::from_toml(value) {
@@ -67,7 +67,7 @@ impl ServerConfig {
             }
             if let Some(devtype) = devtype {
                 devices.push(DevConfig { name: key.to_owned(),
-                                         devtype: devtype.to_owned(),
+                                         devtype: devtype,
                                          props: devprops })
             } else {
                 warn!("ignoring device {}, it has no proper type", key);
