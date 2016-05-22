@@ -35,6 +35,14 @@ impl EchoDevice {
         self.value = f64::from_value(val)?;
         Ok(())
     }
+
+    fn get_def_value(&mut self) -> SpinResult<Value> {
+        Ok(Value::new(0.0))
+    }
+
+    fn set_def_value(&mut self, val: Value) -> SpinResult<()> {
+        Ok(())
+    }
 }
 
 
@@ -47,6 +55,10 @@ device_impl!(
     attrs [
         value => ("A double value.", DataType::Double,
                   read_value, write_value)
+    ],
+    props [
+        default_value => ("Default for 'value' attribute.", DataType::Double,
+                          42.0_f64, get_def_value, set_def_value)
     ]
 );
 

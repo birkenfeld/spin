@@ -6,14 +6,15 @@ use protobuf::RepeatedField;
 use spin_proto as pr;
 
 pub use spin_proto::DataType;
+pub use spin_proto::CmdDesc;
 pub use spin_proto::AttrDesc;
-pub use spin_proto::CommandDesc;
+pub use spin_proto::PropDesc;
 
 use error::{SpinResult, spin_err};
 
 
-pub fn cmd_info(name: &str, doc: &str, intype: DataType, outtype: DataType) -> CommandDesc {
-    let mut c = CommandDesc::new();
+pub fn cmd_info(name: &str, doc: &str, intype: DataType, outtype: DataType) -> CmdDesc {
+    let mut c = CmdDesc::new();
     c.set_name(name.into());
     c.set_doc(doc.into());
     c.set_intype(intype);
@@ -26,6 +27,16 @@ pub fn attr_info(name: &str, doc: &str, dtype: DataType) -> AttrDesc {
     a.set_name(name.into());
     a.set_doc(doc.into());
     a.set_field_type(dtype);
+    // TODO: add shape
+    a
+}
+
+pub fn prop_info(name: &str, doc: &str, dtype: DataType, default: Value) -> PropDesc {
+    let mut a = PropDesc::new();
+    a.set_name(name.into());
+    a.set_doc(doc.into());
+    a.set_field_type(dtype);
+    a.set_default(default.into());
     a
 }
 

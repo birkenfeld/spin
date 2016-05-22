@@ -25,7 +25,8 @@ fn mains() {
     if let Ok(qap) = clnt.query_api() {
         let cnames: Vec<_> = qap.0.iter().map(|ci| ci.get_name()).collect();
         let anames: Vec<_> = qap.1.iter().map(|ai| ai.get_name()).collect();
-        println!("qap: {:?} {:?}", cnames, anames);
+        let pnames: Vec<_> = qap.2.iter().map(|pi| pi.get_name()).collect();
+        println!("qap: {:?} {:?} {:?}", cnames, anames, pnames);
     }
     let t1 = time::get_time();
     for _i in 0..10000 {

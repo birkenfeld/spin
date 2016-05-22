@@ -46,7 +46,7 @@ message Error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-message CommandDesc {
+message CmdDesc {
     required string   name = 1;
     required string   doc = 2;
     required DataType intype = 3;
@@ -60,16 +60,24 @@ message AttrDesc {
     required string   doc = 2;
     required DataType type = 3;
     required string   unit = 4;
-    repeated uint32   shape = 5;
+}
+
+message PropDesc {
+    required string   name = 1;
+    required string   doc = 2;
+    required DataType type = 3;
+    optional Value    default = 4;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 enum ReqType {
     ReqPing = 0;
-    ReqExecCommand = 1;
+    ReqExecCmd = 1;
     ReqReadAttr = 2;
     ReqWriteAttr = 3;
+    ReqGetProp = 4;
+    ReqSetProp = 5;
     ReqQueryAPI = 10;
 }
 
@@ -88,10 +96,11 @@ enum RespType {
 }
 
 message Response {
-    required uint32      seqno = 1;
-    required RespType    rtype = 2;
-    optional Error       error = 3;
-    optional Value       value = 5;
-    repeated CommandDesc commands = 6;
-    repeated AttrDesc    attrs = 7;
+    required uint32   seqno = 1;
+    required RespType rtype = 2;
+    optional Error    error = 3;
+    optional Value    value = 5;
+    repeated CmdDesc  cmds = 6;
+    repeated AttrDesc attrs = 7;
+    repeated PropDesc props = 8;
 }

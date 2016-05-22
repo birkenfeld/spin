@@ -66,6 +66,8 @@ device_impl!(
                      DataType::String, DataType::String, cmd_query)
     ],
     attrs [
+    ],
+    props [
     ]
 );
 

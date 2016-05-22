@@ -76,7 +76,7 @@ impl Client {
 
     pub fn exec_cmd(&mut self, cmd: &str, arg: Value) -> SpinResult<Value> {
         let mut req = pr::Request::new();
-        req.set_rtype(pr::ReqType::ReqExecCommand);
+        req.set_rtype(pr::ReqType::ReqExecCmd);
         req.set_name(cmd.into());
         req.set_value(arg.into());
 
@@ -111,14 +111,38 @@ impl Client {
         Ok(())
     }
 
-    pub fn query_api(&mut self) -> SpinResult<(Vec<CommandDesc>, Vec<AttrDesc>)> {
+    pub fn get_prop(&mut self, prop: &str) -> SpinResult<Value> {
+        let mut req = pr::Request::new();
+        req.set_rtype(pr::ReqType::ReqGetProp);
+        req.set_name(prop.into());
+
+        let mut rsp = self.do_request(req, pr::RespType::RespValue)?;
+        Ok(Value::from(rsp.take_value()))
+    }
+
+    pub fn get_prop_as<T: FromValue>(&mut self, prop: &str) -> SpinResult<T> {
+        self.get_prop(prop).and_then(FromValue::from_value)
+    }
+
+    pub fn set_prop(&mut self, prop: &str, val: Value) -> SpinResult<()> {
+        let mut req = pr::Request::new();
+        req.set_rtype(pr::ReqType::ReqSetProp);
+        req.set_name(prop.into());
+        req.set_value(val.into());
+
+        self.do_request(req, pr::RespType::RespVoid)?;
+        Ok(())
+    }
+
+    pub fn query_api(&mut self) -> SpinResult<(Vec<CmdDesc>, Vec<AttrDesc>, Vec<PropDesc>)> {
         let mut req = pr::Request::new();
         req.set_rtype(pr::ReqType::ReqQueryAPI);
 
         let mut rsp = self.do_request(req, pr::RespType::RespAPI)?;
-        let cmds = rsp.take_commands();
+        let cmds = rsp.take_cmds();
         let attrs = rsp.take_attrs();
-        Ok((cmds.to_vec(), attrs.to_vec()))
+        let props = rsp.take_props();
+        Ok((cmds.to_vec(), attrs.to_vec(), props.to_vec()))
     }
 
 }
