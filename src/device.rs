@@ -144,21 +144,45 @@ pub fn general_error_reply(reason: &str, desc: &str, req: &[u8]) -> SpinResult<V
     Ok(rsp)
 }
 
+// Returns the Rust type for a given DataType type.
+#[macro_export]
+macro_rules! rust_type_for_data_type {
+    (Void) => (());
+    (Bool) => (bool);
+    (Double) => (f64);
+    (Float) => (f32);
+    (Int32) => (i32);
+    (Int64) => (i64);
+    (UInt32) => (u32);
+    (UInt64) => (u64);
+    (String) => (String);
+    (ByteArray) => (Vec<u8>);
+    (BoolArray) => (Vec<bool>);
+    (DoubleArray) => (Vec<f64>);
+    (FloatArray) => (Vec<f32>);
+    (Int32Array) => (Vec<i32>);
+    (Int64Array) => (Vec<i64>);
+    (UInt32Array) => (Vec<u32>);
+    (UInt64Array) => (Vec<u64>);
+    (StringArray) => (Vec<String>);
+    (Int32StringArray) => ((Vec<i32>, Vec<String>));
+    (DoubleStringArray) => ((Vec<f64>, Vec<String>));
+}
 
 #[macro_export]
 macro_rules! device_impl {
     ($clsname:ident,
      $propstruct:ident,
-     cmds  [$($cname:ident => ($cdoc:expr, $cintype:expr, $couttype:expr, $cfunc:ident)),*],
-     attrs [$($aname:ident => ($adoc:expr, $atype:expr, $arfunc:ident, $awfunc:ident)),*],
-     props [$($pname:ident => ($pdoc:expr, $ptype:expr, $prusttype:ty, $pdef:expr)),*]) => {
+     cmds  [$($cname:ident => ($cdoc:expr, $cintype:ident, $couttype:ident, $cfunc:ident)),*],
+     attrs [$($aname:ident => ($adoc:expr, $atype:ident, $arfunc:ident, $awfunc:ident)),*],
+     props [$($pname:ident => ($pdoc:expr, $ptype:ident, $pdef:expr)),*]) => {
         #[derive(Default)]
         struct $propstruct {
             _name: String,
             _descriptions: Vec<::spin::arg::PropDesc>,
             _initialized: bool,
             $(
-                $pname: $prusttype,
+                $pname: rust_type_for_data_type!($ptype),
             )*
         }
 
@@ -184,11 +208,14 @@ macro_rules! device_impl {
             fn get_name(&self) -> &str { &self.props._name }
 
             fn query_cmd_descs(&self) -> Vec<::spin::arg::CmdDesc> {
-                vec![$(::spin::arg::cmd_info(stringify!($cname), $cdoc, $cintype, $couttype),)*]
+                vec![$(::spin::arg::cmd_info(stringify!($cname), $cdoc,
+                                             ::spin::arg::DataType::$cintype,
+                                             ::spin::arg::DataType::$couttype),)*]
             }
 
             fn query_attr_descs(&self) -> Vec<::spin::arg::AttrDesc> {
-                vec![$(::spin::arg::attr_info(stringify!($aname), $adoc, $atype),)*]
+                vec![$(::spin::arg::attr_info(stringify!($aname), $adoc,
+                                              ::spin::arg::DataType::$atype),)*]
             }
 
             fn query_prop_descs(&self) -> Vec<::spin::arg::PropDesc> {
@@ -246,11 +273,12 @@ macro_rules! device_impl {
                 debug!("{}: init properties", self.get_name());
                 $(
                     self.props._descriptions.push(
-                        ::spin::arg::prop_info(stringify!($pname), $pdoc, $ptype,
+                        ::spin::arg::prop_info(stringify!($pname), $pdoc,
+                                               ::spin::arg::DataType::$ptype,
                                                ::spin::arg::Value::from($pdef)));
                     self.props.$pname = $pdef;
                     if let Some(cfg_value) = cfg_prop_map.remove(stringify!($pname)) {
-                        if let Some(value) = cfg_value.convert($ptype) {
+                        if let Some(value) = cfg_value.convert(::spin::arg::DataType::$ptype) {
                             self.props.$pname = value.extract().unwrap();
                             debug!("{}: property {} from config: {:?}", self.get_name(),
                                    stringify!($pname), self.props.$pname);
@@ -283,15 +311,16 @@ macro_rules! device_impl {
                 debug!("{}: set property {} = {:?}", self.get_name(), prop, val);
                 $(
                     if prop == stringify!($pname) {
-                        if let Some(val) = val.convert($ptype) {
+                        if let Some(val) = val.convert(::spin::arg::DataType::$ptype) {
                             self.props.$pname = val.extract().unwrap();
                             self.delete_device();
                             self.init_device()?;
                             return Ok(());
                         } else {
-                            return ::spin::error::spin_err(::spin::error::ARG_ERROR,
-                                                           &format!("Wrong property type, \
-                                                                     expected {:?}", $ptype));
+                            return ::spin::error::spin_err(
+                                ::spin::error::ARG_ERROR,
+                                &format!("Wrong property type, expected {:?}",
+                                         ::spin::arg::DataType::$ptype));
                         }
                     }
                 )*;

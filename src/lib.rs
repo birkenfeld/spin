@@ -2,7 +2,7 @@
 //
 //! Main library module; just re-exports the public API.
 
-#![feature(box_syntax, question_mark)]
+#![feature(box_syntax, question_mark, type_macros)]
 
 #[macro_use]
 extern crate log;

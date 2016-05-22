@@ -11,7 +11,6 @@ extern crate spin;
 
 use std::collections::HashMap;
 
-use spin::arg::DataType;
 use spin::config::{ServerConfig, DevConfig};
 use spin::device::Device;
 use spin::error::{DB_ERROR, SpinResult, spin_err};
@@ -101,13 +100,13 @@ device_impl!(
     DbDeviceProps,
     cmds  [
         Register   => ("Register a server and its devices.",
-                       DataType::StringArray, DataType::Void, cmd_register),
+                       StringArray, Void, cmd_register),
         Unregister => ("Unregister a server and its devices.",
-                       DataType::StringArray, DataType::Void, cmd_unregister),
+                       StringArray, Void, cmd_unregister),
         Query      => ("Query information about a device.",
-                       DataType::String, DataType::String, cmd_query),
+                       String, String, cmd_query),
         List       => ("List all devices, their server names and addresses.",
-                       DataType::Void, DataType::StringArray, cmd_list)
+                       Void, StringArray, cmd_list)
     ],
     attrs [
     ],
