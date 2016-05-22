@@ -295,7 +295,7 @@ macro_rules! spin_device_impl {
                 debug!("{}: get property {}", self.get_name(), prop);
                 $(
                     if prop == stringify!($pname) {
-                        return Ok($crate::Value::from(self.props.$pname));
+                        return Ok($crate::Value::from(self.props.$pname.clone()));
                     }
                 )*;
                 spin_err!($crate::error::API_ERROR, "No such property")

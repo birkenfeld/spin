@@ -4,6 +4,7 @@
 
 use std::error;
 use std::fmt;
+use std::io;
 
 use zmq;
 use protobuf;
@@ -18,6 +19,8 @@ pub const SOCKET_ERROR:   &'static str = "SocketError";
 pub const ADDRESS_ERROR:  &'static str = "AddressError";
 pub const ZMQ_ERROR:      &'static str = "ZmqError";
 pub const PROTO_ERROR:    &'static str = "ProtocolError";
+pub const CONFIG_ERROR:   &'static str = "ConfigError";
+pub const IO_ERROR:       &'static str = "IoError";
 
 
 #[derive(Debug)]
@@ -57,25 +60,23 @@ impl error::Error for Error {
     }
 }
 
-impl From<zmq::Error> for Error {
-    fn from(e: zmq::Error) -> Error {
-        Error {
-            reason: ZMQ_ERROR.into(),
-            desc:   error::Error::description(&e).into(),
-            origin: String::new(),
+macro_rules! error_impl {
+    ($errcls:ty => $errconst:ident) => {
+        impl From<$errcls> for Error {
+            fn from(e: $errcls) -> Error {
+                Error {
+                    reason: $errconst.into(),
+                    desc:   error::Error::description(&e).into(),
+                    origin: String::new(),
+                }
+            }
         }
     }
 }
 
-impl From<protobuf::ProtobufError> for Error {
-    fn from(e: protobuf::ProtobufError) -> Error {
-        Error {
-            reason: PROTO_ERROR.into(),
-            desc:   error::Error::description(&e).into(),
-            origin: String::new(),
-        }
-    }
-}
+error_impl!(io::Error => IO_ERROR);
+error_impl!(zmq::Error => ZMQ_ERROR);
+error_impl!(protobuf::ProtobufError => PROTO_ERROR);
 
 pub type SpinResult<T> = Result<T, Error>;
 
