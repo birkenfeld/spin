@@ -16,43 +16,49 @@ use config::DevProp;
 use error::{SpinResult, spin_err};
 use util;
 
+pub type PropDescMap = HashMap<String, pr::PropDesc>;
 pub type PropMap = HashMap<String, Value>;
+
+/// Collects all the "internal" members every Device must have.
+#[derive(Default)]
+pub struct DeviceInner {
+    pub propdesc: PropDescMap,
+    pub props: PropMap,
+}
 
 
 pub trait Device : Sync + Send {
+    fn init_caches(&mut self);
     fn init(&mut self);
     fn delete(&mut self);
 
     fn get_name(&self) -> &str;
     fn get_props(&self) -> &PropMap;
-    fn mut_props(&mut self) -> &mut PropMap;
+    fn mut_props(&mut self) -> (&mut PropMap, &PropDescMap);
 
-    fn get_cmd_descs(&self) -> Vec<CmdDesc>;
-    fn get_attr_descs(&self) -> Vec<AttrDesc>;
-    fn get_prop_descs(&self) -> Vec<PropDesc>;
+    fn query_cmd_descs(&self) -> Vec<CmdDesc>;
+    fn query_attr_descs(&self) -> Vec<AttrDesc>;
+    fn query_prop_descs(&self) -> Vec<PropDesc>;
 
     fn exec_cmd(&mut self, cmd: &str, arg: Value) -> SpinResult<Value>;
     fn read_attr(&mut self, attr: &str) -> SpinResult<Value>;
     fn write_attr(&mut self, attr: &str, arg: Value) -> SpinResult<()>;
 
     fn init_props(&mut self, cfg_props: Vec<DevProp>) {
-        let descs = self.get_prop_descs();
-        let propmap = self.mut_props();
-        'outer: for cfg_prop in cfg_props {
-            for propdesc in &descs {
-                if cfg_prop.name == propdesc.get_name() {
-                    if let Some(value) = cfg_prop.value.convert(propdesc.get_field_type()) {
-                        propmap.insert(cfg_prop.name, value);
-                    }
-                    continue 'outer;
+        let (propmap, descs) = self.mut_props();
+        for cfg_prop in cfg_props {
+            if let Some(desc) = descs.get(&cfg_prop.name) {
+                if let Some(value) = cfg_prop.value.convert(desc.get_field_type()) {
+                    propmap.insert(cfg_prop.name, value);
                 }
             }
         }
-        for mut propdesc in descs {
-            if !propmap.contains_key(propdesc.get_name()) {
-                let defvalue = Value::new(propdesc.take_default());
-                if let Some(value) = defvalue.convert(propdesc.get_field_type()) {
-                    propmap.insert(propdesc.take_name(), value);
+        // TODO: ensure default value matches data type
+        for (name, desc) in descs {
+            if !propmap.contains_key(name) {
+                let defvalue = Value::new(desc.get_default().clone());
+                if let Some(value) = defvalue.convert(desc.get_field_type()) {
+                    propmap.insert(name.to_owned(), value);
                 }
             }
         }
@@ -67,22 +73,17 @@ pub trait Device : Sync + Send {
 
     #[allow(unused_variables)]
     fn set_prop(&mut self, prop: &str, val: Value) -> SpinResult<()> {
-        if !self.get_props().contains_key(prop) {
-            return spin_err("PropertyError", "No such property");
-        }
-        // TODO: make this quicker
-        let mut proptype = pr::DataType::Void;
-        for propdesc in self.get_prop_descs() {
-            if propdesc.get_name() == prop {
-                proptype = propdesc.get_field_type();
-                break;
+        let (propmap, descs) = self.mut_props();
+        match descs.get(prop) {
+            None => spin_err("PropertyError", "No such property"),
+            Some(desc) => {
+                if let Some(val) = val.convert(desc.get_field_type()) {
+                    propmap.insert(prop.to_owned(), val);
+                    Ok(())
+                } else {
+                    spin_err("PropertyError", "Wrong property type")
+                }
             }
-        }
-        if let Some(val) = val.convert(proptype) {
-            self.mut_props().insert(prop.to_owned(), val);
-            Ok(())
-        } else {
-            spin_err("PropertyError", "Wrong property type")
         }
     }
 }
@@ -165,9 +166,9 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
         }
         pr::ReqType::ReqQueryAPI => {
             rsp.set_rtype(pr::RespType::RespAPI);
-            rsp.set_cmds(RepeatedField::from_vec(dev.get_cmd_descs()));
-            rsp.set_attrs(RepeatedField::from_vec(dev.get_attr_descs()));
-            rsp.set_props(RepeatedField::from_vec(dev.get_prop_descs()));
+            rsp.set_cmds(RepeatedField::from_vec(dev.query_cmd_descs()));
+            rsp.set_attrs(RepeatedField::from_vec(dev.query_attr_descs()));
+            rsp.set_props(RepeatedField::from_vec(dev.query_prop_descs()));
         }
     }
 
@@ -206,6 +207,14 @@ macro_rules! device_impl {
      attrs [$($aname:ident => ($adoc:expr, $atype:expr, $arfunc:ident, $awfunc:ident)),*],
      props [$($pname:ident => ($pdoc:expr, $ptype:expr, $pdef:expr)),*]) => {
         impl ::spin::device::Device for $clsname {
+            fn init_caches(&mut self) {
+                $(
+                    self.inner.propdesc.insert(stringify!($pname).to_owned(),
+                                               prop_info(stringify!($pname), $pdoc,
+                                                         $ptype, Value::from($pdef)));
+                )*
+            }
+
             fn init(&mut self) { $clsname::init(self) }
 
             fn delete(&mut self) { $clsname::delete(self) }
@@ -213,24 +222,24 @@ macro_rules! device_impl {
             fn get_name(&self) -> &str { &self.name }
 
             fn get_props(&self) -> &::spin::device::PropMap {
-                &self.propmap
+                &self.inner.props
             }
 
-            fn mut_props(&mut self) -> &mut ::spin::device::PropMap {
-                &mut self.propmap
+            fn mut_props(&mut self) -> (&mut ::spin::device::PropMap,
+                                        &::spin::device::PropDescMap) {
+                (&mut self.inner.props, &self.inner.propdesc)
             }
 
-            fn get_cmd_descs(&self) -> Vec<CmdDesc> {
+            fn query_cmd_descs(&self) -> Vec<CmdDesc> {
                 vec![$(cmd_info(stringify!($cname), $cdoc, $cintype, $couttype),)*]
             }
 
-            fn get_attr_descs(&self) -> Vec<AttrDesc> {
+            fn query_attr_descs(&self) -> Vec<AttrDesc> {
                 vec![$(attr_info(stringify!($aname), $adoc, $atype),)*]
             }
 
-            fn get_prop_descs(&self) -> Vec<PropDesc> {
-                // TODO: ensure default value matches data type
-                vec![$(prop_info(stringify!($pname), $pdoc, $ptype, Value::from($pdef)),)*]
+            fn query_prop_descs(&self) -> Vec<PropDesc> {
+                self.inner.propdesc.values().cloned().collect()
             }
 
             #[allow(unused_variables)]

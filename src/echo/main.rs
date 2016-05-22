@@ -10,23 +10,24 @@ extern crate log;
 extern crate spin;
 
 use spin::arg::*;
-use spin::device::{Device, PropMap};
+use spin::device::{Device, DeviceInner};
 use spin::error::SpinResult;
 
 
 struct EchoDevice {
     name: String,
+    inner: DeviceInner,
     value: f64,
-    propmap: PropMap,
 }
 
 impl EchoDevice {
     fn create(name: String) -> Box<Device> {
-        box EchoDevice { name: name, value: 0., propmap: PropMap::new() }
+        box EchoDevice { name: name, value: 0.,
+                         inner: Default::default() }
     }
 
     fn init(&mut self) {
-        self.value = self.propmap["default_value"].clone().into_inner().get_double()[0];
+        self.value = self.get_props()["default_value"].clone_as();
     }
 
     fn delete(&mut self) {
@@ -55,8 +56,7 @@ device_impl!(
                   DataType::String, DataType::String, cmd_echo)
     ],
     attrs [
-        value => ("A double value.", DataType::Double,
-                  read_value, write_value)
+        value => ("A double value.", DataType::Double, read_value, write_value)
     ],
     props [
         default_value => ("Default for 'value' attribute.", DataType::Double, 42.0_f64)

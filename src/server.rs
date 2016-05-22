@@ -129,6 +129,7 @@ impl Server {
             pollsockets.push(local_sock);
 
             let mut dev = dev_const(devconfig.name);
+            dev.init_caches();
             dev.init_props(devconfig.props);
             thread::spawn(move || {
                 dev.init();

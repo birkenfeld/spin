@@ -28,7 +28,6 @@ pub fn attr_info(name: &str, doc: &str, dtype: DataType) -> AttrDesc {
     a.set_name(name.into());
     a.set_doc(doc.into());
     a.set_field_type(dtype);
-    // TODO: add shape
     a
 }
 
@@ -72,6 +71,10 @@ impl Value {
             },
             _ => None
         }
+    }
+
+    pub fn clone_as<T: FromValue>(&self) -> T {
+        T::from_value(self.clone()).unwrap()
     }
 
     pub fn convert(self, newtype: DataType) -> Option<Value> {
