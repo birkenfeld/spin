@@ -16,8 +16,6 @@ use error::SpinResult;
 
 
 pub trait Device : Sync + Send {
-    const CLSNAME: &'static str;
-
     fn get_name(&self) -> &str;
     fn get_cmds(&self) -> Vec<CmdDesc>;
     fn get_attrs(&self) -> Vec<AttrDesc>;
@@ -147,8 +145,6 @@ macro_rules! device_impl {
      attrs [$($aname:ident => ($adoc:expr, $atype:expr, $arfunc:ident, $awfunc:ident)),*],
      props [$($pname:ident => ($pdoc:expr, $ptype:expr, $pdef:expr, $prfunc:ident, $pwfunc:ident)),*]) => {
         impl ::spin::device::Device for $clsname {
-            const CLSNAME: &'static str = stringify!($clsname);
-
             fn get_name(&self) -> &str { &self.name }
 
             fn get_cmds(&self) -> Vec<CmdDesc> {
@@ -168,7 +164,7 @@ macro_rules! device_impl {
             fn exec_cmd(&mut self, cmd: &str, arg: Value) -> SpinResult<Value> {
                 match cmd {
                     $(stringify!($cname) => self.$cfunc(arg),)*
-                    _ => spin_err("CommandError", "No such command"),
+                    _ => ::spin::error::spin_err("CommandError", "No such command"),
                 }
             }
 
@@ -176,7 +172,7 @@ macro_rules! device_impl {
             fn read_attr(&mut self, attr: &str) -> SpinResult<Value> {
                 match attr {
                     $(stringify!($aname) => self.$arfunc(),)*
-                    _ => spin_err("AttributeError", "No such attribute"),
+                    _ => ::spin::error::spin_err("AttributeError", "No such attribute"),
                 }
             }
 
@@ -184,7 +180,7 @@ macro_rules! device_impl {
             fn write_attr(&mut self, attr: &str, val: Value) -> SpinResult<()> {
                 match attr {
                     $(stringify!($aname) => self.$awfunc(val),)*
-                    _ => spin_err("AttributeError", "No such attribute"),
+                    _ => ::spin::error::spin_err("AttributeError", "No such attribute"),
                 }
             }
 
@@ -192,7 +188,7 @@ macro_rules! device_impl {
             fn get_prop(&mut self, prop: &str) -> SpinResult<Value> {
                 match prop {
                     $(stringify!($pname) => self.$prfunc(),)*
-                    _ => spin_err("PropertyError", "No such property"),
+                    _ => ::spin::error::spin_err("PropertyError", "No such property"),
                 }
             }
 
@@ -200,7 +196,7 @@ macro_rules! device_impl {
             fn set_prop(&mut self, prop: &str, val: Value) -> SpinResult<()> {
                 match prop {
                     $(stringify!($pname) => self.$pwfunc(val),)*
-                    _ => spin_err("PropertyError", "No such property"),
+                    _ => ::spin::error::spin_err("PropertyError", "No such property"),
                 }
                 // TODO: should reinitialize after property change
             }

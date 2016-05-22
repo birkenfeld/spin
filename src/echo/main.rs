@@ -2,7 +2,7 @@
 //
 //! Test echo server executable.
 
-#![feature(associated_consts, box_syntax, question_mark)]
+#![feature(box_syntax, question_mark)]
 
 #[macro_use]
 extern crate log;
@@ -11,7 +11,7 @@ extern crate spin;
 
 use spin::arg::*;
 use spin::device::Device;
-use spin::error::{SpinResult, spin_err};
+use spin::error::SpinResult;
 
 
 struct EchoDevice {
@@ -20,6 +20,10 @@ struct EchoDevice {
 }
 
 impl EchoDevice {
+    fn create(name: String) -> Box<Device> {
+        box EchoDevice { name: name, value: 0. }
+    }
+
     fn cmd_echo(&self, arg: Value) -> SpinResult<Value> {
         let s = String::from_value(arg)?;
         Ok(Value::new(s))
@@ -60,13 +64,9 @@ device_impl!(
     ]
 );
 
-fn create_echo_device(name: String) -> Box<Device> {
-    box EchoDevice { name: name, value: 0. }
-}
-
 
 fn main() {
     server_main!(devtypes = [
-        Echo => create_echo_device
+        Echo => EchoDevice::create
     ]);
 }

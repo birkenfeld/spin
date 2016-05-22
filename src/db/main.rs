@@ -2,7 +2,7 @@
 //
 //! Database server executable.
 
-#![feature(associated_consts, box_syntax, question_mark)]
+#![feature(box_syntax, question_mark)]
 
 #[macro_use]
 extern crate log;
@@ -24,6 +24,12 @@ struct DbDevice {
 }
 
 impl DbDevice {
+    fn create(name: String) -> Box<Device> {
+        box DbDevice { name: name,
+                       devmap: HashMap::new(),
+                       srvmap: HashMap::new() }
+    }
+
     fn cmd_register(&mut self, arg: Value) -> SpinResult<Value> {
         let mut s: Vec<String> = FromValue::from_value(arg)?;
         if s.len() < 3 {
@@ -70,23 +76,20 @@ device_impl!(
     ]
 );
 
-fn create_db_device(name: String) -> Box<Device> {
-    box DbDevice { name: name,
-                   devmap: HashMap::new(),
-                   srvmap: HashMap::new() }
-}
-
 
 fn main() {
-    server_main!(use_db = false,
-                 static_config = Some(ServerConfig {
-                     devices: vec![DevConfig {
-                         name: "sys/spin/db".into(),
-                         devtype: "Db".into(),
-                         props: vec![],
-                     }]
-                 }),
-                 devtypes = [
-                     Db => create_db_device
-                     ]);
+    let static_config = Some(ServerConfig {
+        devices: vec![DevConfig {
+            name: "sys/spin/db".into(),
+            devtype: "Db".into(),
+            props: vec![],
+        }]
+    });
+    server_main!(
+        use_db = false,
+        static_config = static_config,
+        devtypes = [
+            Db => DbDevice::create
+        ]
+    );
 }
