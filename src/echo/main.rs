@@ -42,13 +42,13 @@ impl device::Device for EchoDevice {
 
     fn get_name(&self) -> &str { &self.name }
 
-    fn get_commands(&self) -> Vec<CommandInfo> {
+    fn get_commands(&self) -> Vec<CommandDesc> {
         vec![
             cmd_info("Echo", "Sends back the same string.", DataType::String, DataType::String),
             ]
     }
 
-    fn get_attributes(&self) -> Vec<AttributeInfo> {
+    fn get_attributes(&self) -> Vec<AttrDesc> {
         vec![
             attr_info("value", "A double value.", DataType::Double),
             ]

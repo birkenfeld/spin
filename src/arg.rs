@@ -6,14 +6,14 @@ use protobuf::RepeatedField;
 use spin_proto as pr;
 
 pub use spin_proto::DataType;
-pub use spin_proto::AttributeInfo;
-pub use spin_proto::CommandInfo;
+pub use spin_proto::AttrDesc;
+pub use spin_proto::CommandDesc;
 
 use error::{SpinResult, spin_err};
 
 
-pub fn cmd_info(name: &str, doc: &str, intype: DataType, outtype: DataType) -> CommandInfo {
-    let mut c = CommandInfo::new();
+pub fn cmd_info(name: &str, doc: &str, intype: DataType, outtype: DataType) -> CommandDesc {
+    let mut c = CommandDesc::new();
     c.set_name(name.into());
     c.set_doc(doc.into());
     c.set_intype(intype);
@@ -21,8 +21,8 @@ pub fn cmd_info(name: &str, doc: &str, intype: DataType, outtype: DataType) -> C
     c
 }
 
-pub fn attr_info(name: &str, doc: &str, dtype: DataType) -> AttributeInfo {
-    let mut a = AttributeInfo::new();
+pub fn attr_info(name: &str, doc: &str, dtype: DataType) -> AttrDesc {
+    let mut a = AttrDesc::new();
     a.set_name(name.into());
     a.set_doc(doc.into());
     a.set_field_type(dtype);
@@ -40,7 +40,7 @@ impl Value {
 
     pub fn void() -> Value {
         let mut v = pr::Value::new();
-        v.set_void(true);
+        v.set_vtype(pr::DataType::Void);
         Value(v)
     }
 
@@ -66,66 +66,104 @@ impl Into<pr::Value> for Value {
     }
 }
 
+impl From<&'static str> for Value {
+    fn from(val: &'static str) -> Value {
+        let mut v = pr::Value::new();
+        v.set_vtype(pr::DataType::String);
+        v.mut_string().push(val.into());
+        Value(v)
+    }
+}
+
+impl From<String> for Value {
+    fn from(val: String) -> Value {
+        let mut v = pr::Value::new();
+        v.set_vtype(pr::DataType::String);
+        v.mut_string().push(val);
+        Value(v)
+    }
+}
+
+impl FromValue for String {
+    fn from_value(mut v: Value) -> SpinResult<String> {
+        if (v.0).get_vtype() == pr::DataType::String {
+            Ok((v.0).take_string().pop().unwrap())  // XXX
+        } else {
+            let msg = format!("wrong type: {:?}, expected String", (v.0).get_vtype());
+            spin_err("ArgumentError", &msg)
+        }
+    }
+}
+
+impl From<Vec<String>> for Value {
+    fn from(val: Vec<String>) -> Value {
+        let mut v = pr::Value::new();
+        v.set_vtype(pr::DataType::StringArray);
+        v.set_string(RepeatedField::from_vec(val));
+        Value(v)
+    }
+}
+
+impl FromValue for Vec<String> {
+    fn from_value(mut v: Value) -> SpinResult<Vec<String>> {
+        if (v.0).get_vtype() == pr::DataType::StringArray {
+            Ok((v.0).take_string().to_vec())
+        } else {
+            let msg = format!("wrong type: {:?}, expected StringArray", (v.0).get_vtype());
+            spin_err("ArgumentError", &msg)
+        }
+    }
+}
 
 macro_rules! impl_traits {
-    ($ty:ty, $setter:ident) => {
+    ($ty:ty, $dtype:ident, $vectype:ident, $setter:ident, $getter:ident) => {
         impl From<$ty> for Value {
             fn from(val: $ty) -> Value {
                 let mut v = pr::Value::new();
-                v.$setter(val.into());
-                Value(v)
-            }
-        }
-    };
-    (Vec<$ty:ty>, $mutarr:ident, $setter:ident, $getarr:ident, $checkarr:ident, $getter:ident) => {
-        impl From<Vec<$ty>> for Value {
-            fn from(val: Vec<$ty>) -> Value {
-                let mut v = pr::Value::new();
-                v.$mutarr().$setter(RepeatedField::from_vec(val));
-                Value(v)
-            }
-        }
-        impl FromValue for Vec<$ty> {
-            #[allow(unused_mut)]
-            fn from_value(mut v: Value) -> SpinResult<Vec<$ty>> {
-                if (v.0).$checkarr() {
-                    Ok((v.0).$getarr().$getter().to_vec())
-                } else {
-                    spin_err("ArgumentError", "wrong type")
-                }
-            }
-        }
-    };
-    ($ty:ty, $setter:ident, $getter:ident, $checker:ident) => {
-        impl From<$ty> for Value {
-            fn from(val: $ty) -> Value {
-                let mut v = pr::Value::new();
-                v.$setter(val);
+                v.set_vtype(pr::DataType::$dtype);
+                v.$setter(vec![val]);
                 Value(v)
             }
         }
         impl FromValue for $ty {
             #[allow(unused_mut)]
             fn from_value(mut v: Value) -> SpinResult<$ty> {
-                if (v.0).$checker() {
+                if (v.0).get_vtype() == pr::DataType::$dtype {
+                    Ok((v.0).$getter()[0])
+                } else {
+                    let msg = format!("wrong type: {:?}, expected {:?}",
+                                      (v.0).get_vtype(), pr::DataType::$dtype);
+                    spin_err("ArgumentError", &msg)
+                }
+            }
+        }
+        impl From<Vec<$ty>> for Value {
+            fn from(val: Vec<$ty>) -> Value {
+                let mut v = pr::Value::new();
+                v.set_vtype(pr::DataType::$vectype);
+                v.$setter(val);
+                Value(v)
+            }
+        }
+        impl FromValue for Vec<$ty> {
+            #[allow(unused_mut)]
+            fn from_value(mut v: Value) -> SpinResult<Vec<$ty>> {
+                if (v.0).get_vtype() == pr::DataType::$vectype {
                     Ok((v.0).$getter())
                 } else {
-                    spin_err("ArgumentError", "wrong type")
+                    let msg = format!("wrong type: {:?}, expected {:?}",
+                                      (v.0).get_vtype(), pr::DataType::$vectype);
+                    spin_err("ArgumentError", &msg)
                 }
             }
         }
     }
 }
 
-impl_traits!(bool, set_bool, get_bool, has_bool);
-impl_traits!(f64, set_double, get_double, has_double);
-impl_traits!(f32, set_float, get_float, has_float);
-impl_traits!(i32, set_int32, get_int32, has_int32);
-impl_traits!(i64, set_int64, get_int64, has_int64);
-impl_traits!(u32, set_uint32, get_uint32, has_uint32);
-impl_traits!(u64, set_uint64, get_uint64, has_uint64);
-impl_traits!(String, set_string, take_string, has_string);
-impl_traits!(&'static str, set_string);
-
-//impl_traits!(Vec<bool>, mut_bool_arr, set_bool, take_bool_arr, has_bool_arr, take_bool);
-impl_traits!(Vec<String>, mut_string_arr, set_string, take_string_arr, has_string_arr, take_string);
+impl_traits!(bool, Bool, BoolArray, set_bool, take_bool);
+impl_traits!(f64, Double, DoubleArray, set_double, take_double);
+impl_traits!(f32, Float, FloatArray, set_float, take_float);
+impl_traits!(i32, Int32, Int32Array, set_int32, take_int32);
+impl_traits!(i64, Int64, Int64Array, set_int64, take_int64);
+impl_traits!(u32, UInt32, UInt32Array, set_uint32, take_uint32);
+impl_traits!(u64, UInt64, UInt64Array, set_uint64, take_uint64);

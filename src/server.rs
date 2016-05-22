@@ -200,9 +200,6 @@ impl<'srv> Server<'srv> {
                 } else {
                     // else it is a reply, send it back to outside
                     try!(util::send_full_message(&mut pollsockets[0], msg));
-                    // TMP: give some indication of successful request
-                    io::stderr().write(&['.' as u8]).unwrap();
-                    io::stderr().flush().unwrap();
                 }
             }
         }

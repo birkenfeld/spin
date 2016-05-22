@@ -59,14 +59,14 @@ impl device::Device for DbDevice {
 
     fn get_name(&self) -> &str { &self.name }
 
-    fn get_commands(&self) -> Vec<CommandInfo> {
+    fn get_commands(&self) -> Vec<CommandDesc> {
         vec![
             cmd_info("Register", "Register a server and its devices.", DataType::StringArray, DataType::Void),
             cmd_info("Query", "Query information about a device.", DataType::String, DataType::String),
             ]
     }
 
-    fn get_attributes(&self) -> Vec<AttributeInfo> {
+    fn get_attributes(&self) -> Vec<AttrDesc> {
         vec![]
     }
 

@@ -45,7 +45,7 @@ impl Client {
         String::from_value(srv_addr)
     }
 
-    fn do_request(&mut self, mut req: pr::Request) -> SpinResult<pr::Response> {
+    fn do_request(&mut self, mut req: pr::Request, exp_type: pr::RespType) -> SpinResult<pr::Response> {
         req.set_seqno(self.seqno);
         self.seqno += 1;
 
@@ -57,10 +57,12 @@ impl Client {
         let mut rsp: pr::Response = try!(protobuf::parse_from_bytes(&reply[1]));
 
         if rsp.get_seqno() != req.get_seqno() {
-            return spin_err("SyncError", "sequence numbers do not match");
+            return spin_err("APIError", "sequence numbers do not match");
         }
-        if rsp.has_general_error() {
-            Err(Error::from_proto(rsp.take_general_error()))
+        if rsp.get_rtype() == pr::RespType::RespError {
+            Err(Error::from_proto(rsp.take_error()))
+        } else if rsp.get_rtype() != exp_type {
+            spin_err("APIError", "wrong type of response received")
         } else {
             Ok(rsp)
         }
@@ -68,16 +70,12 @@ impl Client {
 
     pub fn exec_cmd(&mut self, cmd: &str, arg: Value) -> SpinResult<Value> {
         let mut req = pr::Request::new();
-        req.mut_exec().set_cmd(cmd.into());
-        req.mut_exec().set_value(arg.into());
+        req.set_rtype(pr::ReqType::ReqExecCommand);
+        req.set_name(cmd.into());
+        req.set_value(arg.into());
 
-        let mut rsp = try!(self.do_request(req));
-        let mut ecr = rsp.take_exec();
-        if ecr.has_error() {
-            Err(Error::from_proto(ecr.take_error()))
-        } else {
-            Ok(Value::from(ecr.take_value()))
-        }
+        let mut rsp = try!(self.do_request(req, pr::RespType::RespValue));
+        Ok(Value::from(rsp.take_value()))
     }
 
     pub fn exec_cmd_as<T: FromValue>(&mut self, cmd: &str, arg: Value) -> SpinResult<T> {
@@ -86,15 +84,11 @@ impl Client {
 
     pub fn read_attr(&mut self, attr: &str) -> SpinResult<Value> {
         let mut req = pr::Request::new();
-        req.mut_rattr().set_attr(attr.into());
+        req.set_rtype(pr::ReqType::ReqReadAttr);
+        req.set_name(attr.into());
 
-        let mut rsp = try!(self.do_request(req));
-        let mut at_result = rsp.take_rattr();
-        if at_result.has_error() {
-            Err(Error::from_proto(at_result.take_error()))
-        } else {
-            Ok(Value::from(at_result.take_value()))
-        }
+        let mut rsp = try!(self.do_request(req, pr::RespType::RespValue));
+        Ok(Value::from(rsp.take_value()))
     }
 
     pub fn read_attr_as<T: FromValue>(&mut self, attr: &str) -> SpinResult<T> {
@@ -103,26 +97,22 @@ impl Client {
 
     pub fn write_attr(&mut self, attr: &str, val: Value) -> SpinResult<()> {
         let mut req = pr::Request::new();
-        req.mut_wattr().set_attr(attr.into());
-        req.mut_wattr().set_value(val.into());
+        req.set_rtype(pr::ReqType::ReqWriteAttr);
+        req.set_name(attr.into());
+        req.set_value(val.into());
 
-        let mut rsp = try!(self.do_request(req));
-        let mut at_result = rsp.take_wattr();
-        if at_result.has_error() {
-            Err(Error::from_proto(at_result.take_error()))
-        } else {
-            Ok(())
-        }
+        try!(self.do_request(req, pr::RespType::RespVoid));
+        Ok(())
     }
 
-    pub fn query_api(&mut self) -> SpinResult<(Vec<CommandInfo>, Vec<AttributeInfo>)> {
+    pub fn query_api(&mut self) -> SpinResult<(Vec<CommandDesc>, Vec<AttrDesc>)> {
         let mut req = pr::Request::new();
-        req.mut_qapi();
+        req.set_rtype(pr::ReqType::ReqQueryAPI);
 
-        let mut rsp = try!(self.do_request(req));
-
-        let mut api = rsp.take_qapi();
-        Ok((api.take_cmd().to_vec(), api.take_attr().to_vec()))
+        let mut rsp = try!(self.do_request(req, pr::RespType::RespAPI));
+        let cmds = rsp.take_commands();
+        let attrs = rsp.take_attrs();
+        Ok((cmds.to_vec(), attrs.to_vec()))
     }
 
 }

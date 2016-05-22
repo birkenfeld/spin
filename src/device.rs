@@ -19,8 +19,8 @@ pub trait Device : Sync + Send {
     const CLSNAME: &'static str;
 
     fn get_name(&self) -> &str;
-    fn get_commands(&self) -> Vec<CommandInfo>;
-    fn get_attributes(&self) -> Vec<AttributeInfo>;
+    fn get_commands(&self) -> Vec<CommandDesc>;
+    fn get_attributes(&self) -> Vec<AttrDesc>;
 
     fn exec_cmd(&mut self, cmd: &str, arg: Value) -> SpinResult<Value>;
     fn read_attr(&mut self, attr: &str) -> SpinResult<Value>;
@@ -38,31 +38,52 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
     let mut rsp = pr::Response::new();
     rsp.set_seqno(req.get_seqno());
 
-    if req.has_exec() {
-        let mut exec_cmd = req.take_exec();
-        let arg = exec_cmd.take_value();
-        rsp.mut_exec().set_cmd(exec_cmd.get_cmd().into());
-        match dev.exec_cmd(exec_cmd.get_cmd(), arg.into()) {
-            Ok(rval) => rsp.mut_exec().set_value(rval.into()),
-            Err(err) => rsp.mut_exec().set_error(err.into_proto()),
-        }
-    } else if req.has_rattr() {
-        let at_read = req.take_rattr();
-        rsp.mut_rattr().set_attr(at_read.get_attr().into());
-        match dev.read_attr(at_read.get_attr()) {
-            Ok(rval) => rsp.mut_rattr().set_value(rval.into()),
-            Err(err) => rsp.mut_rattr().set_error(err.into_proto()),
-        }
-    } else if req.has_wattr() {
-        let mut at_write = req.take_wattr();
-        let val = at_write.take_value();
-        rsp.mut_wattr().set_attr(at_write.get_attr().into());
-        if let Err(err) = dev.write_attr(at_write.get_attr(), val.into()) {
-            rsp.mut_wattr().set_error(err.into_proto());
-        }
-    } else if req.has_qapi() {
-        rsp.mut_qapi().set_cmd(RepeatedField::from_vec(dev.get_commands()));
-        rsp.mut_qapi().set_attr(RepeatedField::from_vec(dev.get_attributes()));
+    match req.get_rtype() {
+        pr::ReqType::ReqPing => {
+
+        },
+        pr::ReqType::ReqExecCommand => {
+            let val = req.take_value();
+            match dev.exec_cmd(req.get_name(), val.into()) {
+                Ok(rval) => {
+                    rsp.set_rtype(pr::RespType::RespValue);
+                    rsp.set_value(rval.into());
+                }
+                Err(err) => {
+                    rsp.set_rtype(pr::RespType::RespError);
+                    rsp.set_error(err.into_proto());
+                }
+            }
+        },
+        pr::ReqType::ReqReadAttr => {
+            match dev.read_attr(req.get_name()) {
+                Ok(rval) => {
+                    rsp.set_rtype(pr::RespType::RespValue);
+                    rsp.set_value(rval.into());
+                }
+                Err(err) => {
+                    rsp.set_rtype(pr::RespType::RespError);
+                    rsp.set_error(err.into_proto());
+                }
+            }
+        },
+        pr::ReqType::ReqWriteAttr => {
+            let val = req.take_value();
+            match dev.write_attr(req.get_name(), val.into()) {
+                Ok(_) => {
+                    rsp.set_rtype(pr::RespType::RespVoid);
+                }
+                Err(err) => {
+                    rsp.set_rtype(pr::RespType::RespError);
+                    rsp.set_error(err.into_proto());
+                }
+            }
+        },
+        pr::ReqType::ReqQueryAPI => {
+            rsp.set_rtype(pr::RespType::RespAPI);
+            rsp.set_commands(RepeatedField::from_vec(dev.get_commands()));
+            rsp.set_attrs(RepeatedField::from_vec(dev.get_attributes()));
+        },
     }
 
     let rsp = try!(rsp.write_to_bytes());
@@ -85,8 +106,9 @@ pub fn general_error_reply(reason: &str, desc: &str, req: &Vec<u8>) -> SpinResul
     let req: pr::Request = try!(protobuf::parse_from_bytes(req));
     let mut rsp = pr::Response::new();
     rsp.set_seqno(req.get_seqno());
-    rsp.mut_general_error().set_reason(reason.into());
-    rsp.mut_general_error().set_desc(desc.into());
+    rsp.set_rtype(pr::RespType::RespError);
+    rsp.mut_error().set_reason(reason.into());
+    rsp.mut_error().set_desc(desc.into());
     let rsp = try!(rsp.write_to_bytes());
     Ok(rsp)
 }
