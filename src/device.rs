@@ -28,8 +28,6 @@ pub trait Device : Sync + Send {
 }
 
 
-//pub type DevConstructor = Fn(&String) -> Box<Device>;
-
 fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()> {
     let msg = try!(util::recv_message(sock));
     debug!("msg in dev: {:?}", msg);

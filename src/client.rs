@@ -18,12 +18,14 @@ pub struct Client {
     socket: zmq::Socket,
     devname: Vec<u8>,
     seqno: u32,
+    timeout: i64,  // in ms
 }
 
 impl Client {
     pub fn new(uri: &str) -> SpinResult<Client> {
         let mut ctx = zmq::Context::new();
         let mut sock = try!(ctx.socket(zmq::REQ));
+        try!(sock.set_linger(0));  // no infinite wait for delivery on shutdown
         let addr = try!(util::DeviceAddress::parse_uri(uri));
         let endpoint = if addr.use_db {
             try!(Client::query_db(&addr))
@@ -32,9 +34,10 @@ impl Client {
         };
         try!(sock.connect(&endpoint));
         Ok(Client { _context: ctx,
-                     socket:  sock,
-                     devname: String::from(addr.devname).into_bytes(),
-                     seqno:   0 })
+                    socket:  sock,
+                    devname: String::from(addr.devname).into_bytes(),
+                    seqno:   0,
+                    timeout: 1000, })
     }
 
     fn query_db(addr: &util::DeviceAddress) -> SpinResult<String> {
@@ -51,6 +54,11 @@ impl Client {
         let req_bytes = try!(req.write_to_bytes());
         try!(util::send_message(&mut self.socket, &[&self.devname, &req_bytes]));
 
+        let num = try!(zmq::poll(&mut [self.socket.as_poll_item(zmq::POLLIN)],
+                                 self.timeout));
+        if num == 0 {
+            return spin_err("TimeoutError", "no reply within client timeout");
+        }
         let reply = try!(util::recv_message(&mut self.socket));
 
         let mut rsp: pr::Response = try!(protobuf::parse_from_bytes(&reply[1]));

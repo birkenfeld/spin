@@ -22,7 +22,9 @@ pub type ZmqResult<T> = Result<T, zmq::Error>;
 /// Create a new Zmq socket from a thread-shared Context
 pub fn create_socket(ctx: &Arc<Mutex<zmq::Context>>, ty: zmq::SocketType) -> ZmqResult<zmq::Socket> {
     let mut ctx = ctx.lock().unwrap();
-    ctx.socket(ty)
+    let sock = try!(ctx.socket(ty));
+    try!(sock.set_linger(0));
+    Ok(sock)
 }
 
 /// Poll a number of sockets. Return indices that have poll events.
@@ -58,7 +60,7 @@ pub fn send_message(sock: &mut zmq::Socket, parts: &[&[u8]]) -> ZmqResult<()> {
     for i in 0..parts.len()-1 {
         try!(sock.send(&parts[i], zmq::SNDMORE));
     }
-    sock.send(&parts[parts.len()-1], zmq::DONTWAIT)
+    sock.send(&parts[parts.len()-1], 0)
 }
 
 /// Write a multipart message (as vec of vecs) to a socket.
@@ -66,7 +68,7 @@ pub fn send_full_message(sock: &mut zmq::Socket, parts: Vec<Vec<u8>>) -> ZmqResu
     for i in 0..parts.len()-1 {
         try!(sock.send(&parts[i], zmq::SNDMORE));
     }
-    sock.send(&parts[parts.len()-1], zmq::DONTWAIT)
+    sock.send(&parts[parts.len()-1], 0)
 }
 
 

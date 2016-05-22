@@ -106,7 +106,7 @@ impl<'srv> Server<'srv> {
             }
             debug!("db register: {:?}", my_devs);
             try!(db_cl.exec_cmd("Register", Value::from(my_devs)));
-            debug!("done");
+            info!("   ... done");
         }
         Ok(())
     }
@@ -186,6 +186,7 @@ impl<'srv> Server<'srv> {
         let devsockets = try!(self.start_devices(&mut pollsockets));
 
         // run main loop
+        info!("waiting for requests...");
         loop {
             for index in try!(util::poll_sockets(&pollsockets, 1000)) {
                 // receive a message
