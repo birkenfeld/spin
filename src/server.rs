@@ -59,7 +59,7 @@ impl Server {
             ap.refer(&mut arg_use_db).add_option(&["-n"], StoreFalse, "No database mode.");
             ap.parse_args()
         };
-        util::setup_logging(debug);
+        util::setup_logging(&name, debug);
         let server_config = config.unwrap_or_else(|| ServerConfig::from_file(configfile));
         result.ok().map(|_| Server::new(&name, server_config, address, database,
                                         use_db && arg_use_db))

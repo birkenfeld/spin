@@ -186,27 +186,30 @@ impl DeviceAddress {
 
 
 /// Function for log formatting.
-fn log_format(msg: &str, level: &log::LogLevel,
-              _location: &log::LogLocation) -> String {
+fn make_log_format(name: &str) -> Box<Fn(&str, &log::LogLevel, &log::LogLocation) -> String + Send + Sync> {
     use ansi_term::Colour::*;
     use log::LogLevel::*;
 
-    let text = format!("[{}][{:-5}] {}",
-                       time::now().strftime("%H:%M:%S").unwrap(), level, msg);
-    match *level {
-        Debug => White.paint(text).to_string(),
-        Warn  => Purple.paint(text).to_string(),
-        Error => Red.paint(text).to_string(),
-        _     => text,
-    }
+    let name_str = name.to_owned();
+    return box move |msg, level, _| {
+        let text = format!("[{}][{:-5}][{:-10}] {}",
+                           time::now().strftime("%H:%M:%S").unwrap(),
+                           level, name_str, msg);
+        match *level {
+            Debug => White.paint(text).to_string(),
+            Warn  => Purple.paint(text).to_string(),
+            Error => Red.paint(text).to_string(),
+            _     => text,
+        }
+    };
 }
 
 /// Configure logging.
-pub fn setup_logging(debug: bool) {
+pub fn setup_logging(name: &str, debug: bool) {
     use log::LogLevelFilter::*;
     let loglevel = if debug { Debug } else { Info };
     let log_config = fern::DispatchConfig {
-        format: box log_format,
+        format: make_log_format(name),
         output: vec![fern::OutputConfig::stdout()],
         level:  loglevel,
     };
