@@ -173,9 +173,9 @@ macro_rules! rust_type_for_data_type {
 macro_rules! spin_device_impl {
     ($clsname:ident,
      $propstruct:ident,
-     cmds  [$($cname:ident => ($cdoc:expr, $cintype:ident, $couttype:ident, $cfunc:ident)),*],
-     attrs [$($aname:ident => ($adoc:expr, $atype:ident, $arfunc:ident, $awfunc:ident)),*],
-     props [$($pname:ident => ($pdoc:expr, $ptype:ident, $pdef:expr)),*]) => {
+     cmds = [$($cname:ident => ($cdoc:expr, $cintype:ident, $couttype:ident, $cfunc:ident)),*],
+     attrs = [$($aname:ident => ($adoc:expr, $atype:ident, $arfunc:ident, $awfunc:ident)),*],
+     props = [$($pname:ident => ($pdoc:expr, $ptype:ident, $pdef:expr)),*]) => {
         #[derive(Default)]
         struct $propstruct {
             _name: String,

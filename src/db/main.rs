@@ -98,7 +98,7 @@ impl DbDevice {
 spin_device_impl!(
     DbDevice,
     DbDeviceProps,
-    cmds  [
+    cmds = [
         Register   => ("Register a server and its devices.",
                        StringArray, Void, cmd_register),
         Unregister => ("Unregister a server and its devices.",
@@ -108,10 +108,8 @@ spin_device_impl!(
         List       => ("List all devices, their server names and addresses.",
                        Void, StringArray, cmd_list)
     ],
-    attrs [
-    ],
-    props [
-    ]
+    attrs = [ ],
+    props = [ ]
 );
 
 

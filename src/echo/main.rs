@@ -50,13 +50,13 @@ impl EchoDevice {
 spin_device_impl!(
     EchoDevice,
     EchoDeviceProps,
-    cmds  [
+    cmds = [
         Echo  => ("Sends back the same string.", String, String, cmd_echo)
     ],
-    attrs [
+    attrs = [
         value => ("A double value.", Double, read_value, write_value)
     ],
-    props [
+    props = [
         default_value => ("Default for 'value' attribute.", Double, 42.0)
     ]
 );
