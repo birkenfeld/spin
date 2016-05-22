@@ -48,7 +48,7 @@ impl Server {
         let mut name = String::new();
         let mut configfile = None;
         let mut address = None;
-        let mut database = None;
+        let mut database = String::new();
         let mut debug = false;
         let mut arg_use_db = true;
         let mut log_path = String::from("log");
@@ -58,20 +58,38 @@ impl Server {
         let mut group = None::<String>;
         let result = {
             let mut ap = ArgumentParser::new();
-            ap.refer(&mut name).add_argument("name", Store, "Server name.").required();
-            ap.refer(&mut configfile).add_argument("config", StoreOption, "Config file.");
-            ap.refer(&mut address).add_option(&["--bind"], StoreOption, "Bind [host]:[port].");
-            ap.refer(&mut database).add_option(&["--db"], StoreOption, "DB [host]:[port].");
-            ap.refer(&mut debug).add_option(&["-v"], StoreTrue, "Debug mode.");
-            ap.refer(&mut arg_use_db).add_option(&["-n"], StoreFalse, "No database mode.");
-            ap.refer(&mut log_path).add_option(&["--log"], Store, "Logging path.");
-            ap.refer(&mut pid_path).add_option(&["--pid"], Store, "PID path for daemon.");
-            ap.refer(&mut daemonize).add_option(&["-d"], StoreTrue, "Daemonize.");
-            ap.refer(&mut user).add_option(&["--user"], StoreOption, "Daemon user.");
-            ap.refer(&mut group).add_option(&["--group"], StoreOption, "Daemon group.");
+            ap.set_description("Starts a spin server.");
+            ap.refer(&mut name)
+              .add_argument("name", Store, "server name (name/instance)").required();
+            ap.refer(&mut configfile)
+              .add_argument("config", StoreOption, "config file path");
+            ap.refer(&mut debug)
+              .add_option(&["-v"], StoreTrue, "if given, log debug messages");
+            ap.refer(&mut address)
+              .add_option(&["--bind"], StoreOption, "bind address (default is a random port)")
+              .metavar("[HOST]:[PORT]");
+            ap.refer(&mut database)
+              .envvar("SPIN_DB")
+              .add_option(&["--db"], Store, "database address (default is $SPIN_DB)")
+              .metavar("[HOST]:[PORT]");
+            ap.refer(&mut arg_use_db)
+              .add_option(&["-n"], StoreFalse, "if given, don't register with database");
+            ap.refer(&mut log_path)
+              .envvar("SPIN_LOGPATH")
+              .add_option(&["--log"], Store, "path for logfiles (default is ./log)");
+            ap.refer(&mut pid_path)
+              .envvar("SPIN_PIDPATH")
+              .add_option(&["--pid"], Store, "path for PID files when damonized \
+                                              (default is ./pid)");
+            ap.refer(&mut daemonize)
+              .add_option(&["-d"], StoreTrue, "if given, daemonize at startup");
+            ap.refer(&mut user)
+              .add_option(&["--user"], StoreOption, "name of user to become as daemon");
+            ap.refer(&mut group)
+              .add_option(&["--group"], StoreOption, "name of group to become as daemon");
             ap.parse_args()
         };
-        let log_path = current_dir().unwrap().join(log_path);
+        let log_path = current_dir().unwrap().join(log_path).join(name.replace("/", "-"));
         let pid_path = current_dir().unwrap().join(pid_path);
         let _ = util::ensure_dir(&pid_path);
         let _ = logging::init(&log_path, &name, debug, !daemonize);
@@ -89,6 +107,7 @@ impl Server {
             }
         }
         let server_config = config.unwrap_or_else(|| ServerConfig::from_file(configfile));
+        let database = if database.is_empty() { None } else { Some(database) };
         result.ok().map(|_| Server::new(&name, server_config, address, database,
                                         use_db && arg_use_db))
     }
