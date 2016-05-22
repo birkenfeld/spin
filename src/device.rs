@@ -170,7 +170,7 @@ macro_rules! rust_type_for_data_type {
 }
 
 #[macro_export]
-macro_rules! device_impl {
+macro_rules! spin_device_impl {
     ($clsname:ident,
      $propstruct:ident,
      cmds  [$($cname:ident => ($cdoc:expr, $cintype:ident, $couttype:ident, $cfunc:ident)),*],
@@ -179,16 +179,16 @@ macro_rules! device_impl {
         #[derive(Default)]
         struct $propstruct {
             _name: String,
-            _descriptions: Vec<::spin::arg::PropDesc>,
+            _descriptions: Vec<$crate::arg::PropDesc>,
             _initialized: bool,
             $(
                 $pname: rust_type_for_data_type!($ptype),
             )*
         }
 
-        impl ::spin::device::Device for $clsname {
+        impl $crate::device::Device for $clsname {
 
-            fn init_device(&mut self) -> ::spin::error::SpinResult<()> {
+            fn init_device(&mut self) -> $crate::error::SpinResult<()> {
                 debug!("{}: initializing device", self.get_name());
                 if let Err(err) = $clsname::init(self) {
                     error!("{}: could not initialize: {}", self.get_name(), err);
@@ -207,54 +207,54 @@ macro_rules! device_impl {
             fn set_name(&mut self, name: String) { self.props._name = name; }
             fn get_name(&self) -> &str { &self.props._name }
 
-            fn query_cmd_descs(&self) -> Vec<::spin::arg::CmdDesc> {
-                vec![$(::spin::arg::cmd_info(stringify!($cname), $cdoc,
-                                             ::spin::arg::DataType::$cintype,
-                                             ::spin::arg::DataType::$couttype),)*]
+            fn query_cmd_descs(&self) -> Vec<$crate::arg::CmdDesc> {
+                vec![$($crate::arg::cmd_info(stringify!($cname), $cdoc,
+                                             $crate::arg::DataType::$cintype,
+                                             $crate::arg::DataType::$couttype),)*]
             }
 
-            fn query_attr_descs(&self) -> Vec<::spin::arg::AttrDesc> {
-                vec![$(::spin::arg::attr_info(stringify!($aname), $adoc,
-                                              ::spin::arg::DataType::$atype),)*]
+            fn query_attr_descs(&self) -> Vec<$crate::arg::AttrDesc> {
+                vec![$($crate::arg::attr_info(stringify!($aname), $adoc,
+                                              $crate::arg::DataType::$atype),)*]
             }
 
-            fn query_prop_descs(&self) -> Vec<::spin::arg::PropDesc> {
+            fn query_prop_descs(&self) -> Vec<$crate::arg::PropDesc> {
                 self.props._descriptions.clone()
             }
 
             #[allow(unused_variables)]
-            fn exec_cmd(&mut self, cmd: &str, arg: ::spin::arg::Value)
-                        -> ::spin::error::SpinResult<::spin::arg::Value>
+            fn exec_cmd(&mut self, cmd: &str, arg: $crate::arg::Value)
+                        -> $crate::error::SpinResult<$crate::arg::Value>
             {
                 if !self.props._initialized {
                     self.init_device()?;
                 }
                 debug!("{}: executing command {}({:?})", self.get_name(), cmd, arg);
                 let res = match cmd {
-                    $(stringify!($cname) => self.$cfunc(arg.extract()?).map(::spin::arg::Value::from),)*
-                    _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such command"),
+                    $(stringify!($cname) => self.$cfunc(arg.extract()?).map($crate::arg::Value::from),)*
+                    _ => spin_err!($crate::error::API_ERROR, "No such command"),
                 };
                 debug!("   ... result: {:?}", res);
                 res
             }
 
             #[allow(unused_variables)]
-            fn read_attr(&mut self, attr: &str) -> ::spin::error::SpinResult<::spin::arg::Value> {
+            fn read_attr(&mut self, attr: &str) -> $crate::error::SpinResult<$crate::arg::Value> {
                 if !self.props._initialized {
                     self.init_device()?;
                 }
                 debug!("{}: reading attribute {}", self.get_name(), attr);
                 let res = match attr {
-                    $(stringify!($aname) => self.$arfunc().map(::spin::arg::Value::from),)*
-                    _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such attribute"),
+                    $(stringify!($aname) => self.$arfunc().map($crate::arg::Value::from),)*
+                    _ => spin_err!($crate::error::API_ERROR, "No such attribute"),
                 };
                 debug!("   ... result: {:?}", res);
                 res
             }
 
             #[allow(unused_variables)]
-            fn write_attr(&mut self, attr: &str, val: ::spin::arg::Value)
-                          -> ::spin::error::SpinResult<()>
+            fn write_attr(&mut self, attr: &str, val: $crate::arg::Value)
+                          -> $crate::error::SpinResult<()>
             {
                 if !self.props._initialized {
                     self.init_device()?;
@@ -262,23 +262,23 @@ macro_rules! device_impl {
                 debug!("{}: writing attribute {} = {:?}", self.get_name(), attr, val);
                 let res = match attr {
                     $(stringify!($aname) => self.$awfunc(val.extract()?),)*
-                    _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such attribute"),
+                    _ => spin_err!($crate::error::API_ERROR, "No such attribute"),
                 };
                 debug!("   ... result: {:?}", res);
                 res
             }
 
             #[allow(unused_variables, unused_mut)]
-            fn init_props(&mut self, mut cfg_prop_map: ::std::collections::HashMap<String, ::spin::arg::Value>) {
+            fn init_props(&mut self, mut cfg_prop_map: ::std::collections::HashMap<String, $crate::arg::Value>) {
                 debug!("{}: init properties", self.get_name());
                 $(
                     self.props._descriptions.push(
-                        ::spin::arg::prop_info(stringify!($pname), $pdoc,
-                                               ::spin::arg::DataType::$ptype,
-                                               ::spin::arg::Value::from($pdef)));
+                        $crate::arg::prop_info(stringify!($pname), $pdoc,
+                                               $crate::arg::DataType::$ptype,
+                                               $crate::arg::Value::from($pdef)));
                     self.props.$pname = $pdef;
                     if let Some(cfg_value) = cfg_prop_map.remove(stringify!($pname)) {
-                        if let Some(value) = cfg_value.convert(::spin::arg::DataType::$ptype) {
+                        if let Some(value) = cfg_value.convert($crate::arg::DataType::$ptype) {
                             self.props.$pname = value.extract().unwrap();
                             debug!("{}: property {} from config: {:?}", self.get_name(),
                                    stringify!($pname), self.props.$pname);
@@ -294,37 +294,37 @@ macro_rules! device_impl {
             }
 
             #[allow(unused_variables)]
-            fn get_prop(&mut self, prop: &str) -> ::spin::error::SpinResult<::spin::arg::Value> {
+            fn get_prop(&mut self, prop: &str) -> $crate::error::SpinResult<$crate::arg::Value> {
                 debug!("{}: get property {}", self.get_name(), prop);
                 $(
                     if prop == stringify!($pname) {
-                        return Ok(::spin::arg::Value::from(self.props.$pname));
+                        return Ok($crate::arg::Value::from(self.props.$pname));
                     }
                 )*;
-                ::spin::error::spin_err(::spin::error::API_ERROR, "No such property")
+                spin_err!($crate::error::API_ERROR, "No such property")
             }
 
             #[allow(unused_variables)]
-            fn set_prop(&mut self, prop: &str, val: ::spin::arg::Value)
-                        -> ::spin::error::SpinResult<()>
+            fn set_prop(&mut self, prop: &str, val: $crate::arg::Value)
+                        -> $crate::error::SpinResult<()>
             {
                 debug!("{}: set property {} = {:?}", self.get_name(), prop, val);
                 $(
                     if prop == stringify!($pname) {
-                        if let Some(val) = val.convert(::spin::arg::DataType::$ptype) {
+                        if let Some(val) = val.convert($crate::arg::DataType::$ptype) {
                             self.props.$pname = val.extract().unwrap();
                             self.delete_device();
                             self.init_device()?;
                             return Ok(());
                         } else {
-                            return ::spin::error::spin_err(
-                                ::spin::error::ARG_ERROR,
+                            return spin_err!(
+                                $crate::error::ARG_ERROR,
                                 &format!("Wrong property type, expected {:?}",
-                                         ::spin::arg::DataType::$ptype));
+                                         $crate::arg::DataType::$ptype));
                         }
                     }
                 )*;
-                ::spin::error::spin_err(::spin::error::API_ERROR, "No such property")
+                spin_err!($crate::error::API_ERROR, "No such property")
             }
         }
     }

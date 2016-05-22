@@ -47,7 +47,7 @@ impl EchoDevice {
 }
 
 
-device_impl!(
+spin_device_impl!(
     EchoDevice,
     EchoDeviceProps,
     cmds  [
@@ -63,7 +63,7 @@ device_impl!(
 
 
 fn main() {
-    server_main!(devtypes = [
+    spin_server_main!(devtypes = [
         Echo => EchoDevice::create
     ]);
 }

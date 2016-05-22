@@ -17,8 +17,9 @@ extern crate ansi_term;
 extern crate daemonize;
 extern crate spin_proto;
 
-pub mod arg;
+#[macro_use]
 pub mod error;
+pub mod arg;
 pub mod config;
 pub mod device;
 pub mod server;

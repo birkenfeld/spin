@@ -22,9 +22,9 @@ pub const PROTO_ERROR:    &'static str = "ProtocolError";
 
 #[derive(Debug)]
 pub struct Error {
-    reason: String,
-    desc:   String,
-    origin: String,
+    pub reason: String,
+    pub desc:   String,
+    pub origin: String,
 }
 
 impl Error {
@@ -79,8 +79,11 @@ impl From<protobuf::ProtobufError> for Error {
 
 pub type SpinResult<T> = Result<T, Error>;
 
-pub fn spin_err<T>(reason: &str, msg: &str) -> SpinResult<T> {
-    Err(Error { reason: reason.into(),
-                desc: msg.into(),
-                origin: String::new() })
+#[macro_export]
+macro_rules! spin_err {
+    ($reason:expr, $msg:expr) => {
+        Err($crate::error::Error { reason: $reason.to_string(),
+                                   desc: $msg.to_string(),
+                                   origin: module_path!().into() })
+    }
 }

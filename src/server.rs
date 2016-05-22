@@ -15,7 +15,7 @@ use arg::*;
 use config::{ServerConfig, DevConfig};
 use client::Client;
 use device::{Device, run_device, general_error_reply};
-use error::{SpinResult, spin_err, SOCKET_ERROR};
+use error::{SpinResult, SOCKET_ERROR};
 use util;
 use logging;
 
@@ -135,7 +135,7 @@ impl Server {
                     Err(e) => return Err(e.into()),
                 }
                 if port > MAX_PORT {
-                    return spin_err(SOCKET_ERROR, "cannot find free port");
+                    return spin_err!(SOCKET_ERROR, "cannot find free port");
                 }
             }
         } else {
@@ -264,9 +264,9 @@ impl Server {
 }
 
 #[macro_export]
-macro_rules! server_main {
-    (devtypes = $($toks:tt)+) => { server_main!(use_db = true, static_config = None,
-                                                devtypes = $($toks)+); };
+macro_rules! spin_server_main {
+    (devtypes = $($toks:tt)+) => { spin_server_main!(use_db = true, static_config = None,
+                                                     devtypes = $($toks)+); };
     (use_db = $use_db:expr,
      static_config = $staticconfig:expr,
      devtypes = [$($dtype:ident => $dconstr:expr),*]) => {

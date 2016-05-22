@@ -13,7 +13,7 @@ use std::collections::HashMap;
 
 use spin::config::{ServerConfig, DevConfig};
 use spin::device::Device;
-use spin::error::{DB_ERROR, SpinResult, spin_err};
+use spin::error::{DB_ERROR, SpinResult};
 
 
 struct DbDevice {
@@ -35,7 +35,7 @@ impl DbDevice {
 
     fn cmd_register(&mut self, mut info: Vec<String>) -> SpinResult<()> {
         if info.len() < 3 {
-            return spin_err(DB_ERROR, "need to have at least one devname");
+            return spin_err!(DB_ERROR, "need to have at least one devname");
         }
         let address = info.swap_remove(0);
         let srvname = info.swap_remove(1);
@@ -50,7 +50,7 @@ impl DbDevice {
 
     fn cmd_unregister(&mut self, info: Vec<String>) -> SpinResult<()> {
         if info.len() != 2 {
-            return spin_err(DB_ERROR, "arg needs to be [address, name]");
+            return spin_err!(DB_ERROR, "arg needs to be [address, name]");
         }
         let address = &info[0];
         let srvname = &info[1];
@@ -72,9 +72,9 @@ impl DbDevice {
     fn cmd_query(&self, devname: String) -> SpinResult<String> {
         info!("requested {}", devname);
         match self.devmap.get(&devname) {
-            None => spin_err(DB_ERROR, "device not found"),
+            None => spin_err!(DB_ERROR, "device not found"),
             Some(srvname) => match self.srvmap.get(srvname) {
-                None => spin_err(DB_ERROR, "server not found"),
+                None => spin_err!(DB_ERROR, "server not found"),
                 Some(srvaddr) => {
                     info!("   ... is at {}", srvaddr);
                     Ok(srvaddr.clone())
@@ -95,7 +95,7 @@ impl DbDevice {
     }
 }
 
-device_impl!(
+spin_device_impl!(
     DbDevice,
     DbDeviceProps,
     cmds  [
@@ -123,7 +123,7 @@ fn main() {
             props: vec![],
         }]
     });
-    server_main!(
+    spin_server_main!(
         use_db = false,
         static_config = static_config,
         devtypes = [

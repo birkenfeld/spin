@@ -11,7 +11,7 @@ pub use spin_proto::CmdDesc;
 pub use spin_proto::AttrDesc;
 pub use spin_proto::PropDesc;
 
-use error::{SpinResult, spin_err, ARG_ERROR};
+use error::{SpinResult, ARG_ERROR};
 
 
 pub fn cmd_info(name: &str, doc: &str, intype: DataType, outtype: DataType) -> CmdDesc {
@@ -199,7 +199,7 @@ impl Value {
         } else {
             let msg = format!("wrong argument type: {:?}, expected {:?}",
                               self.0.get_vtype(), dtype);
-            spin_err(ARG_ERROR, &msg)
+            spin_err!(ARG_ERROR, &msg)
         }
     }
 
