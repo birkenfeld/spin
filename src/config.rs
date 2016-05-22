@@ -21,25 +21,25 @@ pub struct DevConfig {
     pub props: Vec<DevProp>,
 }
 
-pub struct Config {
+pub struct ServerConfig {
     pub devices: Vec<DevConfig>,
 }
 
-impl Config {
-    pub fn from_file(filename: Option<String>) -> Config {
+impl ServerConfig {
+    pub fn from_file(filename: Option<String>) -> ServerConfig {
         match filename {
-            None => Config { devices: vec![] },
-            Some(filename) => match Config::parse(&filename) {
+            None => ServerConfig { devices: vec![] },
+            Some(filename) => match ServerConfig::parse(&filename) {
                 Ok(config) => config,
                 Err(e) => {
                     warn!("could not read config: {}", e.description());
-                    Config { devices: vec![] }
+                    ServerConfig { devices: vec![] }
                 }
             }
         }
     }
 
-    fn parse(filename: &str) -> Result<Config, Box<Error>> {
+    fn parse(filename: &str) -> Result<ServerConfig, Box<Error>> {
         let mut text = String::new();
         fs::File::open(filename)?.read_to_string(&mut text)?;
         let mut parser = toml::Parser::new(&text);
@@ -73,6 +73,6 @@ impl Config {
                 warn!("ignoring device {}, it has no proper type", key);
             }
         }
-        Ok(Config { devices: devices })
+        Ok(ServerConfig { devices: devices })
     }
 }

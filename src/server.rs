@@ -10,7 +10,7 @@ use argparse::*;
 use zmq;
 
 use arg::*;
-use config::Config;
+use config::{ServerConfig, DevConfig};
 use client::Client;
 use device::{Device, run_device, general_error_reply};
 use error::{SpinResult, spin_err};
@@ -20,30 +20,30 @@ pub type DevConstructor = fn(String) -> Box<Device>;
 
 pub struct Server {
     pub name: String,
-    pub config: Config,
+    pub config: ServerConfig,
     pub address: util::ServerAddress,
     context: Arc<Mutex<zmq::Context>>,
-    devmap: HashMap<String, DevConstructor>,
+    devcons: Vec<(DevConfig, DevConstructor)>,
 }
 
 impl Server {
 
     /// Construct a new "empty" server.
-    pub fn new(name: &str, config: Config, addr: Option<String>,
+    pub fn new(name: &str, config: ServerConfig, addr: Option<String>,
                db_addr: Option<String>, use_db: bool) -> Server {
         Server {
             name: name.into(),
-            config: config,
             address: util::ServerAddress::new(addr, db_addr, use_db),
             context: Arc::new(Mutex::new(zmq::Context::new())),
-            devmap: HashMap::new(),
+            devcons: Vec::with_capacity(config.devices.len()),
+            config: config,
         }
     }
 
     /// Construct a new server from command-line args.
-    pub fn from_args(use_db: bool) -> Option<Server> {
+    pub fn from_args(use_db: bool, config: Option<ServerConfig>) -> Option<Server> {
         let mut name = String::from("");
-        let mut config = None;
+        let mut configfile = None;
         let mut address = None;
         let mut database = None;
         let mut debug = false;
@@ -51,7 +51,7 @@ impl Server {
         let result = {
             let mut ap = ArgumentParser::new();
             ap.refer(&mut name).add_argument("name", Store, "Server name.").required();
-            ap.refer(&mut config).add_argument("config", StoreOption, "Config file.");
+            ap.refer(&mut configfile).add_argument("config", StoreOption, "Config file.");
             ap.refer(&mut address).add_option(&["-b"], StoreOption, "Bind [host]:[port].");
             ap.refer(&mut database).add_option(&["-d"], StoreOption, "DB [host]:[port].");
             ap.refer(&mut debug).add_option(&["-v"], StoreTrue, "Debug.");
@@ -59,14 +59,14 @@ impl Server {
             ap.parse_args()
         };
         util::setup_logging(debug);
-        let server_config = Config::from_file(config);
+        let server_config = config.unwrap_or_else(|| ServerConfig::from_file(configfile));
         result.ok().map(|_| Server::new(&name, server_config, address, database,
                                         use_db && arg_use_db))
     }
 
     /// Add a constructed device.
-    pub fn add_device(&mut self, name: String, dev_const: DevConstructor) {
-        self.devmap.insert(name, dev_const);
+    pub fn add_device(&mut self, devconfig: DevConfig, dev_const: DevConstructor) {
+        self.devcons.push((devconfig, dev_const));
     }
 
     /// Bind the external socket.
@@ -104,8 +104,8 @@ impl Server {
             let mut db_cl = Client::new(&db_uri)?;
             let mut my_devs = vec![self.address.get_ext_endpoint(),
                                    self.name.clone()];
-            for name in self.devmap.keys() {
-                my_devs.push(name.clone());
+            for &(ref devconfig, _) in &self.devcons {
+                my_devs.push(devconfig.name.clone());
             }
             debug!("db register: {:?}", my_devs);
             db_cl.exec_cmd("Register", Value::from(my_devs))?;
@@ -118,18 +118,18 @@ impl Server {
                      -> SpinResult<HashMap<String, usize>> {
         let mut devsockets = HashMap::new();
         // create a socket pair and a thread for every device
-        for (name, dev_const) in self.devmap.drain() {
-            let inproc_addr = String::from("inproc://") + &name;
+        for (devconfig, dev_const) in self.devcons.drain(..) {
+            let inproc_addr = String::from("inproc://") + &devconfig.name;
             let mut dev_sock = util::create_socket(&self.context, zmq::REP)?;
             dev_sock.bind(&inproc_addr)?;  // must bind before connect
 
             let mut local_sock = util::create_socket(&self.context, zmq::REQ)?;
             local_sock.connect(&inproc_addr)?;
-            devsockets.insert(name.clone(), pollsockets.len());
+            devsockets.insert(devconfig.name.clone(), pollsockets.len());
             pollsockets.push(local_sock);
 
             thread::spawn(move || {
-                let dev = dev_const(name);
+                let dev = dev_const(devconfig.name);
                 // moves dev_sock and dev into this thread
                 run_device(dev_sock, dev);
             });
@@ -207,4 +207,34 @@ impl Server {
             }
         }
     }
+}
+
+#[macro_export]
+macro_rules! server_main {
+    (devtypes = $($toks:tt)+) => { server_main!(use_db = true, static_config = None,
+                                                devtypes = $($toks)+); };
+    (use_db = $use_db:expr,
+     static_config = $staticconfig:expr,
+     devtypes = [$($dtype:ident => $dconstr:expr),*]) => {
+        match ::spin::server::Server::from_args($use_db, $staticconfig) {
+            None => return,
+            Some(mut server) => {
+                for device in ::std::mem::replace(&mut server.config.devices, vec![]) {
+                    $(
+                        if device.devtype == stringify!($dtype) {
+                            server.add_device(device, $dconstr);
+                            continue;
+                        }
+                    )*;
+                    warn!("device type {} for device {} not handled by this server",
+                          device.devtype, device.name);
+                }
+
+                info!("server running...");
+                if let Err(e) = server.run() {
+                    error!("Error running server: {}", e);
+                }
+            }
+        }
+    };
 }

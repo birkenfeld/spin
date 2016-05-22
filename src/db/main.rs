@@ -12,8 +12,7 @@ extern crate spin;
 use std::collections::HashMap;
 
 use spin::arg::*;
-use spin::server;
-use spin::device;
+use spin::config::{ServerConfig, DevConfig};
 use spin::device::Device;
 use spin::error::{SpinResult, spin_err};
 
@@ -79,16 +78,15 @@ fn create_db_device(name: String) -> Box<Device> {
 
 
 fn main() {
-    match server::Server::from_args(false) {
-        None => return,
-        Some(mut server) => {
-            // We're not using the config here, but use a fixed device name.
-            server.add_device("sys/spin/db".into(), create_db_device);
-
-            info!("database server running...");
-            if let Err(e) = server.run() {
-                error!("Error running server: {}", e);
-            }
-        }
-    }
+    server_main!(use_db = false,
+                 static_config = Some(ServerConfig {
+                     devices: vec![DevConfig {
+                         name: "sys/spin/db".into(),
+                         devtype: "Db".into(),
+                         props: vec![],
+                     }]
+                 }),
+                 devtypes = [
+                     Db => create_db_device
+                     ]);
 }

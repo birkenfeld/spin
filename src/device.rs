@@ -146,7 +146,7 @@ macro_rules! device_impl {
      cmds  [$($cname:ident => ($cdoc:expr, $cintype:expr, $couttype:expr, $cfunc:ident)),*],
      attrs [$($aname:ident => ($adoc:expr, $atype:expr, $arfunc:ident, $awfunc:ident)),*],
      props [$($pname:ident => ($pdoc:expr, $ptype:expr, $pdef:expr, $prfunc:ident, $pwfunc:ident)),*]) => {
-        impl device::Device for $clsname {
+        impl ::spin::device::Device for $clsname {
             const CLSNAME: &'static str = stringify!($clsname);
 
             fn get_name(&self) -> &str { &self.name }

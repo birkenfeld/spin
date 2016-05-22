@@ -19,7 +19,7 @@ pub mod arg;
 pub mod client;
 pub mod server;
 pub mod device;
+pub mod config;
 pub mod error;
 mod db;
 mod util;
-mod config;
