@@ -32,12 +32,12 @@ impl DbDevice {
                        srvmap: HashMap::new() }
     }
 
-    fn init(&mut self) { }
+    fn init(&mut self) -> SpinResult<()> { Ok(()) }
 
     fn delete(&mut self) { }
 
     fn cmd_register(&mut self, arg: Value) -> SpinResult<Value> {
-        let mut s: Vec<String> = FromValue::from_value(arg)?;
+        let mut s: Vec<String> = arg.extract()?;
         if s.len() < 3 {
             return spin_err(DB_ERROR, "need to have at least one devname");
         }
@@ -53,7 +53,7 @@ impl DbDevice {
     }
 
     fn cmd_query(&self, arg: Value) -> SpinResult<Value> {
-        let devname = String::from_value(arg)?;
+        let devname: String = arg.extract()?;
         info!("requested {}", devname);
         match self.devmap.get(&devname) {
             None => spin_err(DB_ERROR, "device not found"),

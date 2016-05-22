@@ -48,7 +48,7 @@ impl Client {
         let db_addr = format!("spin://{}/sys/spin/db", &addr.endpoint[6..]);
         let mut db_cl = Client::new(&db_addr)?;
         let srv_addr = db_cl.exec_cmd("Query", Value::from(addr.devname.clone()))?;
-        String::from_value(srv_addr)
+        srv_addr.extract()
     }
 
     fn do_request(&mut self, mut req: pr::Request, exp_type: pr::RespType) -> SpinResult<pr::Response> {

@@ -26,15 +26,16 @@ impl EchoDevice {
                          inner: Default::default() }
     }
 
-    fn init(&mut self) {
-        self.value = self.get_props()["default_value"].clone_as();
+    fn init(&mut self) -> SpinResult<()> {
+        self.value = self.get_props()["default_value"].extract_clone()?;
+        Ok(())
     }
 
     fn delete(&mut self) {
     }
 
     fn cmd_echo(&self, arg: Value) -> SpinResult<Value> {
-        let s = String::from_value(arg)?;
+        let s: String = arg.extract()?;
         Ok(Value::new(s))
     }
 
@@ -43,7 +44,7 @@ impl EchoDevice {
     }
 
     fn write_value(&mut self, val: Value) -> SpinResult<()> {
-        self.value = f64::from_value(val)?;
+        self.value = val.extract()?;
         Ok(())
     }
 }

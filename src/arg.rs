@@ -73,8 +73,12 @@ impl Value {
         }
     }
 
-    pub fn clone_as<T: FromValue>(&self) -> T {
-        T::from_value(self.clone()).unwrap()
+    pub fn extract_clone<T: FromValue>(&self) -> SpinResult<T> {
+        T::from_value(self.clone())
+    }
+
+    pub fn extract<T: FromValue>(self) -> SpinResult<T> {
+        T::from_value(self)
     }
 
     pub fn convert(self, newtype: DataType) -> Option<Value> {
@@ -129,7 +133,7 @@ impl Value {
     }
 }
 
-pub trait FromValue where Self: Sized {
+pub trait FromValue: Default where Self: Sized {
     fn from_value(Value) -> SpinResult<Self>;
 }
 

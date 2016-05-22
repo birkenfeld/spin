@@ -29,7 +29,7 @@ pub struct DeviceInner {
 
 pub trait Device : Sync + Send {
     fn init_caches(&mut self);
-    fn init(&mut self);
+    fn init(&mut self) -> SpinResult<()>;
     fn delete(&mut self);
 
     fn get_name(&self) -> &str;
@@ -155,7 +155,7 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
             match dev.set_prop(req.get_name(), val.into()) {
                 Ok(_) => {
                     dev.delete();
-                    dev.init();
+                    dev.init(); // TODO: this can fail now
                     rsp.set_rtype(pr::RespType::RespVoid);
                 }
                 Err(err) => {
@@ -215,7 +215,7 @@ macro_rules! device_impl {
                 )*
             }
 
-            fn init(&mut self) { $clsname::init(self) }
+            fn init(&mut self) -> ::spin::error::SpinResult<()> { $clsname::init(self) }
 
             fn delete(&mut self) { $clsname::delete(self) }
 
@@ -243,26 +243,26 @@ macro_rules! device_impl {
             }
 
             #[allow(unused_variables)]
-            fn exec_cmd(&mut self, cmd: &str, arg: $crate::arg::Value) -> $crate::error::SpinResult<Value> {
+            fn exec_cmd(&mut self, cmd: &str, arg: ::spin::arg::Value) -> ::spin::error::SpinResult<Value> {
                 match cmd {
                     $(stringify!($cname) => self.$cfunc(arg),)*
-                    _ => ::spin::error::spin_err($crate::error::API_ERROR, "No such command"),
+                    _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such command"),
                 }
             }
 
             #[allow(unused_variables)]
-            fn read_attr(&mut self, attr: &str) -> $crate::error::SpinResult<Value> {
+            fn read_attr(&mut self, attr: &str) -> ::spin::error::SpinResult<Value> {
                 match attr {
                     $(stringify!($aname) => self.$arfunc(),)*
-                    _ => ::spin::error::spin_err($crate::error::API_ERROR, "No such attribute"),
+                    _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such attribute"),
                 }
             }
 
             #[allow(unused_variables)]
-            fn write_attr(&mut self, attr: &str, val: $crate::arg::Value) -> $crate::error::SpinResult<()> {
+            fn write_attr(&mut self, attr: &str, val: ::spin::arg::Value) -> ::spin::error::SpinResult<()> {
                 match attr {
                     $(stringify!($aname) => self.$awfunc(val),)*
-                    _ => ::spin::error::spin_err($crate::error::API_ERROR, "No such attribute"),
+                    _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such attribute"),
                 }
             }
         }

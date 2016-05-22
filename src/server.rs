@@ -131,8 +131,8 @@ impl Server {
             let mut dev = dev_const(devconfig.name);
             dev.init_caches();
             dev.init_props(devconfig.props);
+            dev.init();  // TODO: this can fail now
             thread::spawn(move || {
-                dev.init();
                 // moves dev_sock and dev into this thread
                 run_device(dev_sock, dev);
             });
