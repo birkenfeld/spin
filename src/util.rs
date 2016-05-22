@@ -2,12 +2,12 @@
 //
 //! Utilities.
 
+use std::io;
 use std::env;
+use std::fs::{File, OpenOptions, DirBuilder};
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 
-use log;
-use fern;
-use time;
 use zmq;
 use url;
 
@@ -185,33 +185,25 @@ impl DeviceAddress {
 }
 
 
-/// Function for log formatting.
-fn make_log_format(name: &str) -> Box<Fn(&str, &log::LogLevel, &log::LogLocation) -> String + Send + Sync> {
-    use ansi_term::Colour::*;
-    use log::LogLevel::*;
-
-    let name_str = name.to_owned();
-    return box move |msg, level, _| {
-        let text = format!("[{}][{:-5}][{:-10}] {}",
-                           time::now().strftime("%H:%M:%S").unwrap(),
-                           level, name_str, msg);
-        match *level {
-            Debug => White.paint(text).to_string(),
-            Warn  => Purple.paint(text).to_string(),
-            Error => Red.paint(text).to_string(),
-            _     => text,
+/// A less verbose way of opening files.
+pub fn open_file<P: AsRef<Path>>(path: P, mode: &str) -> io::Result<File> {
+    let mut opt = OpenOptions::new();
+    for ch in mode.chars() {
+        match ch {
+            'r' => { opt.read(true); },
+            'w' => { opt.write(true).create(true); },
+            'a' => { opt.write(true).append(true); },
+            _   => { },  // ignore unsupported chars
         }
-    };
+    }
+    opt.open(path)
 }
 
-/// Configure logging.
-pub fn setup_logging(name: &str, debug: bool) {
-    use log::LogLevelFilter::*;
-    let loglevel = if debug { Debug } else { Info };
-    let log_config = fern::DispatchConfig {
-        format: make_log_format(name),
-        output: vec![fern::OutputConfig::stdout()],
-        level:  loglevel,
-    };
-    fern::init_global_logger(log_config, loglevel).unwrap();
+
+/// mkdir -p utility.
+pub fn ensure_dir<P: AsRef<Path>>(path: P) -> io::Result<()> {
+    if path.as_ref().is_dir() {
+        return Ok(());
+    }
+    DirBuilder::new().recursive(true).create(path)
 }

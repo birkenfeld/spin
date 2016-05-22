@@ -8,9 +8,9 @@
 extern crate log;
 extern crate url;
 extern crate zmq;
-extern crate fern;
 extern crate time;
 extern crate toml;
+extern crate log4rs;
 extern crate argparse;
 extern crate protobuf;
 extern crate ansi_term;
@@ -24,6 +24,7 @@ pub mod server;
 pub mod client;
 mod db;
 mod util;
+mod logging;
 
 // For client use, re-export the needed API here.
 pub use arg::Value;
