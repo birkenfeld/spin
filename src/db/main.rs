@@ -2,7 +2,7 @@
 //
 //! Database server executable.
 
-#![feature(associated_consts, box_syntax)]
+#![feature(associated_consts, box_syntax, question_mark)]
 
 #[macro_use]
 extern crate log;
@@ -26,7 +26,7 @@ struct DbDevice {
 
 impl DbDevice {
     fn cmd_register(&mut self, arg: Value) -> SpinResult<Value> {
-        let mut s: Vec<String> = try!(FromValue::from_value(arg));
+        let mut s: Vec<String> = FromValue::from_value(arg)?;
         if s.len() < 3 {
             return spin_err("DbError", "need to have at least one devname");
         }
@@ -42,7 +42,7 @@ impl DbDevice {
     }
 
     fn cmd_query(&self, arg: Value) -> SpinResult<Value> {
-        let devname = try!(String::from_value(arg));
+        let devname = String::from_value(arg)?;
         info!("requested {}", devname);
         match self.devmap.get(&devname) {
             None => spin_err("DbError", "device not found"),

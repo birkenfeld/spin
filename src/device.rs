@@ -29,10 +29,10 @@ pub trait Device : Sync + Send {
 
 
 fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()> {
-    let msg = try!(util::recv_message(sock));
+    let msg = util::recv_message(sock)?;
     debug!("msg in dev: {:?}", msg);
 
-    let mut req: pr::Request = try!(protobuf::parse_from_bytes(&msg[3]));
+    let mut req: pr::Request = protobuf::parse_from_bytes(&msg[3])?;
     let mut rsp = pr::Response::new();
     rsp.set_seqno(req.get_seqno());
 
@@ -84,8 +84,8 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
         },
     }
 
-    let rsp = try!(rsp.write_to_bytes());
-    try!(util::send_message(sock, &[&msg[0], &msg[1], &msg[2], &rsp]));
+    let rsp = rsp.write_to_bytes()?;
+    util::send_message(sock, &[&msg[0], &msg[1], &msg[2], &rsp])?;
     Ok(())
 }
 
@@ -101,13 +101,13 @@ pub fn run_device(mut sock: zmq::Socket, mut dev: Box<Device>) {
 
 
 pub fn general_error_reply(reason: &str, desc: &str, req: &[u8]) -> SpinResult<Vec<u8>> {
-    let req: pr::Request = try!(protobuf::parse_from_bytes(req));
+    let req: pr::Request = protobuf::parse_from_bytes(req)?;
     let mut rsp = pr::Response::new();
     rsp.set_seqno(req.get_seqno());
     rsp.set_rtype(pr::RespType::RespError);
     rsp.mut_error().set_reason(reason.into());
     rsp.mut_error().set_desc(desc.into());
-    let rsp = try!(rsp.write_to_bytes());
+    let rsp = rsp.write_to_bytes()?;
     Ok(rsp)
 }
 

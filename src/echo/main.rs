@@ -2,7 +2,7 @@
 //
 //! Test echo server executable.
 
-#![feature(associated_consts, box_syntax)]
+#![feature(associated_consts, box_syntax, question_mark)]
 
 #[macro_use]
 extern crate log;
@@ -23,7 +23,7 @@ struct EchoDevice {
 
 impl EchoDevice {
     fn cmd_echo(&self, arg: Value) -> SpinResult<Value> {
-        let s = try!(String::from_value(arg));
+        let s = String::from_value(arg)?;
         Ok(Value::new(s))
     }
 
@@ -32,7 +32,7 @@ impl EchoDevice {
     }
 
     fn write_value(&mut self, val: Value) -> SpinResult<()> {
-        self.value = try!(f64::from_value(val));
+        self.value = f64::from_value(val)?;
         Ok(())
     }
 }

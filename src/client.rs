@@ -24,15 +24,15 @@ pub struct Client {
 impl Client {
     pub fn new(uri: &str) -> SpinResult<Client> {
         let mut ctx = zmq::Context::new();
-        let mut sock = try!(ctx.socket(zmq::REQ));
-        try!(sock.set_linger(0));  // no infinite wait for delivery on shutdown
-        let addr = try!(util::DeviceAddress::parse_uri(uri));
+        let mut sock = ctx.socket(zmq::REQ)?;
+        sock.set_linger(0)?;  // no infinite wait for delivery on shutdown
+        let addr = util::DeviceAddress::parse_uri(uri)?;
         let endpoint = if addr.use_db {
-            try!(Client::query_db(&addr))
+            Client::query_db(&addr)?
         } else {
             addr.endpoint
         };
-        try!(sock.connect(&endpoint));
+        sock.connect(&endpoint)?;
         Ok(Client { _context: ctx,
                     socket:  sock,
                     devname: String::from(addr.devname).into_bytes(),
@@ -42,8 +42,8 @@ impl Client {
 
     fn query_db(addr: &util::DeviceAddress) -> SpinResult<String> {
         let db_addr = format!("spin://{}/sys/spin/db", &addr.endpoint[6..]);
-        let mut db_cl = try!(Client::new(&db_addr));
-        let srv_addr = try!(db_cl.exec_cmd("Query", Value::from(addr.devname.clone())));
+        let mut db_cl = Client::new(&db_addr)?;
+        let srv_addr = db_cl.exec_cmd("Query", Value::from(addr.devname.clone()))?;
         String::from_value(srv_addr)
     }
 
@@ -51,17 +51,16 @@ impl Client {
         req.set_seqno(self.seqno);
         self.seqno += 1;
 
-        let req_bytes = try!(req.write_to_bytes());
-        try!(util::send_message(&mut self.socket, &[&self.devname, &req_bytes]));
+        let req_bytes = req.write_to_bytes()?;
+        util::send_message(&mut self.socket, &[&self.devname, &req_bytes])?;
 
-        let num = try!(zmq::poll(&mut [self.socket.as_poll_item(zmq::POLLIN)],
-                                 self.timeout));
+        let num = zmq::poll(&mut [self.socket.as_poll_item(zmq::POLLIN)], self.timeout)?;
         if num == 0 {
             return spin_err("TimeoutError", "no reply within client timeout");
         }
-        let reply = try!(util::recv_message(&mut self.socket));
+        let reply = util::recv_message(&mut self.socket)?;
 
-        let mut rsp: pr::Response = try!(protobuf::parse_from_bytes(&reply[1]));
+        let mut rsp: pr::Response = protobuf::parse_from_bytes(&reply[1])?;
 
         if rsp.get_seqno() != req.get_seqno() {
             return spin_err("APIError", "sequence numbers do not match");
@@ -81,7 +80,7 @@ impl Client {
         req.set_name(cmd.into());
         req.set_value(arg.into());
 
-        let mut rsp = try!(self.do_request(req, pr::RespType::RespValue));
+        let mut rsp = self.do_request(req, pr::RespType::RespValue)?;
         Ok(Value::from(rsp.take_value()))
     }
 
@@ -94,7 +93,7 @@ impl Client {
         req.set_rtype(pr::ReqType::ReqReadAttr);
         req.set_name(attr.into());
 
-        let mut rsp = try!(self.do_request(req, pr::RespType::RespValue));
+        let mut rsp = self.do_request(req, pr::RespType::RespValue)?;
         Ok(Value::from(rsp.take_value()))
     }
 
@@ -108,7 +107,7 @@ impl Client {
         req.set_name(attr.into());
         req.set_value(val.into());
 
-        try!(self.do_request(req, pr::RespType::RespVoid));
+        self.do_request(req, pr::RespType::RespVoid)?;
         Ok(())
     }
 
@@ -116,7 +115,7 @@ impl Client {
         let mut req = pr::Request::new();
         req.set_rtype(pr::ReqType::ReqQueryAPI);
 
-        let mut rsp = try!(self.do_request(req, pr::RespType::RespAPI));
+        let mut rsp = self.do_request(req, pr::RespType::RespAPI)?;
         let cmds = rsp.take_commands();
         let attrs = rsp.take_attrs();
         Ok((cmds.to_vec(), attrs.to_vec()))

@@ -73,7 +73,7 @@ impl<'srv> Server<'srv> {
     /// Bind the external socket.
     fn bind_external(&mut self) -> SpinResult<zmq::Socket> {
         // external socket that takes requests
-        let mut sock = try!(util::create_socket(&self.context, zmq::ROUTER));
+        let mut sock = util::create_socket(&self.context, zmq::ROUTER)?;
         if self.address.use_random_port {
             // random port!
             let mut port = Server::MIN_PORT;
@@ -89,7 +89,7 @@ impl<'srv> Server<'srv> {
                 }
             }
         } else {
-            try!(sock.bind(&self.address.get_endpoint()));
+            sock.bind(&self.address.get_endpoint())?;
         }
         info!("bound to {}", self.address.get_endpoint());
         Ok(sock)
@@ -99,14 +99,14 @@ impl<'srv> Server<'srv> {
         if self.address.use_db {
             let db_uri = format!("spin://{}/sys/spin/db", self.address.db_hostport);
             info!("registering to database: {:?}", db_uri);
-            let mut db_cl = try!(Client::new(&db_uri));
+            let mut db_cl = Client::new(&db_uri)?;
             let mut my_devs = vec![self.address.get_ext_endpoint(),
                                    self.name.clone()];
             for name in self.devmap.keys() {
                 my_devs.push(name.clone());
             }
             debug!("db register: {:?}", my_devs);
-            try!(db_cl.exec_cmd("Register", Value::from(my_devs)));
+            db_cl.exec_cmd("Register", Value::from(my_devs))?;
             info!("   ... done");
         }
         Ok(())
@@ -118,11 +118,11 @@ impl<'srv> Server<'srv> {
         // create a socket pair and a thread for every device
         for (name, dev_const) in self.devmap.drain() {
             let inproc_addr = String::from("inproc://") + &name;
-            let mut dev_sock = try!(util::create_socket(&self.context, zmq::REP));
-            try!(dev_sock.bind(&inproc_addr));  // must bind before connect
+            let mut dev_sock = util::create_socket(&self.context, zmq::REP)?;
+            dev_sock.bind(&inproc_addr)?;  // must bind before connect
 
-            let mut local_sock = try!(util::create_socket(&self.context, zmq::REQ));
-            try!(local_sock.connect(&inproc_addr));
+            let mut local_sock = util::create_socket(&self.context, zmq::REQ)?;
+            local_sock.connect(&inproc_addr)?;
             devsockets.insert(name.clone(), pollsockets.len());
             pollsockets.push(local_sock);
 
@@ -146,26 +146,26 @@ impl<'srv> Server<'srv> {
         if msg.len() < 4 {
             warn!("ill formed message");
             // no need to send a serialized error response; client doesn't observe our protocol
-            try!(util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &[], &[]]));
+            util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &[], &[]])?;
             return Ok(());
         }
         // must decode the device name from bytes
         match String::from_utf8(msg[2].clone()) {
             Err(_) => {
                 warn!("invalid utf-8 in device name");
-                let rsp = try!(general_error_reply("DeviceError", "ill formed message", &msg[3]));
-                try!(util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &msg[2], &rsp]));
+                let rsp = general_error_reply("DeviceError", "ill formed message", &msg[3])?;
+                util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &msg[2], &rsp])?;
             },
             Ok(ref devname) => {
                 match devsockets.get(devname) {
                     None => {
                         warn!("device not found: {}", devname);
-                        let rsp = try!(general_error_reply("DeviceError", "no such device", &msg[3]));
-                        try!(util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &msg[2], &rsp]));
+                        let rsp = general_error_reply("DeviceError", "no such device", &msg[3])?;
+                        util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &msg[2], &rsp])?;
                     },
                     Some(&sindex) => {
                         let sock = &mut pollsockets[sindex];
-                        try!(util::send_full_message(sock, msg));
+                        util::send_full_message(sock, msg)?;
                     },
                 }
             }
@@ -176,31 +176,31 @@ impl<'srv> Server<'srv> {
     /// Create a thread for each device and run the server main loop.
     pub fn run(mut self) -> SpinResult<()> {
         // bind external interface
-        let ext_sock = try!(self.bind_external());
+        let ext_sock = self.bind_external()?;
 
-        try!(self.register_to_db());
+        self.register_to_db()?;
 
         let mut pollsockets = Vec::new();
         pollsockets.push(ext_sock);
 
         // create a thread per device and add its socket to pollsockets
-        let devsockets = try!(self.start_devices(&mut pollsockets));
+        let devsockets = self.start_devices(&mut pollsockets)?;
 
         // run main loop
         info!("waiting for requests...");
         loop {
-            for index in try!(util::poll_sockets(&pollsockets, 1000)) {
+            for index in util::poll_sockets(&pollsockets, 1000)? {
                 // receive a message
                 let msg = {
                     let socket = &mut pollsockets[index];
-                    try!(util::recv_message(socket))
+                    util::recv_message(socket)?
                 };
                 if index == 0 {
                     // if it came from outside, forward it
-                    try!(self.msg_from_extern(msg, &devsockets, &mut pollsockets));
+                    self.msg_from_extern(msg, &devsockets, &mut pollsockets)?;
                 } else {
                     // else it is a reply, send it back to outside
-                    try!(util::send_full_message(&mut pollsockets[0], msg));
+                    util::send_full_message(&mut pollsockets[0], msg)?;
                 }
             }
         }
