@@ -8,6 +8,7 @@
 extern crate log;
 extern crate zmq;
 extern crate fern;
+extern crate time;
 extern crate argparse;
 extern crate protobuf;
 extern crate spin_proto;

@@ -4,6 +4,8 @@
 
 #![feature(associated_consts,box_syntax)]
 
+#[macro_use]
+extern crate log;
 extern crate spin;
 
 use spin::arg::*;
@@ -76,13 +78,16 @@ impl device::Device for EchoDevice {
 
 
 fn main() {
-    let mut server = server::Server::from_args().unwrap();
+    match server::Server::from_args() {
+        None => return,
+        Some(mut server) => {
+            let echodev = EchoDevice { name: "test/dev/echo".into(), value: 0. };
+            server.add_device(Box::new(echodev));
 
-    let echodev = EchoDevice { name: "test/dev/echo".into(), value: 0. };
-    server.add_device(Box::new(echodev));
-
-    println!("Echo server running...");
-    if let Err(e) = server.run() {
-        println!("Error running server: {}", e);
+            info!("Echo server running...");
+            if let Err(e) = server.run() {
+                error!("Error running server: {}", e);
+            }
+        }
     }
 }

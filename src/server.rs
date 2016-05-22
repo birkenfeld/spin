@@ -25,18 +25,21 @@ pub struct Server<'srv> {
     context: Arc<Mutex<zmq::Context>>,
     clsmap: HashMap<String, &'srv str>,
     devmap: HashMap<String, Box<Device>>,
+    debug: bool,
 }
 
 impl<'srv> Server<'srv> {
 
     /// Construct a new "empty" server.
-    pub fn new(name: &str, address: Option<&str>) -> Server<'srv> {
+    pub fn new(name: &str, address: Option<&str>, debug: bool) -> Server<'srv> {
+        util::setup_logging(debug);
         Server {
             name: name.into(),
             address: util::ServerAddress::parse(address),
             context: Arc::new(Mutex::new(zmq::Context::new())),
             clsmap: HashMap::new(),
             devmap: HashMap::new(),
+            debug: debug,
         }
     }
 
@@ -44,13 +47,15 @@ impl<'srv> Server<'srv> {
     pub fn from_args() -> Option<Server<'srv>> {
         let mut name = String::from("");
         let mut address = String::from("");
+        let mut debug = false;
         let result = {
             let mut ap = ArgumentParser::new();
             ap.refer(&mut name).add_argument("name", Store, "Server name.").required();
             ap.refer(&mut address).add_option(&["-b"], Store, "Bind address.");
+            ap.refer(&mut debug).add_option(&["-d"], StoreTrue, "Debug.");
             ap.parse_args()
         };
-        result.ok().map(|_| Server::new(&name, Some(&address)))
+        result.ok().map(|_| Server::new(&name, Some(&address), debug))
     }
 
     /// Add a constructed device.
@@ -90,7 +95,7 @@ impl<'srv> Server<'srv> {
     fn register_to_db(&mut self) -> SpinResult<()> {
         if let Some((ref host, ref port)) = self.address.db_addr {
             let db_addr = format!("tcp://{}:{}", host, port);
-            println!("{:?}", db_addr);
+            debug!("{:?}", db_addr);
             let mut db_cl = try!(Client::new(&db_addr, "sys/spin/db"));
             let my_addr = format!("tcp://{}:{}", self.address.srv_host, self.address.srv_port);
             try!(db_cl.exec_cmd("Register", Value::from(my_addr)));
@@ -130,7 +135,7 @@ impl<'srv> Server<'srv> {
         // 2 - device name
         // 3 - serialized request
         if msg.len() < 4 {
-            println!("ill formed message");
+            warn!("ill formed message");
             // no need to send a serialized error response; client doesn't observe our protocol
             try!(util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &[], &[]]));
             return Ok(());
@@ -138,14 +143,14 @@ impl<'srv> Server<'srv> {
         // must decode the device name from bytes
         match String::from_utf8(msg[2].clone()) {
             Err(_) => {
-                println!("invalid utf-8 in device name");
+                warn!("invalid utf-8 in device name");
                 let rsp = try!(general_error_reply("DeviceError", "ill formed message", &msg[3]));
                 try!(util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &msg[2], &rsp]));
             },
             Ok(ref devname) => {
                 match devsockets.get(devname) {
                     None => {
-                        println!("device not found: {}", devname);
+                        warn!("device not found: {}", devname);
                         let rsp = try!(general_error_reply("DeviceError", "no such device", &msg[3]));
                         try!(util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &msg[2], &rsp]));
                     },

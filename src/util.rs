@@ -5,6 +5,10 @@
 use std::env;
 use std::sync::{Arc, Mutex};
 
+use log;
+use log::LogLevelFilter::*;
+use fern;
+use time;
 use zmq;
 
 use db;
@@ -101,4 +105,23 @@ impl ServerAddress {
             None => None,
         }
     }
+}
+
+
+/// Function for log formatting.
+fn log_format(msg: &str, level: &log::LogLevel,
+              _location: &log::LogLocation) -> String {
+    format!("[{}][{}] {}", time::now().strftime("%H:%M:%S").unwrap(),
+            level, msg)
+}
+
+/// Configure logging.
+pub fn setup_logging(debug: bool) {
+    let loglevel = if debug { Debug } else { Info };
+    let log_config = fern::DispatchConfig {
+        format: box log_format,
+        output: vec![fern::OutputConfig::stdout()],
+        level:  loglevel,
+    };
+    fern::init_global_logger(log_config, loglevel).unwrap();
 }

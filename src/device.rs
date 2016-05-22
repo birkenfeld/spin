@@ -32,7 +32,7 @@ pub trait Device : Sync + Send {
 
 fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()> {
     let msg = try!(util::recv_message(sock));
-    //println!("msg in dev: {:?}", msg);
+    debug!("msg in dev: {:?}", msg);
 
     let mut req: pr::Request = try!(protobuf::parse_from_bytes(&msg[3]));
     let mut rsp = pr::Response::new();
@@ -75,7 +75,7 @@ pub fn run_device<'a>(mut sock: zmq::Socket, mut dev: Box<Device>) {
     let dev = dev.deref_mut();
     loop {
         if let Err(e) = handle_one_message(&mut sock, dev) {
-            println!("error handling request: {:?}", e);
+            warn!("{}: error handling request: {:?}", dev.get_name(), e);
         }
     }
 }
