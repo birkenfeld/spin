@@ -15,17 +15,17 @@ MARG := $(if $(filter release,$(MODE)),--release,)
 demo:
 	cargo build $(MARG)
 	cargo build $(MARG) --example=echocl
-	@(  echo $$'    \e[01;32mStarting\e[0m DB...'; \
+	@(  printf '    \033[01;32mStarting\033[0m DB...'; \
 	    target/$(MODE)/spin_db -v db/1 --bind :9999 & \
 	    DBPID=$$!; \
 	    sleep 0.2; \
-	    echo $$'    \e[01;32mStarting\e[0m server...'; \
+	    printf '    \033[01;32mStarting\033[0m server...'; \
 	    target/$(MODE)/spin_echo echo/1 test/echo.srv & \
 	    SRVPID=$$!; \
 	    sleep 0.2; \
-	    echo $$'    \e[01;32mStarting\e[0m client...'; \
+	    printf '    \033[01;32mStarting\033[0m client...'; \
 	    target/$(MODE)/examples/echocl; \
-	    echo $$'     \e[01;31mKilling\e[0m all processes...'; \
+	    printf '     \033[01;31mKilling\033[0m all processes...'; \
 	    kill $$SRVPID; \
 	    kill $$DBPID \
 	)
