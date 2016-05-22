@@ -47,19 +47,20 @@ message Error {
 ////////////////////////////////////////////////////////////////////////////////
 
 message CommandDesc {
-    required string name = 1;
-    required string doc = 2;
+    required string   name = 1;
+    required string   doc = 2;
     required DataType intype = 3;
     required DataType outtype = 4;
-    required string indoc = 5;
-    required string outdoc = 6;
+    required string   indoc = 5;
+    required string   outdoc = 6;
 }
 
 message AttrDesc {
-    required string name = 1;
-    required string doc = 2;
+    required string   name = 1;
+    required string   doc = 2;
     required DataType type = 3;
-    required string unit = 4;
+    required string   unit = 4;
+    repeated uint32   shape = 5;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -73,10 +74,10 @@ enum ReqType {
 }
 
 message Request {
-    required uint32 seqno = 1;
+    required uint32  seqno = 1;
     required ReqType rtype = 2;
-    optional string name = 3;
-    optional Value value = 4;
+    optional string  name = 3;
+    optional Value   value = 4;
 }
 
 enum RespType {
@@ -87,10 +88,10 @@ enum RespType {
 }
 
 message Response {
-    required uint32 seqno = 1;
-    required RespType rtype = 2;
-    optional Error error = 3;
-    optional Value value = 5;
+    required uint32      seqno = 1;
+    required RespType    rtype = 2;
+    optional Error       error = 3;
+    optional Value       value = 5;
     repeated CommandDesc commands = 6;
-    repeated AttrDesc attrs = 7;
+    repeated AttrDesc    attrs = 7;
 }
