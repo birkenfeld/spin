@@ -19,8 +19,8 @@ use spin::error::{DB_ERROR, SpinResult, spin_err};
 
 struct DbDevice {
     props: DbDeviceProps,
-    devmap: HashMap<String, String>,
-    srvmap: HashMap<String, String>,
+    devmap: HashMap<String, String>,  // device -> server
+    srvmap: HashMap<String, String>,  // server -> address
 }
 
 impl DbDevice {
@@ -49,6 +49,27 @@ impl DbDevice {
         Ok(())
     }
 
+    fn cmd_unregister(&mut self, info: Vec<String>) -> SpinResult<()> {
+        if info.len() != 2 {
+            return spin_err(DB_ERROR, "arg needs to be [address, name]");
+        }
+        let address = &info[0];
+        let srvname = &info[1];
+        info!("unregistering server {} at {}...", srvname, address);
+        let mut remove = Vec::new();
+        for (dev, srv) in &self.devmap {
+            if srvname == srv {
+                info!("   ... device {}", dev);
+                remove.push(dev.clone());
+            }
+        }
+        for dev in remove {
+            self.devmap.remove(&dev);
+        }
+        self.srvmap.remove(srvname);
+        Ok(())
+    }
+
     fn cmd_query(&self, devname: String) -> SpinResult<String> {
         info!("requested {}", devname);
         match self.devmap.get(&devname) {
@@ -68,10 +89,12 @@ device_impl!(
     DbDevice,
     DbDeviceProps,
     cmds  [
-        Register => ("Register a server and its devices.",
-                     DataType::StringArray, DataType::Void, cmd_register),
-        Query    => ("Query information about a device.",
-                     DataType::String, DataType::String, cmd_query)
+        Register   => ("Register a server and its devices.",
+                       DataType::StringArray, DataType::Void, cmd_register),
+        Unregister => ("Unregister a server and its devices.",
+                       DataType::StringArray, DataType::Void, cmd_unregister),
+        Query      => ("Query information about a device.",
+                       DataType::String, DataType::String, cmd_query)
     ],
     attrs [
     ],

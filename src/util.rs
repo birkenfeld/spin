@@ -71,7 +71,7 @@ pub fn send_full_message(sock: &mut zmq::Socket, parts: Vec<Vec<u8>>) -> ZmqResu
 
 
 /// Helper object for server address handling.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ServerAddress {
     bind_host: String,
     ext_host: String,
