@@ -3,6 +3,7 @@
 //! Device trait.
 
 use std::ops::DerefMut;
+use std::collections::HashMap;
 
 use protobuf;
 use protobuf::{Message, RepeatedField};
@@ -11,21 +12,79 @@ use zmq;
 use spin_proto as pr;
 
 use arg::*;
+use config::DevProp;
+use error::{SpinResult, spin_err};
 use util;
-use error::SpinResult;
+
+pub type PropMap = HashMap<String, Value>;
 
 
 pub trait Device : Sync + Send {
+    fn init(&mut self);
+    fn delete(&mut self);
+
     fn get_name(&self) -> &str;
-    fn get_cmds(&self) -> Vec<CmdDesc>;
-    fn get_attrs(&self) -> Vec<AttrDesc>;
-    fn get_props(&self) -> Vec<PropDesc>;
+    fn get_props(&self) -> &PropMap;
+    fn mut_props(&mut self) -> &mut PropMap;
+
+    fn get_cmd_descs(&self) -> Vec<CmdDesc>;
+    fn get_attr_descs(&self) -> Vec<AttrDesc>;
+    fn get_prop_descs(&self) -> Vec<PropDesc>;
 
     fn exec_cmd(&mut self, cmd: &str, arg: Value) -> SpinResult<Value>;
     fn read_attr(&mut self, attr: &str) -> SpinResult<Value>;
     fn write_attr(&mut self, attr: &str, arg: Value) -> SpinResult<()>;
-    fn get_prop(&mut self, prop: &str) -> SpinResult<Value>;
-    fn set_prop(&mut self, prop: &str, arg: Value) -> SpinResult<()>;
+
+    fn init_props(&mut self, cfg_props: Vec<DevProp>) {
+        let descs = self.get_prop_descs();
+        let propmap = self.mut_props();
+        'outer: for cfg_prop in cfg_props {
+            for propdesc in &descs {
+                if cfg_prop.name == propdesc.get_name() {
+                    if let Some(value) = cfg_prop.value.convert(propdesc.get_field_type()) {
+                        propmap.insert(cfg_prop.name, value);
+                    }
+                    continue 'outer;
+                }
+            }
+        }
+        for mut propdesc in descs {
+            if !propmap.contains_key(propdesc.get_name()) {
+                let defvalue = Value::new(propdesc.take_default());
+                if let Some(value) = defvalue.convert(propdesc.get_field_type()) {
+                    propmap.insert(propdesc.take_name(), value);
+                }
+            }
+        }
+    }
+
+    fn get_prop(&mut self, prop: &str) -> SpinResult<Value> {
+        match self.get_props().get(prop) {
+            None => spin_err("PropertyError", "No such property"),
+            Some(val) => Ok(val.clone())
+        }
+    }
+
+    #[allow(unused_variables)]
+    fn set_prop(&mut self, prop: &str, val: Value) -> SpinResult<()> {
+        if !self.get_props().contains_key(prop) {
+            return spin_err("PropertyError", "No such property");
+        }
+        // TODO: make this quicker
+        let mut proptype = pr::DataType::Void;
+        for propdesc in self.get_prop_descs() {
+            if propdesc.get_name() == prop {
+                proptype = propdesc.get_field_type();
+                break;
+            }
+        }
+        if let Some(val) = val.convert(proptype) {
+            self.mut_props().insert(prop.to_owned(), val);
+            Ok(())
+        } else {
+            spin_err("PropertyError", "Wrong property type")
+        }
+    }
 }
 
 
@@ -94,6 +153,8 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
             let val = req.take_value();
             match dev.set_prop(req.get_name(), val.into()) {
                 Ok(_) => {
+                    dev.delete();
+                    dev.init();
                     rsp.set_rtype(pr::RespType::RespVoid);
                 }
                 Err(err) => {
@@ -104,9 +165,9 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
         }
         pr::ReqType::ReqQueryAPI => {
             rsp.set_rtype(pr::RespType::RespAPI);
-            rsp.set_cmds(RepeatedField::from_vec(dev.get_cmds()));
-            rsp.set_attrs(RepeatedField::from_vec(dev.get_attrs()));
-            rsp.set_props(RepeatedField::from_vec(dev.get_props()));
+            rsp.set_cmds(RepeatedField::from_vec(dev.get_cmd_descs()));
+            rsp.set_attrs(RepeatedField::from_vec(dev.get_attr_descs()));
+            rsp.set_props(RepeatedField::from_vec(dev.get_prop_descs()));
         }
     }
 
@@ -143,19 +204,31 @@ macro_rules! device_impl {
     ($clsname:ident,
      cmds  [$($cname:ident => ($cdoc:expr, $cintype:expr, $couttype:expr, $cfunc:ident)),*],
      attrs [$($aname:ident => ($adoc:expr, $atype:expr, $arfunc:ident, $awfunc:ident)),*],
-     props [$($pname:ident => ($pdoc:expr, $ptype:expr, $pdef:expr, $prfunc:ident, $pwfunc:ident)),*]) => {
+     props [$($pname:ident => ($pdoc:expr, $ptype:expr, $pdef:expr)),*]) => {
         impl ::spin::device::Device for $clsname {
+            fn init(&mut self) { $clsname::init(self) }
+
+            fn delete(&mut self) { $clsname::delete(self) }
+
             fn get_name(&self) -> &str { &self.name }
 
-            fn get_cmds(&self) -> Vec<CmdDesc> {
+            fn get_props(&self) -> &::spin::device::PropMap {
+                &self.propmap
+            }
+
+            fn mut_props(&mut self) -> &mut ::spin::device::PropMap {
+                &mut self.propmap
+            }
+
+            fn get_cmd_descs(&self) -> Vec<CmdDesc> {
                 vec![$(cmd_info(stringify!($cname), $cdoc, $cintype, $couttype),)*]
             }
 
-            fn get_attrs(&self) -> Vec<AttrDesc> {
+            fn get_attr_descs(&self) -> Vec<AttrDesc> {
                 vec![$(attr_info(stringify!($aname), $adoc, $atype),)*]
             }
 
-            fn get_props(&self) -> Vec<PropDesc> {
+            fn get_prop_descs(&self) -> Vec<PropDesc> {
                 // TODO: ensure default value matches data type
                 vec![$(prop_info(stringify!($pname), $pdoc, $ptype, Value::from($pdef)),)*]
             }
@@ -182,23 +255,6 @@ macro_rules! device_impl {
                     $(stringify!($aname) => self.$awfunc(val),)*
                     _ => ::spin::error::spin_err("AttributeError", "No such attribute"),
                 }
-            }
-
-            #[allow(unused_variables)]
-            fn get_prop(&mut self, prop: &str) -> SpinResult<Value> {
-                match prop {
-                    $(stringify!($pname) => self.$prfunc(),)*
-                    _ => ::spin::error::spin_err("PropertyError", "No such property"),
-                }
-            }
-
-            #[allow(unused_variables)]
-            fn set_prop(&mut self, prop: &str, val: Value) -> SpinResult<()> {
-                match prop {
-                    $(stringify!($pname) => self.$pwfunc(val),)*
-                    _ => ::spin::error::spin_err("PropertyError", "No such property"),
-                }
-                // TODO: should reinitialize after property change
             }
         }
     }

@@ -24,6 +24,12 @@ fn mains() {
     println!("write_attr: {:?}", wat);
     let rat: Result<f64, _> = clnt.read_attr_as("value");
     println!("read_attr:  {:?}", rat);
+    let gpr: Result<f64, _> = clnt.get_prop_as("default_value");
+    println!("get_prop:   {:?}", gpr);
+    let spr = clnt.set_prop("default_value", arg::Value::new(67));
+    println!("set_prop:   {:?}", spr);
+    let rat: Result<f64, _> = clnt.read_attr_as("value");
+    println!("read_attr:  {:?}", rat);
     if let Ok(qap) = clnt.query_api() {
         let cnames: Vec<_> = qap.0.iter().map(|ci| ci.get_name()).collect();
         let anames: Vec<_> = qap.1.iter().map(|ai| ai.get_name()).collect();

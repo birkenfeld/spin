@@ -42,7 +42,7 @@ pub fn prop_info(name: &str, doc: &str, dtype: DataType, default: Value) -> Prop
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Value(pr::Value);
 
 impl Value {
@@ -52,7 +52,7 @@ impl Value {
 
     pub fn void() -> Value {
         let mut v = pr::Value::new();
-        v.set_vtype(pr::DataType::Void);
+        v.set_vtype(DataType::Void);
         Value(v)
     }
 
@@ -70,6 +70,57 @@ impl Value {
                 // TODO
                 None
             },
+            _ => None
+        }
+    }
+
+    pub fn convert(self, newtype: DataType) -> Option<Value> {
+        if self.0.get_vtype() == newtype {
+            return Some(self);
+        }
+        let inner = self.into_inner();
+        match inner.get_vtype() {
+            DataType::Double => match newtype {
+                DataType::Float => Some(Value::from(inner.get_double()[0] as f32)),
+                _ => None
+            },
+            DataType::Float => match newtype {
+                DataType::Double => Some(Value::from(inner.get_float()[0] as f64)),
+                _ => None
+            },
+            DataType::Int32 => match newtype {
+                DataType::Int64 => Some(Value::from(inner.get_int32()[0] as i64)),
+                DataType::UInt32 => Some(Value::from(inner.get_int32()[0] as u32)),
+                DataType::UInt64 => Some(Value::from(inner.get_int32()[0] as u64)),
+                DataType::Float => Some(Value::from(inner.get_int32()[0] as f32)),
+                DataType::Double => Some(Value::from(inner.get_int32()[0] as f64)),
+                _ => None
+            },
+            DataType::Int64 => match newtype {
+                DataType::Int32 => Some(Value::from(inner.get_int64()[0] as i32)),
+                DataType::UInt32 => Some(Value::from(inner.get_int64()[0] as u32)),
+                DataType::UInt64 => Some(Value::from(inner.get_int64()[0] as u64)),
+                DataType::Float => Some(Value::from(inner.get_int64()[0] as f32)),
+                DataType::Double => Some(Value::from(inner.get_int64()[0] as f64)),
+                _ => None
+            },
+            DataType::UInt32 => match newtype {
+                DataType::Int32 => Some(Value::from(inner.get_uint32()[0] as i32)),
+                DataType::Int64 => Some(Value::from(inner.get_uint32()[0] as i64)),
+                DataType::UInt64 => Some(Value::from(inner.get_uint32()[0] as u64)),
+                DataType::Float => Some(Value::from(inner.get_uint32()[0] as f32)),
+                DataType::Double => Some(Value::from(inner.get_uint32()[0] as f64)),
+                _ => None
+            },
+            DataType::UInt64 => match newtype {
+                DataType::Int32 => Some(Value::from(inner.get_uint64()[0] as i32)),
+                DataType::Int64 => Some(Value::from(inner.get_uint64()[0] as i64)),
+                DataType::UInt32 => Some(Value::from(inner.get_uint64()[0] as u32)),
+                DataType::Float => Some(Value::from(inner.get_uint64()[0] as f32)),
+                DataType::Double => Some(Value::from(inner.get_uint64()[0] as f64)),
+                _ => None
+            },
+            // TODO: arrays
             _ => None
         }
     }
@@ -95,7 +146,7 @@ impl Into<pr::Value> for Value {
 impl From<&'static str> for Value {
     fn from(val: &'static str) -> Value {
         let mut v = pr::Value::new();
-        v.set_vtype(pr::DataType::String);
+        v.set_vtype(DataType::String);
         v.mut_string().push(val.into());
         Value(v)
     }
@@ -104,7 +155,7 @@ impl From<&'static str> for Value {
 impl From<String> for Value {
     fn from(val: String) -> Value {
         let mut v = pr::Value::new();
-        v.set_vtype(pr::DataType::String);
+        v.set_vtype(DataType::String);
         v.mut_string().push(val);
         Value(v)
     }
@@ -112,7 +163,7 @@ impl From<String> for Value {
 
 impl FromValue for String {
     fn from_value(mut v: Value) -> SpinResult<String> {
-        if v.0.get_vtype() == pr::DataType::String {
+        if v.0.get_vtype() == DataType::String {
             Ok(v.0.take_string().pop().unwrap())
         } else {
             let msg = format!("wrong type: {:?}, expected String", v.0.get_vtype());
@@ -124,7 +175,7 @@ impl FromValue for String {
 impl From<Vec<String>> for Value {
     fn from(val: Vec<String>) -> Value {
         let mut v = pr::Value::new();
-        v.set_vtype(pr::DataType::StringArray);
+        v.set_vtype(DataType::StringArray);
         v.set_string(RepeatedField::from_vec(val));
         Value(v)
     }
@@ -132,7 +183,7 @@ impl From<Vec<String>> for Value {
 
 impl FromValue for Vec<String> {
     fn from_value(mut v: Value) -> SpinResult<Vec<String>> {
-        if v.0.get_vtype() == pr::DataType::StringArray {
+        if v.0.get_vtype() == DataType::StringArray {
             Ok(v.0.take_string().to_vec())
         } else {
             let msg = format!("wrong type: {:?}, expected StringArray", v.0.get_vtype());
@@ -144,7 +195,7 @@ impl FromValue for Vec<String> {
 impl From<(Vec<i32>, Vec<String>)> for Value {
     fn from((ival, sval): (Vec<i32>, Vec<String>)) -> Value {
         let mut v = pr::Value::new();
-        v.set_vtype(pr::DataType::Int32StringArray);
+        v.set_vtype(DataType::Int32StringArray);
         v.set_int32(ival);
         v.set_string(RepeatedField::from_vec(sval));
         Value(v)
@@ -153,7 +204,7 @@ impl From<(Vec<i32>, Vec<String>)> for Value {
 
 impl FromValue for (Vec<i32>, Vec<String>) {
     fn from_value(mut v: Value) -> SpinResult<(Vec<i32>, Vec<String>)> {
-        if v.0.get_vtype() == pr::DataType::Int32StringArray {
+        if v.0.get_vtype() == DataType::Int32StringArray {
             Ok((v.0.take_int32(), v.0.take_string().to_vec()))
         } else {
             let msg = format!("wrong type: {:?}, expected Int32StringArray", v.0.get_vtype());
@@ -165,7 +216,7 @@ impl FromValue for (Vec<i32>, Vec<String>) {
 impl From<(Vec<f64>, Vec<String>)> for Value {
     fn from((fval, sval): (Vec<f64>, Vec<String>)) -> Value {
         let mut v = pr::Value::new();
-        v.set_vtype(pr::DataType::DoubleStringArray);
+        v.set_vtype(DataType::DoubleStringArray);
         v.set_double(fval);
         v.set_string(RepeatedField::from_vec(sval));
         Value(v)
@@ -174,7 +225,7 @@ impl From<(Vec<f64>, Vec<String>)> for Value {
 
 impl FromValue for (Vec<f64>, Vec<String>) {
     fn from_value(mut v: Value) -> SpinResult<(Vec<f64>, Vec<String>)> {
-        if v.0.get_vtype() == pr::DataType::DoubleStringArray {
+        if v.0.get_vtype() == DataType::DoubleStringArray {
             Ok((v.0.take_double(), v.0.take_string().to_vec()))
         } else {
             let msg = format!("wrong type: {:?}, expected DoubleStringArray", v.0.get_vtype());
@@ -186,7 +237,7 @@ impl FromValue for (Vec<f64>, Vec<String>) {
 impl From<Vec<u8>> for Value {
     fn from(val: Vec<u8>) -> Value {
         let mut v = pr::Value::new();
-        v.set_vtype(pr::DataType::String);
+        v.set_vtype(DataType::String);
         v.set_bytes(val);
         Value(v)
     }
@@ -194,7 +245,7 @@ impl From<Vec<u8>> for Value {
 
 impl FromValue for Vec<u8> {
     fn from_value(mut v: Value) -> SpinResult<Vec<u8>> {
-        if v.0.get_vtype() == pr::DataType::ByteArray {
+        if v.0.get_vtype() == DataType::ByteArray {
             Ok(v.0.take_bytes())
         } else {
             let msg = format!("wrong type: {:?}, expected ByteArray", v.0.get_vtype());
@@ -208,7 +259,7 @@ macro_rules! impl_traits {
         impl From<$ty> for Value {
             fn from(val: $ty) -> Value {
                 let mut v = pr::Value::new();
-                v.set_vtype(pr::DataType::$dtype);
+                v.set_vtype(DataType::$dtype);
                 v.$setter(vec![val]);
                 Value(v)
             }
@@ -216,11 +267,11 @@ macro_rules! impl_traits {
         impl FromValue for $ty {
             #[allow(unused_mut)]
             fn from_value(mut v: Value) -> SpinResult<$ty> {
-                if v.0.get_vtype() == pr::DataType::$dtype {
+                if v.0.get_vtype() == DataType::$dtype {
                     Ok((v.0).$getter()[0])
                 } else {
                     let msg = format!("wrong type: {:?}, expected {:?}",
-                                      v.0.get_vtype(), pr::DataType::$dtype);
+                                      v.0.get_vtype(), DataType::$dtype);
                     spin_err("ArgumentError", &msg)
                 }
             }
@@ -228,7 +279,7 @@ macro_rules! impl_traits {
         impl From<Vec<$ty>> for Value {
             fn from(val: Vec<$ty>) -> Value {
                 let mut v = pr::Value::new();
-                v.set_vtype(pr::DataType::$vectype);
+                v.set_vtype(DataType::$vectype);
                 v.$setter(val);
                 Value(v)
             }
@@ -236,11 +287,11 @@ macro_rules! impl_traits {
         impl FromValue for Vec<$ty> {
             #[allow(unused_mut)]
             fn from_value(mut v: Value) -> SpinResult<Vec<$ty>> {
-                if v.0.get_vtype() == pr::DataType::$vectype {
+                if v.0.get_vtype() == DataType::$vectype {
                     Ok((v.0).$getter())
                 } else {
                     let msg = format!("wrong type: {:?}, expected {:?}",
-                                      v.0.get_vtype(), pr::DataType::$vectype);
+                                      v.0.get_vtype(), DataType::$vectype);
                     spin_err("ArgumentError", &msg)
                 }
             }

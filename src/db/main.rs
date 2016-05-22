@@ -12,23 +12,29 @@ extern crate spin;
 use std::collections::HashMap;
 
 use spin::arg::*;
-use spin::config::{ServerConfig, DevConfig, DevProp};
-use spin::device::Device;
+use spin::config::{ServerConfig, DevConfig};
+use spin::device::{Device, PropMap};
 use spin::error::{SpinResult, spin_err};
 
 
 struct DbDevice {
     name: String,
+    propmap: PropMap,
     devmap: HashMap<String, String>,
     srvmap: HashMap<String, String>,
 }
 
 impl DbDevice {
-    fn create(name: String, _: Vec<DevProp>) -> Box<Device> {
+    fn create(name: String) -> Box<Device> {
         box DbDevice { name: name,
+                       propmap: PropMap::new(),
                        devmap: HashMap::new(),
                        srvmap: HashMap::new() }
     }
+
+    fn init(&mut self) { }
+
+    fn delete(&mut self) { }
 
     fn cmd_register(&mut self, arg: Value) -> SpinResult<Value> {
         let mut s: Vec<String> = FromValue::from_value(arg)?;
