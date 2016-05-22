@@ -79,3 +79,14 @@ pub fn run_device<'a>(mut sock: zmq::Socket, mut dev: Box<Device>) {
         }
     }
 }
+
+
+pub fn general_error_reply(reason: &str, desc: &str, req: &Vec<u8>) -> SpinResult<Vec<u8>> {
+    let req: pr::Request = try!(protobuf::parse_from_bytes(req));
+    let mut rsp = pr::Response::new();
+    rsp.set_seqno(req.get_seqno());
+    rsp.mut_general_error().set_reason(reason.into());
+    rsp.mut_general_error().set_desc(desc.into());
+    let rsp = try!(rsp.write_to_bytes());
+    Ok(rsp)
+}

@@ -79,7 +79,7 @@ impl device::Device for EchoDevice {
 
 fn main() {
     println!("Echo server running...");
-    let mut server = server::Server::new("echo/test");
+    let mut server = server::Server::new("echo/test", None);
     server.config_from_args(&args().collect());
 
     let echodev = EchoDevice { name: "test/dev/echo".into(), value: 0. };

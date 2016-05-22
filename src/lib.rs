@@ -16,6 +16,7 @@ pub mod client;
 pub mod server;
 pub mod device;
 pub mod error;
+mod db;
 mod util;
 
 // pub use server::*;

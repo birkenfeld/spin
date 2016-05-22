@@ -86,7 +86,7 @@ message Value {
 	UInt32Arr uint32_arr = 16;
 	UInt64Arr uint64_arr = 17;
 	StringArr string_arr = 18;
-	Int32StringArr	int32string_arr  = 21;
+	Int32StringArr	int32string_arr	 = 21;
 	DoubleStringArr doublestring_arr = 22;
     }
 }
@@ -183,10 +183,11 @@ message QueryAPIResult {
 message Response {
     required uint32 seqno = 1;
     oneof response {
-	ExecCommandResult exec = 2;
-	ReadAttributeResult rattr = 3;
-	WriteAttributeResult wattr = 4;
-	// QueryAttributeResult qattr = 5;
-	QueryAPIResult qapi = 6;
+	Error general_error = 2;
+	ExecCommandResult exec = 3;
+	ReadAttributeResult rattr = 4;
+	WriteAttributeResult wattr = 5;
+	// QueryAttributeResult qattr = 6;
+	QueryAPIResult qapi = 7;
     }
 }

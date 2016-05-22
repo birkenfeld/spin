@@ -40,13 +40,16 @@ impl Client {
 
         let reply = try!(util::recv_message(&mut self.socket));
 
-        let rsp: pr::Response = try!(protobuf::parse_from_bytes(&reply[1]));
+        let mut rsp: pr::Response = try!(protobuf::parse_from_bytes(&reply[1]));
 
         if rsp.get_seqno() != req.get_seqno() {
-            return spin_err("SyncError", "sequence numbers out of order");
+            return spin_err("SyncError", "sequence numbers do not match");
         }
-
-        Ok(rsp)
+        if rsp.has_general_error() {
+            Err(Error::from_proto(rsp.take_general_error()))
+        } else {
+            Ok(rsp)
+        }
     }
 
     pub fn exec_cmd(&mut self, cmd: &str, arg: Value) -> SpinResult<Value> {

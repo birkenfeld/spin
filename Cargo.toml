@@ -19,6 +19,7 @@ zmq = "*"
 log = "*"
 fern = "*"
 protobuf = "*"
+time = "*"
 
 [dependencies.spin_proto]
 path = "src/proto"
