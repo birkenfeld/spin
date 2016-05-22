@@ -28,7 +28,7 @@ fn mains() {
         println!("qap: {:?} {:?}", cnames, anames);
     }
     let t1 = time::get_time();
-    for _i in (0..10000) {
+    for _i in 0..10000 {
         let val = arg::Value::new("Hello, world!");
         clnt.exec_cmd("Echo", val).unwrap();
     }

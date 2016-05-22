@@ -1,4 +1,4 @@
-// Spin RPC library, copyright 2015 Georg Brandl.
+// Spin RPC library, copyright 2015, 2016 Georg Brandl.
 //
 //! Argument type library, wrapper around some protobuf types.
 
@@ -49,7 +49,7 @@ impl Value {
     }
 }
 
-pub trait FromValue {
+pub trait FromValue where Self: Sized {
     fn from_value(Value) -> SpinResult<Self>;
 }
 

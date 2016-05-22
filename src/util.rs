@@ -1,4 +1,4 @@
-// Spin RPC library, copyright 2015 Georg Brandl.
+// Spin RPC library, copyright 2015, 2016 Georg Brandl.
 //
 //! Utilities.
 
@@ -28,8 +28,7 @@ pub fn create_socket(ctx: &Arc<Mutex<zmq::Context>>, ty: zmq::SocketType) -> Zmq
 }
 
 /// Poll a number of sockets. Return indices that have poll events.
-pub fn poll_sockets<'a>(sockets: &Vec<zmq::Socket>,
-                        timeout: i64) -> Result<Vec<usize>, zmq::Error> {
+pub fn poll_sockets(sockets: &[zmq::Socket], timeout: i64) -> Result<Vec<usize>, zmq::Error> {
     let mut items: Vec<_> = sockets.iter().map(|s| s.as_poll_item(zmq::POLLIN)).collect();
     let num_items = try!(zmq::poll(items.as_mut_slice(), timeout));
     let mut rv = Vec::new();
@@ -57,16 +56,16 @@ pub fn recv_message(sock: &mut zmq::Socket) -> ZmqResult<Vec<Vec<u8>>> {
 
 /// Write a multipart message to a socket.
 pub fn send_message(sock: &mut zmq::Socket, parts: &[&[u8]]) -> ZmqResult<()> {
-    for i in 0..parts.len()-1 {
-        try!(sock.send(&parts[i], zmq::SNDMORE));
+    for part in parts.iter().take(parts.len() - 1) {
+        try!(sock.send(part, zmq::SNDMORE));
     }
     sock.send(&parts[parts.len()-1], 0)
 }
 
 /// Write a multipart message (as vec of vecs) to a socket.
 pub fn send_full_message(sock: &mut zmq::Socket, parts: Vec<Vec<u8>>) -> ZmqResult<()> {
-    for i in 0..parts.len()-1 {
-        try!(sock.send(&parts[i], zmq::SNDMORE));
+    for part in parts.iter().take(parts.len() - 1) {
+        try!(sock.send(part, zmq::SNDMORE));
     }
     sock.send(&parts[parts.len()-1], 0)
 }

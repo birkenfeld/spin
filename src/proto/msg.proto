@@ -1,6 +1,5 @@
-//! Spin RPC library, copyright 2015 Georg Brandl.
-//! 
-//!
+// Spin RPC library, copyright 2015, 2016 Georg Brandl.
+//
 //! Protocol buffers: definition of message format sent over 0MQ.
 
 enum DataType {
@@ -64,11 +63,11 @@ message AttrDesc {
 ////////////////////////////////////////////////////////////////////////////////
 
 enum ReqType {
-     ReqPing = 0;
-     ReqExecCommand = 1;
-     ReqReadAttr = 2;
-     ReqWriteAttr = 3;
-     ReqQueryAPI = 10;
+    ReqPing = 0;
+    ReqExecCommand = 1;
+    ReqReadAttr = 2;
+    ReqWriteAttr = 3;
+    ReqQueryAPI = 10;
 }
 
 message Request {
@@ -79,10 +78,10 @@ message Request {
 }
 
 enum RespType {
-     RespVoid = 0;
-     RespError = 1;
-     RespValue = 2;
-     RespAPI = 3;
+    RespVoid = 0;
+    RespError = 1;
+    RespValue = 2;
+    RespAPI = 3;
 }
 
 message Response {

@@ -1,8 +1,8 @@
-// Spin RPC library, copyright 2015 Georg Brandl.
+// Spin RPC library, copyright 2015, 2016 Georg Brandl.
 //
 //! Test echo server executable.
 
-#![feature(associated_consts,box_syntax)]
+#![feature(associated_consts, box_syntax)]
 
 #[macro_use]
 extern crate log;

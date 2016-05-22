@@ -17,11 +17,11 @@ path = "src/echo/main.rs"
 [dependencies]
 log = "*"
 url = "*"
-zmq = "*"
 fern = "*"
 time = "*"
 argparse = "*"
 protobuf = "*"
+zmq = {"git" = "https://github.com/erickt/rust-zmq"}
 
 [dependencies.spin_proto]
 path = "src/proto"

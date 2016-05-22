@@ -1,4 +1,4 @@
-// Spin RPC library, copyright 2015 Georg Brandl.
+// Spin RPC library, copyright 2015, 2016 Georg Brandl.
 //
 //! Server framework.
 
@@ -102,7 +102,7 @@ impl<'srv> Server<'srv> {
             let mut db_cl = try!(Client::new(&db_uri));
             let mut my_devs = vec![self.address.get_ext_endpoint(),
                                    self.name.clone()];
-            for (name, _dev) in &self.devmap {
+            for name in self.devmap.keys() {
                 my_devs.push(name.clone());
             }
             debug!("db register: {:?}", my_devs);
@@ -192,7 +192,7 @@ impl<'srv> Server<'srv> {
             for index in try!(util::poll_sockets(&pollsockets, 1000)) {
                 // receive a message
                 let msg = {
-                    let ref mut socket = pollsockets[index];
+                    let socket = &mut pollsockets[index];
                     try!(util::recv_message(socket))
                 };
                 if index == 0 {

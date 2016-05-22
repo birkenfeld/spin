@@ -1,4 +1,4 @@
-// Spin RPC library, copyright 2015 Georg Brandl.
+// Spin RPC library, copyright 2015, 2016 Georg Brandl.
 //
 //! Device trait.
 
@@ -43,9 +43,9 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
         pr::ReqType::ReqExecCommand => {
             let val = req.take_value();
             match dev.exec_cmd(req.get_name(), val.into()) {
-                Ok(rval) => {
+                Ok(val) => {
                     rsp.set_rtype(pr::RespType::RespValue);
-                    rsp.set_value(rval.into());
+                    rsp.set_value(val.into());
                 }
                 Err(err) => {
                     rsp.set_rtype(pr::RespType::RespError);
@@ -55,9 +55,9 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
         },
         pr::ReqType::ReqReadAttr => {
             match dev.read_attr(req.get_name()) {
-                Ok(rval) => {
+                Ok(val) => {
                     rsp.set_rtype(pr::RespType::RespValue);
-                    rsp.set_value(rval.into());
+                    rsp.set_value(val.into());
                 }
                 Err(err) => {
                     rsp.set_rtype(pr::RespType::RespError);
@@ -90,7 +90,7 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
 }
 
 
-pub fn run_device<'a>(mut sock: zmq::Socket, mut dev: Box<Device>) {
+pub fn run_device(mut sock: zmq::Socket, mut dev: Box<Device>) {
     let dev = dev.deref_mut();
     loop {
         if let Err(e) = handle_one_message(&mut sock, dev) {
@@ -100,7 +100,7 @@ pub fn run_device<'a>(mut sock: zmq::Socket, mut dev: Box<Device>) {
 }
 
 
-pub fn general_error_reply(reason: &str, desc: &str, req: &Vec<u8>) -> SpinResult<Vec<u8>> {
+pub fn general_error_reply(reason: &str, desc: &str, req: &[u8]) -> SpinResult<Vec<u8>> {
     let req: pr::Request = try!(protobuf::parse_from_bytes(req));
     let mut rsp = pr::Response::new();
     rsp.set_seqno(req.get_seqno());

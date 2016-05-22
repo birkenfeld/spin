@@ -1,8 +1,8 @@
-// Spin RPC library, copyright 2015 Georg Brandl.
+// Spin RPC library, copyright 2015, 2016 Georg Brandl.
 //
 //! Main library module; just re-exports the public API.
 
-#![feature(associated_consts,box_patterns,convert,box_syntax,drain)]
+#![feature(associated_consts, box_patterns, box_syntax)]
 
 #[macro_use]
 extern crate log;
