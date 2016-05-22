@@ -91,7 +91,7 @@ impl<'srv> Server<'srv> {
     fn start_devices(&mut self,
                      pollsockets: &mut Vec<zmq::Socket>)
                      -> SpinResult<HashMap<String, usize>> {
-        let mut sendsockets = HashMap::new();
+        let mut devsockets = HashMap::new();
         // create a socket pair and a thread for every device
         for (name, dev) in self.devmap.drain() {
             let inproc_addr = String::from("inproc://") + &name;
@@ -100,7 +100,7 @@ impl<'srv> Server<'srv> {
 
             let mut local_sock = try!(util::create_socket(&self.context, zmq::REQ));
             try!(local_sock.connect(&inproc_addr));
-            sendsockets.insert(name, pollsockets.len());
+            devsockets.insert(name, pollsockets.len());
             pollsockets.push(local_sock);
             
             thread::spawn(move || {
@@ -108,7 +108,45 @@ impl<'srv> Server<'srv> {
                 run_device(dev_sock, dev);
             });
         }
-        Ok(sendsockets)
+        Ok(devsockets)
+    }
+
+    fn msg_from_extern(&mut self, msg: Vec<Vec<u8>>,
+                       devsockets: &HashMap<String, usize>,
+                       pollsockets: &mut Vec<zmq::Socket>) -> SpinResult<()> {
+        // check number of message parts:
+        // 0 - zmq client socket id
+        // 1 - empty
+        // 2 - device name
+        // 3 - serialized request
+        if msg.len() < 4 {
+            println!("ill formed message");
+            // no need to send a serialized error response; client doesn't observe our protocol
+            try!(util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &[], &[]]));
+            return Ok(());
+        }
+        // must decode the device name from bytes
+        match String::from_utf8(msg[2].clone()) {
+            Err(_) => {
+                println!("invalid utf-8 in device name");
+                let rsp = try!(general_error_reply("DeviceError", "ill formed message", &msg[3]));
+                try!(util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &msg[2], &rsp]));
+            },
+            Ok(ref devname) => {
+                match devsockets.get(devname) {
+                    None => {
+                        println!("device not found: {}", devname);
+                        let rsp = try!(general_error_reply("DeviceError", "no such device", &msg[3]));
+                        try!(util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &msg[2], &rsp]));
+                    },
+                    Some(&sindex) => {
+                        let sock = &mut pollsockets[sindex];
+                        try!(util::send_full_message(sock, msg));
+                    },
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Create a thread for each device and run the server main loop.
@@ -122,7 +160,7 @@ impl<'srv> Server<'srv> {
         pollsockets.push(ext_sock);
 
         // create a thread per device and add its socket to pollsockets
-        let sendsockets = try!(self.start_devices(&mut pollsockets));
+        let devsockets = try!(self.start_devices(&mut pollsockets));
 
         // run main loop
         loop {
@@ -132,39 +170,13 @@ impl<'srv> Server<'srv> {
                     let ref mut socket = pollsockets[index];
                     try!(util::recv_message(socket))
                 };
-                // forward it
-                if index == 0 {  // the external receiver
-                    if msg.len() < 4 {
-                        println!("ill formed message");
-                        try!(util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &[], &[]]));
-                        continue;
-                    }
-                    match String::from_utf8(msg[2].clone()) {
-                        Err(_) => {
-                            println!("invalid utf-8 in device name");
-                            let rsp = try!(general_error_reply("DeviceError", "ill formed message", &msg[3]));
-                            try!(util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &msg[2], &rsp]));
-                            continue;
-                        },
-                        Ok(ref devname) => {
-                            match sendsockets.get(devname) {
-                                Some(&sindex) => {
-                                    let sock = &mut pollsockets[sindex];
-                                    try!(util::send_full_message(sock, msg));
-                                },
-                                None => {
-                                    let rsp = try!(general_error_reply("DeviceError", "no such device", &msg[3]));
-                                    try!(util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &msg[2], &rsp]));
-                                    println!("no send socket found");
-                                    continue;
-                                },
-                            }
-                        }
-                    }
-                } else {  // the internal sockets
-                    let sock = &mut pollsockets[0];
-                    try!(util::send_full_message(sock, msg));
-                    // some indication of successful request
+                if index == 0 {
+                    // if it came from outside, forward it
+                    try!(self.msg_from_extern(msg, &devsockets, &mut pollsockets));
+                } else {
+                    // else it is a reply, send it back to outside
+                    try!(util::send_full_message(&mut pollsockets[0], msg));
+                    // TMP: give some indication of successful request
                     io::stderr().write(&['.' as u8]).unwrap();
                     io::stderr().flush().unwrap();
                 }
