@@ -3,6 +3,7 @@
 //! Server framework.
 
 use std::collections::HashMap;
+use std::iter::FromIterator;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -129,8 +130,9 @@ impl Server {
             pollsockets.push(local_sock);
 
             let mut dev = dev_const(devconfig.name);
-            dev.init_caches();
-            dev.init_props(devconfig.props);
+            let prop_map = HashMap::from_iter(devconfig.props.into_iter()
+                                              .map(|p| (p.name, p.value)));
+            dev.init_props(prop_map);
             dev.init();  // TODO: this can fail now
             thread::spawn(move || {
                 // moves dev_sock and dev into this thread

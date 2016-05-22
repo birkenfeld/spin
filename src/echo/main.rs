@@ -10,24 +10,24 @@ extern crate log;
 extern crate spin;
 
 use spin::arg::*;
-use spin::device::{Device, DeviceInner};
+use spin::device::{Device};
 use spin::error::SpinResult;
 
 
 struct EchoDevice {
     name: String,
-    inner: DeviceInner,
+    props: EchoDeviceProps,
     value: f64,
 }
 
 impl EchoDevice {
     fn create(name: String) -> Box<Device> {
         box EchoDevice { name: name, value: 0.,
-                         inner: Default::default() }
+                         props: Default::default() }
     }
 
     fn init(&mut self) -> SpinResult<()> {
-        self.value = self.get_props()["default_value"].extract_clone()?;
+        self.value = self.props.default_value;
         Ok(())
     }
 
@@ -51,6 +51,7 @@ impl EchoDevice {
 
 device_impl!(
     EchoDevice,
+    EchoDeviceProps,
     cmds  [
         Echo  => ("Sends back the same string.",
                   DataType::String, DataType::String, cmd_echo)
@@ -59,7 +60,7 @@ device_impl!(
         value => ("A double value.", DataType::Double, read_value, write_value)
     ],
     props [
-        default_value => ("Default for 'value' attribute.", DataType::Double, 42.0_f64)
+        default_value => ("Default for 'value' attribute.", DataType::Double, f64, 42.0_f64)
     ]
 );
 

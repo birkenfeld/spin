@@ -13,13 +13,13 @@ use std::collections::HashMap;
 
 use spin::arg::*;
 use spin::config::{ServerConfig, DevConfig};
-use spin::device::{Device, DeviceInner};
+use spin::device::{Device};
 use spin::error::{SpinResult, spin_err, DB_ERROR};
 
 
 struct DbDevice {
     name: String,
-    inner: DeviceInner,
+    props: DbDeviceProps,
     devmap: HashMap<String, String>,
     srvmap: HashMap<String, String>,
 }
@@ -27,7 +27,7 @@ struct DbDevice {
 impl DbDevice {
     fn create(name: String) -> Box<Device> {
         box DbDevice { name: name,
-                       inner: Default::default(),
+                       props: Default::default(),
                        devmap: HashMap::new(),
                        srvmap: HashMap::new() }
     }
@@ -68,6 +68,7 @@ impl DbDevice {
 
 device_impl!(
     DbDevice,
+    DbDeviceProps,
     cmds  [
         Register => ("Register a server and its devices.",
                      DataType::StringArray, DataType::Void, cmd_register),

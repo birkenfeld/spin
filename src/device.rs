@@ -12,29 +12,17 @@ use zmq;
 use spin_proto as pr;
 
 use arg::*;
-use config::DevProp;
-use error::{SpinResult, spin_err, API_ERROR};
+use error::SpinResult;
 use util;
-
-pub type PropDescMap = HashMap<String, pr::PropDesc>;
-pub type PropMap = HashMap<String, Value>;
-
-/// Collects all the "internal" members every Device must have.
-#[derive(Default)]
-pub struct DeviceInner {
-    pub propdesc: PropDescMap,
-    pub props: PropMap,
-}
 
 
 pub trait Device : Sync + Send {
-    fn init_caches(&mut self);
+    fn init_props(&mut self, HashMap<String, Value>);
+
     fn init(&mut self) -> SpinResult<()>;
     fn delete(&mut self);
 
     fn get_name(&self) -> &str;
-    fn get_props(&self) -> &PropMap;
-    fn mut_props(&mut self) -> (&mut PropMap, &PropDescMap);
 
     fn query_cmd_descs(&self) -> Vec<CmdDesc>;
     fn query_attr_descs(&self) -> Vec<AttrDesc>;
@@ -43,49 +31,8 @@ pub trait Device : Sync + Send {
     fn exec_cmd(&mut self, cmd: &str, arg: Value) -> SpinResult<Value>;
     fn read_attr(&mut self, attr: &str) -> SpinResult<Value>;
     fn write_attr(&mut self, attr: &str, arg: Value) -> SpinResult<()>;
-
-    fn init_props(&mut self, cfg_props: Vec<DevProp>) {
-        let (propmap, descs) = self.mut_props();
-        for cfg_prop in cfg_props {
-            if let Some(desc) = descs.get(&cfg_prop.name) {
-                if let Some(value) = cfg_prop.value.convert(desc.get_field_type()) {
-                    propmap.insert(cfg_prop.name, value);
-                }
-            }
-        }
-        // TODO: ensure default value matches data type
-        for (name, desc) in descs {
-            if !propmap.contains_key(name) {
-                let defvalue = Value::new(desc.get_default().clone());
-                if let Some(value) = defvalue.convert(desc.get_field_type()) {
-                    propmap.insert(name.to_owned(), value);
-                }
-            }
-        }
-    }
-
-    fn get_prop(&mut self, prop: &str) -> SpinResult<Value> {
-        match self.get_props().get(prop) {
-            None => spin_err(API_ERROR, "No such property"),
-            Some(val) => Ok(val.clone())
-        }
-    }
-
-    #[allow(unused_variables)]
-    fn set_prop(&mut self, prop: &str, val: Value) -> SpinResult<()> {
-        let (propmap, descs) = self.mut_props();
-        match descs.get(prop) {
-            None => spin_err(API_ERROR, "No such property"),
-            Some(desc) => {
-                if let Some(val) = val.convert(desc.get_field_type()) {
-                    propmap.insert(prop.to_owned(), val);
-                    Ok(())
-                } else {
-                    spin_err(API_ERROR, "Wrong property type")
-                }
-            }
-        }
-    }
+    fn get_prop(&mut self, prop: &str) -> SpinResult<Value>;
+    fn set_prop(&mut self, prop: &str, val: Value) -> SpinResult<()>;
 }
 
 
@@ -203,17 +150,19 @@ pub fn general_error_reply(reason: &str, desc: &str, req: &[u8]) -> SpinResult<V
 #[macro_export]
 macro_rules! device_impl {
     ($clsname:ident,
+     $propstruct:ident,
      cmds  [$($cname:ident => ($cdoc:expr, $cintype:expr, $couttype:expr, $cfunc:ident)),*],
      attrs [$($aname:ident => ($adoc:expr, $atype:expr, $arfunc:ident, $awfunc:ident)),*],
-     props [$($pname:ident => ($pdoc:expr, $ptype:expr, $pdef:expr)),*]) => {
+     props [$($pname:ident => ($pdoc:expr, $ptype:expr, $prusttype:ty, $pdef:expr)),*]) => {
+        #[derive(Default)]
+        struct $propstruct {
+            _descriptions: Vec<::spin::arg::PropDesc>,
+            $(
+                $pname: $prusttype,
+            )*
+        }
+
         impl ::spin::device::Device for $clsname {
-            fn init_caches(&mut self) {
-                $(
-                    self.inner.propdesc.insert(stringify!($pname).to_owned(),
-                                               prop_info(stringify!($pname), $pdoc,
-                                                         $ptype, Value::from($pdef)));
-                )*
-            }
 
             fn init(&mut self) -> ::spin::error::SpinResult<()> { $clsname::init(self) }
 
@@ -221,49 +170,87 @@ macro_rules! device_impl {
 
             fn get_name(&self) -> &str { &self.name }
 
-            fn get_props(&self) -> &::spin::device::PropMap {
-                &self.inner.props
-            }
-
-            fn mut_props(&mut self) -> (&mut ::spin::device::PropMap,
-                                        &::spin::device::PropDescMap) {
-                (&mut self.inner.props, &self.inner.propdesc)
-            }
-
-            fn query_cmd_descs(&self) -> Vec<CmdDesc> {
+            fn query_cmd_descs(&self) -> Vec<::spin::arg::CmdDesc> {
                 vec![$(cmd_info(stringify!($cname), $cdoc, $cintype, $couttype),)*]
             }
 
-            fn query_attr_descs(&self) -> Vec<AttrDesc> {
+            fn query_attr_descs(&self) -> Vec<::spin::arg::AttrDesc> {
                 vec![$(attr_info(stringify!($aname), $adoc, $atype),)*]
             }
 
-            fn query_prop_descs(&self) -> Vec<PropDesc> {
-                self.inner.propdesc.values().cloned().collect()
+            fn query_prop_descs(&self) -> Vec<::spin::arg::PropDesc> {
+                self.props._descriptions.clone()
             }
 
             #[allow(unused_variables)]
-            fn exec_cmd(&mut self, cmd: &str, arg: ::spin::arg::Value) -> ::spin::error::SpinResult<Value> {
+            fn exec_cmd(&mut self, cmd: &str, arg: ::spin::arg::Value)
+                        -> ::spin::error::SpinResult<::spin::arg::Value>
+            {
                 match cmd {
-                    $(stringify!($cname) => self.$cfunc(arg.extract()?).map(Value::new),)*
+                    $(stringify!($cname) => self.$cfunc(arg.extract()?).map(::spin::arg::Value::new),)*
                     _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such command"),
                 }
             }
 
             #[allow(unused_variables)]
-            fn read_attr(&mut self, attr: &str) -> ::spin::error::SpinResult<Value> {
+            fn read_attr(&mut self, attr: &str) -> ::spin::error::SpinResult<::spin::arg::Value> {
                 match attr {
-                    $(stringify!($aname) => self.$arfunc().map(Value::new),)*
+                    $(stringify!($aname) => self.$arfunc().map(::spin::arg::Value::new),)*
                     _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such attribute"),
                 }
             }
 
             #[allow(unused_variables)]
-            fn write_attr(&mut self, attr: &str, val: ::spin::arg::Value) -> ::spin::error::SpinResult<()> {
+            fn write_attr(&mut self, attr: &str, val: ::spin::arg::Value)
+                          -> ::spin::error::SpinResult<()>
+            {
                 match attr {
                     $(stringify!($aname) => self.$awfunc(val.extract()?),)*
                     _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such attribute"),
                 }
+            }
+
+            #[allow(unused_variables, unused_mut)]
+            fn init_props(&mut self, mut cfg_prop_map: ::std::collections::HashMap<String, ::spin::arg::Value>) {
+                $(
+                    self.props._descriptions.push(
+                        prop_info(stringify!($pname), $pdoc, $ptype, ::spin::arg::Value::from($pdef)));
+                    self.props.$pname = $pdef;
+                    if let Some(cfg_value) = cfg_prop_map.remove(stringify!($pname)) {
+                        if let Some(value) = cfg_value.convert($ptype) {
+                            self.props.$pname = value.extract().unwrap();
+                        }
+                    }
+                )*
+            }
+
+            #[allow(unused_variables)]
+            fn get_prop(&mut self, prop: &str) -> ::spin::error::SpinResult<::spin::arg::Value> {
+                $(
+                    if prop == stringify!($pname) {
+                        return Ok(::spin::arg::Value::new(self.props.$pname));
+                    }
+                )*;
+                ::spin::error::spin_err(::spin::error::API_ERROR, "No such property")
+            }
+
+            #[allow(unused_variables)]
+            fn set_prop(&mut self, prop: &str, val: ::spin::arg::Value)
+                        -> ::spin::error::SpinResult<()>
+            {
+                $(
+                    if prop == stringify!($pname) {
+                        if let Some(val) = val.convert($ptype) {
+                            self.props.$pname = val.extract().unwrap();
+                            return Ok(());
+                        } else {
+                            return ::spin::error::spin_err(::spin::error::ARG_ERROR,
+                                                           &format!("Wrong property type, \
+                                                                     expected {:?}", $ptype));
+                        }
+                    }
+                )*;
+                ::spin::error::spin_err(::spin::error::API_ERROR, "No such property")
             }
         }
     }
