@@ -15,6 +15,10 @@ path = "src/db/main.rs"
 name = "spin_echo"
 path = "src/echo/main.rs"
 
+[[bin]]
+name = "spin_network"
+path = "src/network/main.rs"
+
 [dependencies]
 log = "*"
 url = "*"
