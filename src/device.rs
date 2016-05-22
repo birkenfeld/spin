@@ -50,10 +50,10 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
         }
         pr::ReqType::ReqExecCmd => {
             let val = req.take_value();
-            match dev.exec_cmd(req.get_name(), val.into()) {
+            match dev.exec_cmd(req.get_name(), Value::new(val)) {
                 Ok(val) => {
                     rsp.set_rtype(pr::RespType::RespValue);
-                    rsp.set_value(val.into());
+                    rsp.set_value(val.into_inner());
                 }
                 Err(err) => {
                     rsp.set_rtype(pr::RespType::RespError);
@@ -65,7 +65,7 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
             match dev.read_attr(req.get_name()) {
                 Ok(val) => {
                     rsp.set_rtype(pr::RespType::RespValue);
-                    rsp.set_value(val.into());
+                    rsp.set_value(val.into_inner());
                 }
                 Err(err) => {
                     rsp.set_rtype(pr::RespType::RespError);
@@ -75,7 +75,7 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
         }
         pr::ReqType::ReqWriteAttr => {
             let val = req.take_value();
-            match dev.write_attr(req.get_name(), val.into()) {
+            match dev.write_attr(req.get_name(), Value::new(val)) {
                 Ok(_) => {
                     rsp.set_rtype(pr::RespType::RespVoid);
                 }
@@ -89,7 +89,7 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
             match dev.get_prop(req.get_name()) {
                 Ok(val) => {
                     rsp.set_rtype(pr::RespType::RespValue);
-                    rsp.set_value(val.into());
+                    rsp.set_value(val.into_inner());
                 }
                 Err(err) => {
                     rsp.set_rtype(pr::RespType::RespError);
@@ -99,7 +99,7 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
         }
         pr::ReqType::ReqSetProp => {
             let val = req.take_value();
-            match dev.set_prop(req.get_name(), val.into()) {
+            match dev.set_prop(req.get_name(), Value::new(val)) {
                 Ok(_) => {
                     rsp.set_rtype(pr::RespType::RespVoid);
                 }
@@ -204,7 +204,7 @@ macro_rules! device_impl {
                 }
                 debug!("{}: executing command {}({:?})", self.get_name(), cmd, arg);
                 let res = match cmd {
-                    $(stringify!($cname) => self.$cfunc(arg.extract()?).map(::spin::arg::Value::new),)*
+                    $(stringify!($cname) => self.$cfunc(arg.extract()?).map(::spin::arg::Value::from),)*
                     _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such command"),
                 };
                 debug!("   ... result: {:?}", res);
@@ -218,7 +218,7 @@ macro_rules! device_impl {
                 }
                 debug!("{}: reading attribute {}", self.get_name(), attr);
                 let res = match attr {
-                    $(stringify!($aname) => self.$arfunc().map(::spin::arg::Value::new),)*
+                    $(stringify!($aname) => self.$arfunc().map(::spin::arg::Value::from),)*
                     _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such attribute"),
                 };
                 debug!("   ... result: {:?}", res);
@@ -270,7 +270,7 @@ macro_rules! device_impl {
                 debug!("{}: get property {}", self.get_name(), prop);
                 $(
                     if prop == stringify!($pname) {
-                        return Ok(::spin::arg::Value::new(self.props.$pname));
+                        return Ok(::spin::arg::Value::from(self.props.$pname));
                     }
                 )*;
                 ::spin::error::spin_err(::spin::error::API_ERROR, "No such property")

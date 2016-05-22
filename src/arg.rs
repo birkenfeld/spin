@@ -36,7 +36,7 @@ pub fn prop_info(name: &str, doc: &str, dtype: DataType, default: Value) -> Prop
     a.set_name(name.into());
     a.set_doc(doc.into());
     a.set_field_type(dtype);
-    a.set_default(default.into());
+    a.set_default(default.into_inner());
     a
 }
 
@@ -45,14 +45,8 @@ pub fn prop_info(name: &str, doc: &str, dtype: DataType, default: Value) -> Prop
 pub struct Value(pr::Value);
 
 impl Value {
-    pub fn new<T: Into<Value>>(val: T) -> Value {
-        val.into()
-    }
-
-    pub fn void() -> Value {
-        let mut v = pr::Value::new();
-        v.set_vtype(DataType::Void);
-        Value(v)
+    pub fn new(val: pr::Value) -> Value {
+        Value(val)
     }
 
     pub fn into_inner(self) -> pr::Value {
@@ -137,18 +131,6 @@ pub trait FromValue: Default where Self: Sized {
     fn from_value(Value) -> SpinResult<Self>;
 }
 
-
-impl From<pr::Value> for Value {
-    fn from(v: pr::Value) -> Value {
-        Value(v)
-    }
-}
-
-impl Into<pr::Value> for Value {
-    fn into(self) -> pr::Value {
-        self.0
-    }
-}
 
 impl From<()> for Value {
     fn from(_: ()) -> Value {

@@ -13,13 +13,13 @@ fn main() {
     };
 
     // Execute command
-    let res = clnt.exec_cmd_as::<String>("Echo", spin::Value::new("Hello!"));
+    let res = clnt.exec_cmd_as::<_, String>("Echo", "Hello!");
     println!("exec_cmd:   {:?}", res);
 
     // Read and write attribute
     let res = clnt.read_attr_as::<f64>("value");
     println!("read_attr:  {:?}", res);
-    let res = clnt.write_attr("value", spin::Value::new(5.5));
+    let res = clnt.write_attr("value", 5.5);
     println!("write_attr: {:?}", res);
     let res = clnt.read_attr_as::<f64>("value");
     println!("read_attr:  {:?}", res);
@@ -27,7 +27,7 @@ fn main() {
     // Get and set property
     let res = clnt.get_prop_as::<f64>("default_value");
     println!("get_prop:   {:?}", res);
-    let res = clnt.set_prop("default_value", spin::Value::new(67.2));
+    let res = clnt.set_prop("default_value", 67.2);
     println!("set_prop:   {:?}", res);
     // Attribute changed due to reinit after setting property
     let res = clnt.read_attr_as::<f64>("value");
@@ -43,7 +43,7 @@ fn main() {
     // Time the simple Echo call
     let t1 = time::get_time();
     for _i in 0..10000 {
-        clnt.exec_cmd("Echo", spin::Value::new("Hello!")).unwrap();
+        clnt.exec_cmd("Echo", "Hello!").unwrap();
     }
     let t2 = time::get_time();
     println!("timing:     10000 calls -> {} us/call",

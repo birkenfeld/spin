@@ -78,17 +78,19 @@ impl Client {
         }
     }
 
-    pub fn exec_cmd(&mut self, cmd: &str, arg: Value) -> SpinResult<Value> {
+    pub fn exec_cmd<I: Into<Value>>(&mut self, cmd: &str, arg: I) -> SpinResult<Value> {
         let mut req = pr::Request::new();
         req.set_rtype(pr::ReqType::ReqExecCmd);
         req.set_name(cmd.into());
-        req.set_value(arg.into());
+        req.set_value(arg.into().into_inner());
 
         let mut rsp = self.do_request(req, pr::RespType::RespValue)?;
-        Ok(Value::from(rsp.take_value()))
+        Ok(Value::new(rsp.take_value()))
     }
 
-    pub fn exec_cmd_as<T: FromValue>(&mut self, cmd: &str, arg: Value) -> SpinResult<T> {
+    pub fn exec_cmd_as<I, O>(&mut self, cmd: &str, arg: I) -> SpinResult<O>
+        where I: Into<Value>, O: FromValue
+    {
         self.exec_cmd(cmd, arg).and_then(FromValue::from_value)
     }
 
@@ -98,18 +100,18 @@ impl Client {
         req.set_name(attr.into());
 
         let mut rsp = self.do_request(req, pr::RespType::RespValue)?;
-        Ok(Value::from(rsp.take_value()))
+        Ok(Value::new(rsp.take_value()))
     }
 
-    pub fn read_attr_as<T: FromValue>(&mut self, attr: &str) -> SpinResult<T> {
+    pub fn read_attr_as<O: FromValue>(&mut self, attr: &str) -> SpinResult<O> {
         self.read_attr(attr).and_then(FromValue::from_value)
     }
 
-    pub fn write_attr(&mut self, attr: &str, val: Value) -> SpinResult<()> {
+    pub fn write_attr<I: Into<Value>>(&mut self, attr: &str, val: I) -> SpinResult<()> {
         let mut req = pr::Request::new();
         req.set_rtype(pr::ReqType::ReqWriteAttr);
         req.set_name(attr.into());
-        req.set_value(val.into());
+        req.set_value(val.into().into_inner());
 
         self.do_request(req, pr::RespType::RespVoid)?;
         Ok(())
@@ -121,18 +123,18 @@ impl Client {
         req.set_name(prop.into());
 
         let mut rsp = self.do_request(req, pr::RespType::RespValue)?;
-        Ok(Value::from(rsp.take_value()))
+        Ok(Value::new(rsp.take_value()))
     }
 
-    pub fn get_prop_as<T: FromValue>(&mut self, prop: &str) -> SpinResult<T> {
+    pub fn get_prop_as<O: FromValue>(&mut self, prop: &str) -> SpinResult<O> {
         self.get_prop(prop).and_then(FromValue::from_value)
     }
 
-    pub fn set_prop(&mut self, prop: &str, val: Value) -> SpinResult<()> {
+    pub fn set_prop<I: Into<Value>>(&mut self, prop: &str, val: I) -> SpinResult<()> {
         let mut req = pr::Request::new();
         req.set_rtype(pr::ReqType::ReqSetProp);
         req.set_name(prop.into());
-        req.set_value(val.into());
+        req.set_value(val.into().into_inner());
 
         self.do_request(req, pr::RespType::RespVoid)?;
         Ok(())
