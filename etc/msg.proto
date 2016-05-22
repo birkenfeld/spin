@@ -1,0 +1,189 @@
+// Spin RPC library, copyright 2015 Georg Brandl.
+// 
+//! Protocol buffers: definition of message format sent over 0MQ.
+
+enum DataType {
+    Void   = 0;
+    Bool   = 1;
+    Double = 2;
+    Float  = 3;
+    Int32  = 4;
+    Int64  = 5;
+    UInt32 = 6;
+    UInt64 = 7;
+    String = 8;
+    BoolArray   = 11;
+    DoubleArray = 12;
+    FloatArray  = 13;
+    Int32Array  = 14;
+    Int64Array  = 15;
+    UInt32Array = 16;
+    UInt64Array = 17;
+    StringArray = 18;
+    Int32StringArray  = 21;
+    DoubleStringArray = 22;
+}
+
+message BoolArr {
+    repeated bool bool = 1 [packed=true];
+}
+
+message DoubleArr {
+    repeated double double = 2 [packed=true];
+}
+
+message FloatArr {
+    repeated float float = 3 [packed=true];
+}
+
+message Int32Arr {
+    repeated sint32 int32 = 4 [packed=true];
+}
+
+message Int64Arr {
+    repeated sint64 int64 = 5 [packed=true];
+}
+
+message UInt32Arr {
+    repeated uint32 uint32 = 6 [packed=true];
+}
+
+message UInt64Arr {
+    repeated uint64 uint64 = 7 [packed=true];
+}
+
+message StringArr {
+    repeated string string = 8;
+}
+
+message Int32StringArr {
+    repeated sint32 int32 = 1 [packed=true];
+    repeated string string = 2;
+}
+
+message DoubleStringArr {
+    repeated double double = 1 [packed=true];
+    repeated string string = 2;
+}
+
+message Value {
+    oneof value {
+	bool   bool         = 1;
+        double double       = 2;
+	float  float        = 3;
+	sint32 int32        = 4;
+	sint64 int64        = 5;
+	uint32 uint32       = 6;
+	uint64 uint64       = 7;
+	string string       = 8;
+	BoolArr   abool     = 11;
+	DoubleArr adouble   = 12;
+	FloatArr  afloat    = 13;
+	Int32Arr  aint32    = 14;
+	Int64Arr  aint64    = 15;
+	UInt32Arr auint32   = 16;
+	UInt64Arr auint64   = 17;
+	StringArr astring   = 18;
+	Int32StringArr  aint32string  = 21;
+	DoubleStringArr adoublestring = 22;
+    }
+}
+
+message Error {
+    required string reason = 1;
+    required string desc = 2;
+    required string origin = 3;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message ExecCommand {
+    required string cmd = 1;
+    optional Value value = 2;
+}
+
+message ReadAttribute {
+    required string attr = 1;
+}
+
+message WriteAttribute {
+    required string attr = 1;
+    required Value value = 2;
+}
+
+message QueryAttribute {
+    required string attr = 1;
+}
+
+message QueryAPI {
+}
+
+message Request {
+    required uint32 seqno = 1;
+    oneof request {
+        ExecCommand exec = 2;
+	ReadAttribute rattr = 3;
+	WriteAttribute wattr = 4;
+	QueryAttribute qattr = 5;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message ExecCommandResult {
+    required string cmd = 1;
+    oneof result {
+        Value value = 2;
+        Error error = 3;
+    }
+}
+
+message ReadAttributeResult {
+    required string attr = 1;
+    oneof result {
+	Value value = 2;
+	Error error = 3;
+    }
+}
+
+message WriteAttributeResult {
+    required string attr = 1;
+    optional Error error = 2;
+}
+
+message CommandInfo {
+    required string name = 1;
+    required string doc = 2;
+    required DataType intype = 3;
+    required DataType outtype = 4;
+    required string indoc = 5;
+    required string outdoc = 6;
+}
+
+message AttributeInfo {
+    required string name = 1;
+    required string doc = 2;
+    required DataType type = 3;
+    required string unit = 4;
+}
+
+message QueryAttributeResult {
+    required string attr = 1;
+    required AttributeInfo info = 2;
+}
+
+message QueryAPIResult {
+    repeated CommandInfo cmd = 1;
+    repeated AttributeInfo attr = 2;
+}
+
+message Response {
+    required uint32 seqno = 1;
+    oneof response {
+        ExecCommandResult exec = 2;
+	ReadAttributeResult rattr = 3;
+	WriteAttributeResult wattr = 4;
+	QueryAttributeResult qattr = 5;
+	QueryAPIResult qapi = 6;
+    }
+}

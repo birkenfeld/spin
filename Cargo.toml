@@ -1,0 +1,24 @@
+[package]
+name = "spin"
+version = "0.1.0"
+authors = ["Georg Brandl <g.brandl@fz-juelich.de>"]
+
+[lib]
+name = "spin"
+
+[[bin]]
+name = "spin_db"
+path = "src/db/main.rs"
+
+[[bin]]
+name = "spin_echo"
+path = "src/echo/main.rs"
+
+[dependencies]
+zmq = "*"
+log = "*"
+fern = "*"
+protobuf = "*"
+
+[dependencies.spin_proto]
+path = "src/proto"
