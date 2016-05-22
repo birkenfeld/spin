@@ -57,7 +57,10 @@ impl Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(fmt, "{:?}", self)
+        match *self {
+            Error::Spin { ref reason, ref desc, .. } => write!(fmt, "{}: {}", reason, desc),
+            _ => write!(fmt, "{}", error::Error::description(self)),
+        }
     }
 }
 

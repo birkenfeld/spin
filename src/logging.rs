@@ -19,6 +19,7 @@ use log4rs::encode::pattern::PatternEncoder;
 use log4rs::encode::writer::SimpleWriter;
 use log4rs::config::{Config, Root, Appender};
 use ansi_term::Colour::{Red, White, Purple};
+use ansi_term::ANSIString;
 
 use util::{ensure_dir, open_file};
 
@@ -45,18 +46,17 @@ impl Append for ConsoleAppender {
     fn append(&self, record: &LogRecord) -> Result<(), Box<Error>> {
         let mut stdout = self.stdout.lock();
         let time_str = strftime("[%H:%M:%S]", &now()).unwrap();
-        let time = White.paint(time_str);
-        let msg = format!("{}", record.args());
-        match record.level() {
-            LogLevel::Error => write!(stdout, "{} [{:-10}] ERROR: {}\n",
-                                      time, self.prefix, Red.bold().paint(msg))?,
-            LogLevel::Warn  => write!(stdout, "{} [{:-10}] WARNING: {}\n",
-                                      time, self.prefix, Purple.bold().paint(msg))?,
-            LogLevel::Debug => write!(stdout, "{} [{:-10}] {}\n",
-                                      time, self.prefix, White.paint(msg))?,
-            _               => write!(stdout, "{} [{:-10}] {}\n",
-                                      time, self.prefix, msg)?,
-        }
+        let msg = match record.level() {
+            LogLevel::Error => Red.bold().paint(
+                format!("[{:-10}] ERROR: {}", self.prefix, record.args())),
+            LogLevel::Warn  => Purple.paint(
+                format!("[{:-10}] WARNING: {}", self.prefix, record.args())),
+            LogLevel::Debug => White.paint(
+                format!("[{:-10}] {}", self.prefix, record.args())),
+            _ => ANSIString::from(
+                format!("[{:-10}] {}", self.prefix, record.args())),
+        };
+        writeln!(stdout, "{} {}", White.paint(time_str), msg)?;
         stdout.flush()?;
         Ok(())
     }

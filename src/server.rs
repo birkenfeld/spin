@@ -254,6 +254,7 @@ macro_rules! server_main {
         match ::spin::server::Server::from_args($use_db, $staticconfig) {
             None => return,
             Some(mut server) => {
+                info!("creating devices...");
                 for device in ::std::mem::replace(&mut server.config.devices, vec![]) {
                     $(
                         if device.devtype == stringify!($dtype) {
@@ -267,7 +268,7 @@ macro_rules! server_main {
 
                 info!("server running...");
                 if let Err(e) = server.run() {
-                    error!("Error running server: {}", e);
+                    error!("server stopped: {}", e);
                 }
             }
         }
