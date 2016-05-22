@@ -9,6 +9,8 @@ extern crate log;
 #[macro_use]
 extern crate spin;
 
+use std::mem::replace;
+
 use spin::arg::*;
 use spin::server;
 use spin::device;
@@ -71,7 +73,11 @@ fn main() {
     match server::Server::from_args(true) {
         None => return,
         Some(mut server) => {
-            server.add_device("test/dev/echo".into(), create_echo_device);
+            for device in replace(&mut server.config.devices, vec![]) {
+                if device.devtype == "Echo" {
+                    server.add_device(device.name.clone(), create_echo_device);
+                }
+            }
 
             info!("echo server running...");
             if let Err(e) = server.run() {

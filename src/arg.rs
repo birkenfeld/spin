@@ -2,6 +2,7 @@
 //
 //! Argument type library, wrapper around some protobuf types.
 
+use toml;
 use protobuf::RepeatedField;
 use spin_proto as pr;
 
@@ -57,6 +58,20 @@ impl Value {
 
     pub fn into_inner(self) -> pr::Value {
         self.0
+    }
+
+    pub fn from_toml(val: &toml::Value) -> Option<Value> {
+        match *val {
+            toml::Value::String(ref s) => Some(Value::from(s.clone())),
+            toml::Value::Integer(i) => Some(Value::from(i)),
+            toml::Value::Float(f) => Some(Value::from(f)),
+            toml::Value::Boolean(b) => Some(Value::from(b)),
+            toml::Value::Array(_) => {
+                // TODO
+                None
+            },
+            _ => None
+        }
     }
 }
 

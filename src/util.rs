@@ -157,7 +157,7 @@ impl DeviceAddress {
             _ => url::SchemeType::NonRelative,
         }
     }
-    
+
     /// Parse a connection URI.
     pub fn parse_uri(uri: &str) -> SpinResult<DeviceAddress> {
         let mut parser = url::UrlParser::new();

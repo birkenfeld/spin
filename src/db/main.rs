@@ -82,6 +82,7 @@ fn main() {
     match server::Server::from_args(false) {
         None => return,
         Some(mut server) => {
+            // We're not using the config here, but use a fixed device name.
             server.add_device("sys/spin/db".into(), create_db_device);
 
             info!("database server running...");

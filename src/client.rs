@@ -40,6 +40,10 @@ impl Client {
                     timeout: 1000, })
     }
 
+    pub fn set_timeout(&mut self, timeout: i64) {
+        self.timeout = timeout;
+    }
+
     fn query_db(addr: &util::DeviceAddress) -> SpinResult<String> {
         let db_addr = format!("spin://{}/sys/spin/db", &addr.endpoint[6..]);
         let mut db_cl = Client::new(&db_addr)?;

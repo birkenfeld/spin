@@ -10,6 +10,7 @@ use argparse::*;
 use zmq;
 
 use arg::*;
+use config::Config;
 use client::Client;
 use device::{Device, run_device, general_error_reply};
 use error::{SpinResult, spin_err};
@@ -17,35 +18,32 @@ use util;
 
 pub type DevConstructor = fn(String) -> Box<Device>;
 
-#[allow(dead_code)]
-pub struct Server<'srv> {
-    name: String,
+pub struct Server {
+    pub name: String,
+    pub config: Config,
     pub address: util::ServerAddress,
     context: Arc<Mutex<zmq::Context>>,
-    clsmap: HashMap<String, &'srv str>,
     devmap: HashMap<String, DevConstructor>,
-    debug: bool,
 }
 
-impl<'srv> Server<'srv> {
+impl Server {
 
     /// Construct a new "empty" server.
-    pub fn new(name: &str, addr: Option<String>, db_addr: Option<String>,
-               use_db: bool, debug: bool) -> Server<'srv> {
-        util::setup_logging(debug);
+    pub fn new(name: &str, config: Config, addr: Option<String>,
+               db_addr: Option<String>, use_db: bool) -> Server {
         Server {
             name: name.into(),
+            config: config,
             address: util::ServerAddress::new(addr, db_addr, use_db),
             context: Arc::new(Mutex::new(zmq::Context::new())),
-            clsmap: HashMap::new(),
             devmap: HashMap::new(),
-            debug: debug,
         }
     }
 
     /// Construct a new server from command-line args.
-    pub fn from_args(use_db: bool) -> Option<Server<'srv>> {
+    pub fn from_args(use_db: bool) -> Option<Server> {
         let mut name = String::from("");
+        let mut config = None;
         let mut address = None;
         let mut database = None;
         let mut debug = false;
@@ -53,13 +51,17 @@ impl<'srv> Server<'srv> {
         let result = {
             let mut ap = ArgumentParser::new();
             ap.refer(&mut name).add_argument("name", Store, "Server name.").required();
+            ap.refer(&mut config).add_argument("config", StoreOption, "Config file.");
             ap.refer(&mut address).add_option(&["-b"], StoreOption, "Bind [host]:[port].");
             ap.refer(&mut database).add_option(&["-d"], StoreOption, "DB [host]:[port].");
             ap.refer(&mut debug).add_option(&["-v"], StoreTrue, "Debug.");
             ap.refer(&mut arg_use_db).add_option(&["-n"], StoreFalse, "No database mode.");
             ap.parse_args()
         };
-        result.ok().map(|_| Server::new(&name, address, database, use_db && arg_use_db, debug))
+        util::setup_logging(debug);
+        let server_config = Config::from_file(config);
+        result.ok().map(|_| Server::new(&name, server_config, address, database,
+                                        use_db && arg_use_db))
     }
 
     /// Add a constructed device.

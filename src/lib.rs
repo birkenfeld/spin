@@ -10,6 +10,7 @@ extern crate url;
 extern crate zmq;
 extern crate fern;
 extern crate time;
+extern crate toml;
 extern crate argparse;
 extern crate protobuf;
 extern crate spin_proto;
@@ -21,6 +22,4 @@ pub mod device;
 pub mod error;
 mod db;
 mod util;
-
-// pub use server::*;
-// pub use device::*;
+mod config;
