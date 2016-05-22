@@ -22,6 +22,7 @@ pub trait Device : Sync + Send {
     fn init(&mut self) -> SpinResult<()>;
     fn delete(&mut self);
 
+    fn set_name(&mut self, String);
     fn get_name(&self) -> &str;
 
     fn query_cmd_descs(&self) -> Vec<CmdDesc>;
@@ -156,6 +157,7 @@ macro_rules! device_impl {
      props [$($pname:ident => ($pdoc:expr, $ptype:expr, $prusttype:ty, $pdef:expr)),*]) => {
         #[derive(Default)]
         struct $propstruct {
+            _name: String,
             _descriptions: Vec<::spin::arg::PropDesc>,
             $(
                 $pname: $prusttype,
@@ -168,14 +170,15 @@ macro_rules! device_impl {
 
             fn delete(&mut self) { $clsname::delete(self) }
 
-            fn get_name(&self) -> &str { &self.name }
+            fn set_name(&mut self, name: String) { self.props._name = name; }
+            fn get_name(&self) -> &str { &self.props._name }
 
             fn query_cmd_descs(&self) -> Vec<::spin::arg::CmdDesc> {
-                vec![$(cmd_info(stringify!($cname), $cdoc, $cintype, $couttype),)*]
+                vec![$(::spin::arg::cmd_info(stringify!($cname), $cdoc, $cintype, $couttype),)*]
             }
 
             fn query_attr_descs(&self) -> Vec<::spin::arg::AttrDesc> {
-                vec![$(attr_info(stringify!($aname), $adoc, $atype),)*]
+                vec![$(::spin::arg::attr_info(stringify!($aname), $adoc, $atype),)*]
             }
 
             fn query_prop_descs(&self) -> Vec<::spin::arg::PropDesc> {
@@ -214,7 +217,8 @@ macro_rules! device_impl {
             fn init_props(&mut self, mut cfg_prop_map: ::std::collections::HashMap<String, ::spin::arg::Value>) {
                 $(
                     self.props._descriptions.push(
-                        prop_info(stringify!($pname), $pdoc, $ptype, ::spin::arg::Value::from($pdef)));
+                        ::spin::arg::prop_info(stringify!($pname), $pdoc, $ptype,
+                                               ::spin::arg::Value::from($pdef)));
                     self.props.$pname = $pdef;
                     if let Some(cfg_value) = cfg_prop_map.remove(stringify!($pname)) {
                         if let Some(value) = cfg_value.convert($ptype) {

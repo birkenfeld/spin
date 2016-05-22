@@ -9,20 +9,19 @@ extern crate log;
 #[macro_use]
 extern crate spin;
 
-use spin::arg::*;
-use spin::device::{Device};
+use spin::arg::DataType;
+use spin::device::Device;
 use spin::error::SpinResult;
 
 
 struct EchoDevice {
-    name: String,
     props: EchoDeviceProps,
     value: f64,
 }
 
 impl EchoDevice {
-    fn create(name: String) -> Box<Device> {
-        box EchoDevice { name: name, value: 0.,
+    fn create(_name: &str) -> Box<Device> {
+        box EchoDevice { value: 0.,
                          props: Default::default() }
     }
 

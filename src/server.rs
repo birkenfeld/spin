@@ -17,7 +17,7 @@ use device::{Device, run_device, general_error_reply};
 use error::{SpinResult, spin_err, SOCKET_ERROR};
 use util;
 
-pub type DevConstructor = fn(String) -> Box<Device>;
+pub type DevConstructor = fn(&str) -> Box<Device>;
 
 pub struct Server {
     pub name: String,
@@ -129,7 +129,8 @@ impl Server {
             devsockets.insert(devconfig.name.clone(), pollsockets.len());
             pollsockets.push(local_sock);
 
-            let mut dev = dev_const(devconfig.name);
+            let mut dev = dev_const(&devconfig.name);
+            dev.set_name(devconfig.name);
             let prop_map = HashMap::from_iter(devconfig.props.into_iter()
                                               .map(|p| (p.name, p.value)));
             dev.init_props(prop_map);

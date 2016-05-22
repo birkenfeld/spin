@@ -11,23 +11,21 @@ extern crate spin;
 
 use std::collections::HashMap;
 
-use spin::arg::*;
+use spin::arg::DataType;
 use spin::config::{ServerConfig, DevConfig};
-use spin::device::{Device};
-use spin::error::{SpinResult, spin_err, DB_ERROR};
+use spin::device::Device;
+use spin::error::{DB_ERROR, SpinResult, spin_err};
 
 
 struct DbDevice {
-    name: String,
     props: DbDeviceProps,
     devmap: HashMap<String, String>,
     srvmap: HashMap<String, String>,
 }
 
 impl DbDevice {
-    fn create(name: String) -> Box<Device> {
-        box DbDevice { name: name,
-                       props: Default::default(),
+    fn create(_name: &str) -> Box<Device> {
+        box DbDevice { props: Default::default(),
                        devmap: HashMap::new(),
                        srvmap: HashMap::new() }
     }
