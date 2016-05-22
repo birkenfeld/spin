@@ -1,5 +1,5 @@
 // Spin RPC library, copyright 2015, 2016 Georg Brandl.
-//
+
 //! Argument type library, wrapper around some protobuf types.
 
 use toml;

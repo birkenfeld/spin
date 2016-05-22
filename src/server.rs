@@ -1,5 +1,5 @@
 // Spin RPC library, copyright 2015, 2016 Georg Brandl.
-//
+
 //! Server framework.
 
 use std::env::current_dir;

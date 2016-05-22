@@ -1,5 +1,5 @@
 // Spin RPC library, copyright 2015, 2016 Georg Brandl.
-//
+
 //! Main library module; just re-exports the public API.
 
 #![feature(box_syntax, question_mark, type_macros)]

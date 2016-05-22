@@ -1,5 +1,5 @@
 // Spin RPC library, copyright 2015, 2016 Georg Brandl.
-//
+
 //! Server config file handling.
 
 use std::error::Error;

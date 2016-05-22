@@ -1,5 +1,5 @@
 // Spin RPC library, copyright 2015, 2016 Georg Brandl.
-//
+
 //! Error and Result types for Spin.
 
 use std::error;

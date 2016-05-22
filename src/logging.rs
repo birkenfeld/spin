@@ -1,5 +1,5 @@
 // Spin RPC library, copyright 2015, 2016 Georg Brandl.
-//
+
 //! Additions to the log4rs library for logging.
 
 use std::fmt;

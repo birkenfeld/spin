@@ -1,5 +1,5 @@
 // Spin RPC library, copyright 2015, 2016 Georg Brandl.
-//
+
 //! Database server executable.
 
 #![feature(box_syntax, question_mark)]
