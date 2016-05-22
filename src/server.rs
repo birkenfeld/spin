@@ -10,13 +10,13 @@ use argparse::*;
 use zmq;
 
 use arg::*;
-use config::{ServerConfig, DevConfig};
+use config::{ServerConfig, DevConfig, DevProp};
 use client::Client;
 use device::{Device, run_device, general_error_reply};
 use error::{SpinResult, spin_err};
 use util;
 
-pub type DevConstructor = fn(String) -> Box<Device>;
+pub type DevConstructor = fn(String, Vec<DevProp>) -> Box<Device>;
 
 pub struct Server {
     pub name: String,
@@ -129,7 +129,7 @@ impl Server {
             pollsockets.push(local_sock);
 
             thread::spawn(move || {
-                let dev = dev_const(devconfig.name);
+                let dev = dev_const(devconfig.name, devconfig.props);
                 // moves dev_sock and dev into this thread
                 run_device(dev_sock, dev);
             });

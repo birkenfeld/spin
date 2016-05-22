@@ -17,16 +17,18 @@ fn mains() {
     };
     let val = arg::Value::new("Hello, world!");
     let exc: Result<String, _> = clnt.exec_cmd_as("Echo", val);
-    println!("exc: {:?}", exc);
-    let wat = clnt.write_attr("value", arg::Value::new(42.1));
-    println!("wat: {:?}", wat);
+    println!("exec_cmd:   {:?}", exc);
     let rat: Result<f64, _> = clnt.read_attr_as("value");
-    println!("rat: {:?}", rat);
+    println!("read_attr:  {:?}", rat);
+    let wat = clnt.write_attr("value", arg::Value::new(42.1));
+    println!("write_attr: {:?}", wat);
+    let rat: Result<f64, _> = clnt.read_attr_as("value");
+    println!("read_attr:  {:?}", rat);
     if let Ok(qap) = clnt.query_api() {
         let cnames: Vec<_> = qap.0.iter().map(|ci| ci.get_name()).collect();
         let anames: Vec<_> = qap.1.iter().map(|ai| ai.get_name()).collect();
         let pnames: Vec<_> = qap.2.iter().map(|pi| pi.get_name()).collect();
-        println!("qap: {:?} {:?} {:?}", cnames, anames, pnames);
+        println!("query_api:  {:?} {:?} {:?}", cnames, anames, pnames);
     }
     let t1 = time::get_time();
     for _i in 0..10000 {

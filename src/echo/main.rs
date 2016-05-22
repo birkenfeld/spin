@@ -10,6 +10,7 @@ extern crate log;
 extern crate spin;
 
 use spin::arg::*;
+use spin::config::DevProp;
 use spin::device::Device;
 use spin::error::SpinResult;
 
@@ -20,8 +21,17 @@ struct EchoDevice {
 }
 
 impl EchoDevice {
-    fn create(name: String) -> Box<Device> {
-        box EchoDevice { name: name, value: 0. }
+    fn create(name: String, props: Vec<DevProp>) -> Box<Device> {
+        let mut dev = box EchoDevice { name: name, value: 0. };
+        for prop in props {
+            // TODO: more automatic?
+            if prop.name == "default_value" {
+                if let Ok(v) = f64::from_value(prop.value) {
+                    dev.value = v;
+                }
+            }
+        }
+        dev
     }
 
     fn cmd_echo(&self, arg: Value) -> SpinResult<Value> {
