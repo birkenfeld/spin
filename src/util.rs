@@ -6,7 +6,6 @@ use std::env;
 use std::sync::{Arc, Mutex};
 
 use log;
-use log::LogLevelFilter::*;
 use fern;
 use time;
 use zmq;
@@ -189,12 +188,22 @@ impl DeviceAddress {
 /// Function for log formatting.
 fn log_format(msg: &str, level: &log::LogLevel,
               _location: &log::LogLocation) -> String {
-    format!("[{}][{}] {}", time::now().strftime("%H:%M:%S").unwrap(),
-            level, msg)
+    use ansi_term::Colour::*;
+    use log::LogLevel::*;
+
+    let text = format!("[{}][{:-5}] {}",
+                       time::now().strftime("%H:%M:%S").unwrap(), level, msg);
+    match *level {
+        Debug => White.paint(text).to_string(),
+        Warn  => Purple.paint(text).to_string(),
+        Error => Red.paint(text).to_string(),
+        _     => text,
+    }
 }
 
 /// Configure logging.
 pub fn setup_logging(debug: bool) {
+    use log::LogLevelFilter::*;
     let loglevel = if debug { Debug } else { Info };
     let log_config = fern::DispatchConfig {
         format: box log_format,

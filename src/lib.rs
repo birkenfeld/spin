@@ -13,6 +13,7 @@ extern crate time;
 extern crate toml;
 extern crate argparse;
 extern crate protobuf;
+extern crate ansi_term;
 extern crate spin_proto;
 
 pub mod arg;

@@ -23,6 +23,7 @@ time = "*"
 toml = "*"
 argparse = "*"
 protobuf = "*"
+ansi_term = "*"
 zmq = {"git" = "https://github.com/erickt/rust-zmq"}
 
 [dependencies.spin_proto]
