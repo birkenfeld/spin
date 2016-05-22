@@ -6,8 +6,6 @@
 
 extern crate spin;
 
-use std::env::args;
-
 use spin::arg::*;
 use spin::server;
 use spin::device;
@@ -78,13 +76,12 @@ impl device::Device for EchoDevice {
 
 
 fn main() {
-    println!("Echo server running...");
-    let mut server = server::Server::new("echo/test", None);
-    server.config_from_args(&args().collect());
+    let mut server = server::Server::from_args().unwrap();
 
     let echodev = EchoDevice { name: "test/dev/echo".into(), value: 0. };
     server.add_device(Box::new(echodev));
 
+    println!("Echo server running...");
     if let Err(e) = server.run() {
         println!("Error running server: {}", e);
     }

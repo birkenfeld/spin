@@ -15,11 +15,12 @@ name = "spin_echo"
 path = "src/echo/main.rs"
 
 [dependencies]
-zmq = "*"
 log = "*"
+zmq = "*"
 fern = "*"
-protobuf = "*"
 time = "*"
+protobuf = "*"
+argparse = "*"
 
 [dependencies.spin_proto]
 path = "src/proto"

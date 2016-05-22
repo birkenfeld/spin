@@ -89,12 +89,13 @@ impl ServerAddress {
     }
 
     fn parse_host_port(arg: &str, defaultport: u16) -> Option<(String, u16)> {
-        let mut parts_iter = arg.rsplitn(2, ':');
+        let mut parts_iter = arg.splitn(2, ':');
         match parts_iter.next() {
-            Some(host) => {
+            Some(mut host) => {
                 let port = parts_iter.next()
                     .and_then(|v| v.parse().ok())
                     .unwrap_or(defaultport);
+                if host == "" { host = "*"; }
                 Some((host.into(), port))
             }
             None => None,

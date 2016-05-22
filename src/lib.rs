@@ -4,12 +4,13 @@
 
 #![feature(associated_consts,box_patterns,std_misc,convert,box_syntax)]
 
-extern crate protobuf;
-extern crate spin_proto;
-extern crate zmq;
 #[macro_use]
 extern crate log;
+extern crate zmq;
 extern crate fern;
+extern crate argparse;
+extern crate protobuf;
+extern crate spin_proto;
 
 pub mod arg;
 pub mod client;

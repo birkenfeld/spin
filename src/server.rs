@@ -8,6 +8,7 @@ use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
+use argparse::*;
 use zmq;
 
 use arg::*;
@@ -20,7 +21,7 @@ use util;
 #[allow(dead_code)]
 pub struct Server<'srv> {
     name: String,
-    address: util::ServerAddress,
+    pub address: util::ServerAddress,
     context: Arc<Mutex<zmq::Context>>,
     clsmap: HashMap<String, &'srv str>,
     devmap: HashMap<String, Box<Device>>,
@@ -39,9 +40,17 @@ impl<'srv> Server<'srv> {
         }
     }
 
-    /// Configure the server from command line arguments.
-    pub fn config_from_args(&mut self, _args: &Vec<String>) {
-        //unimplemented!();
+    /// Construct a new server from command-line args.
+    pub fn from_args() -> Option<Server<'srv>> {
+        let mut name = String::from("");
+        let mut address = String::from("");
+        let result = {
+            let mut ap = ArgumentParser::new();
+            ap.refer(&mut name).add_argument("name", Store, "Server name.").required();
+            ap.refer(&mut address).add_option(&["-b"], Store, "Bind address.");
+            ap.parse_args()
+        };
+        result.ok().map(|_| Server::new(&name, Some(&address)))
     }
 
     /// Add a constructed device.
@@ -52,6 +61,7 @@ impl<'srv> Server<'srv> {
     const MIN_PORT: u16 = 11000;
     const MAX_PORT: u16 = 65000;
 
+    /// Bind the external socket.
     fn bind_external(&mut self) -> SpinResult<zmq::Socket> {
         // external socket that takes requests
         let mut sock = try!(util::create_socket(&self.context, zmq::ROUTER));

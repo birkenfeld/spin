@@ -11,7 +11,7 @@ use spin::arg;
 
 
 fn mains() {
-    let mut clnt = client::Client::new("tcp://localhost:11000", "test/dev/echo").unwrap();
+    let mut clnt = client::Client::new("tcp://localhost:1123", "test/dev/echo").unwrap();
     let val = arg::Value::new("Hello, world!");
     let exc: Result<String, _> = clnt.exec_cmd_as("Echo", val);
     println!("exc: {:?}", exc);
