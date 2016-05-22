@@ -20,8 +20,8 @@ url = "*"
 zmq = "*"
 fern = "*"
 time = "*"
-protobuf = "*"
 argparse = "*"
+protobuf = "*"
 
 [dependencies.spin_proto]
 path = "src/proto"

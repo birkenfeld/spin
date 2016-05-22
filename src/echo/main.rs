@@ -6,6 +6,7 @@
 
 #[macro_use]
 extern crate log;
+#[macro_use]
 extern crate spin;
 
 use spin::arg::*;
@@ -37,43 +38,20 @@ impl EchoDevice {
 }
 
 
-impl device::Device for EchoDevice {
-    const CLSNAME: &'static str = "EchoDevice";
+device_impl!(
+    EchoDevice,
+    cmds  [
+        Echo  => ("Sends back the same string.",
+                  DataType::String, DataType::String, cmd_echo)
+    ],
+    attrs [
+        value => ("A double value.", DataType::Double,
+                  read_value, write_value)
+    ]
+);
 
-    fn get_name(&self) -> &str { &self.name }
-
-    fn get_commands(&self) -> Vec<CommandDesc> {
-        vec![
-            cmd_info("Echo", "Sends back the same string.", DataType::String, DataType::String),
-            ]
-    }
-
-    fn get_attributes(&self) -> Vec<AttrDesc> {
-        vec![
-            attr_info("value", "A double value.", DataType::Double),
-            ]
-    }
-
-    fn exec_cmd(&mut self, cmd: &str, arg: Value) -> SpinResult<Value> {
-        match cmd {
-            "Echo" => self.cmd_echo(arg),
-            _      => spin_err("CommandError", "No such command"),
-        }
-    }
-
-    fn read_attr(&mut self, attr: &str) -> SpinResult<Value> {
-        match attr {
-            "value" => self.read_value(),
-            _       => spin_err("AttributeError", "No such attribute"),
-        }
-    }
-
-    fn write_attr(&mut self, attr: &str, val: Value) -> SpinResult<()> {
-        match attr {
-            "value" => self.write_value(val),
-            _       => spin_err("AttributeError", "No such command"),
-        }
-    }
+fn create_echo_device(name: String) -> Box<Device> {
+    box EchoDevice { name: name, value: 0. }
 }
 
 
@@ -81,8 +59,7 @@ fn main() {
     match server::Server::from_args(true) {
         None => return,
         Some(mut server) => {
-            let echodev = EchoDevice { name: "test/dev/echo".into(), value: 0. };
-            server.add_device(Box::new(echodev));
+            server.add_device("test/dev/echo".into(), create_echo_device);
 
             info!("echo server running...");
             if let Err(e) = server.run() {

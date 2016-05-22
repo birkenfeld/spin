@@ -15,6 +15,7 @@ use device::{Device, run_device, general_error_reply};
 use error::{SpinResult, spin_err};
 use util;
 
+pub type DevConstructor = fn(String) -> Box<Device>;
 
 #[allow(dead_code)]
 pub struct Server<'srv> {
@@ -22,7 +23,7 @@ pub struct Server<'srv> {
     pub address: util::ServerAddress,
     context: Arc<Mutex<zmq::Context>>,
     clsmap: HashMap<String, &'srv str>,
-    devmap: HashMap<String, Box<Device>>,
+    devmap: HashMap<String, DevConstructor>,
     debug: bool,
 }
 
@@ -62,8 +63,8 @@ impl<'srv> Server<'srv> {
     }
 
     /// Add a constructed device.
-    pub fn add_device(&mut self, dev: Box<Device>) {
-        self.devmap.insert(dev.get_name().into(), dev);
+    pub fn add_device(&mut self, name: String, dev_const: DevConstructor) {
+        self.devmap.insert(name, dev_const);
     }
 
     const MIN_PORT: u16 = 11000;
@@ -111,22 +112,22 @@ impl<'srv> Server<'srv> {
         Ok(())
     }
 
-    fn start_devices(&mut self,
-                     pollsockets: &mut Vec<zmq::Socket>)
+    fn start_devices(&mut self, pollsockets: &mut Vec<zmq::Socket>)
                      -> SpinResult<HashMap<String, usize>> {
         let mut devsockets = HashMap::new();
         // create a socket pair and a thread for every device
-        for (name, dev) in self.devmap.drain() {
+        for (name, dev_const) in self.devmap.drain() {
             let inproc_addr = String::from("inproc://") + &name;
             let mut dev_sock = try!(util::create_socket(&self.context, zmq::REP));
             try!(dev_sock.bind(&inproc_addr));  // must bind before connect
 
             let mut local_sock = try!(util::create_socket(&self.context, zmq::REQ));
             try!(local_sock.connect(&inproc_addr));
-            devsockets.insert(name, pollsockets.len());
+            devsockets.insert(name.clone(), pollsockets.len());
             pollsockets.push(local_sock);
-            
+
             thread::spawn(move || {
+                let dev = dev_const(name);
                 // moves dev_sock and dev into this thread
                 run_device(dev_sock, dev);
             });

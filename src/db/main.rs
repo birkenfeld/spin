@@ -6,6 +6,7 @@
 
 #[macro_use]
 extern crate log;
+#[macro_use]
 extern crate spin;
 
 use std::collections::HashMap;
@@ -56,40 +57,22 @@ impl DbDevice {
     }
 }
 
+device_impl!(
+    DbDevice,
+    cmds  [
+        Register => ("Register a server and its devices.",
+                     DataType::StringArray, DataType::Void, cmd_register),
+        Query    => ("Query information about a device.",
+                     DataType::String, DataType::String, cmd_query)
+    ],
+    attrs [
+    ]
+);
 
-impl device::Device for DbDevice {
-    const CLSNAME: &'static str = "DbDevice";
-
-    fn get_name(&self) -> &str { &self.name }
-
-    fn get_commands(&self) -> Vec<CommandDesc> {
-        vec![
-            cmd_info("Register", "Register a server and its devices.",
-                     DataType::StringArray, DataType::Void),
-            cmd_info("Query", "Query information about a device.",
-                     DataType::String, DataType::String),
-            ]
-    }
-
-    fn get_attributes(&self) -> Vec<AttrDesc> {
-        vec![]
-    }
-
-    fn exec_cmd(&mut self, cmd: &str, arg: Value) -> SpinResult<Value> {
-        match cmd {
-            "Register" => self.cmd_register(arg),
-            "Query"    => self.cmd_query(arg),
-            _          => spin_err("CommandError", "No such command"),
-        }
-    }
-
-    fn read_attr(&mut self, _attr: &str) -> SpinResult<Value> {
-        spin_err("AttributeError", "No such attribute")
-    }
-
-    fn write_attr(&mut self, _attr: &str, _val: Value) -> SpinResult<()> {
-        spin_err("AttributeError", "No such attribute")
-    }
+fn create_db_device(name: String) -> Box<Device> {
+    box DbDevice { name: name,
+                   devmap: HashMap::new(),
+                   srvmap: HashMap::new() }
 }
 
 
@@ -97,10 +80,7 @@ fn main() {
     match server::Server::from_args(false) {
         None => return,
         Some(mut server) => {
-            let dev = DbDevice { name: "sys/spin/db".into(),
-                                 devmap: HashMap::new(),
-                                 srvmap: HashMap::new() };
-            server.add_device(Box::new(dev));
+            server.add_device("sys/spin/db".into(), create_db_device);
 
             info!("database server running...");
             if let Err(e) = server.run() {

@@ -110,3 +110,49 @@ pub fn general_error_reply(reason: &str, desc: &str, req: &Vec<u8>) -> SpinResul
     let rsp = try!(rsp.write_to_bytes());
     Ok(rsp)
 }
+
+
+#[macro_export]
+macro_rules! device_impl {
+    ($clsname:ident,
+     cmds [$($cname:ident => ($cdoc:expr, $cintype:expr, $couttype:expr, $cfunc:ident)),*],
+     attrs [$($aname:ident => ($adoc:expr, $atype:expr, $arfunc:ident, $awfunc:ident)),*]) => {
+        impl device::Device for $clsname {
+            const CLSNAME: &'static str = stringify!($clsname);
+
+            fn get_name(&self) -> &str { &self.name }
+
+            fn get_commands(&self) -> Vec<CommandDesc> {
+                vec![$(cmd_info(stringify!($cname), $cdoc, $cintype, $couttype),)*]
+            }
+
+            fn get_attributes(&self) -> Vec<AttrDesc> {
+                vec![$(attr_info(stringify!($aname), $adoc, $atype),)*]
+            }
+
+            #[allow(unused_variables)]
+            fn exec_cmd(&mut self, cmd: &str, arg: Value) -> SpinResult<Value> {
+                match cmd {
+                    $(stringify!($cname) => self.$cfunc(arg),)*
+                    _ => spin_err("CommandError", "No such command"),
+                }
+            }
+
+            #[allow(unused_variables)]
+            fn read_attr(&mut self, attr: &str) -> SpinResult<Value> {
+                match attr {
+                    $(stringify!($aname) => self.$arfunc(),)*
+                    _ => spin_err("AttributeError", "No such attribute"),
+                }
+            }
+
+            #[allow(unused_variables)]
+            fn write_attr(&mut self, attr: &str, val: Value) -> SpinResult<()> {
+                match attr {
+                    $(stringify!($aname) => self.$awfunc(val),)*
+                    _ => spin_err("AttributeError", "No such attribute"),
+                }
+            }
+        }
+    }
+}
