@@ -16,7 +16,7 @@ use error::SpinResult;
 use util;
 
 
-pub trait Device : Sync + Send {
+pub trait Device : Send {
     fn init_props(&mut self, HashMap<String, Value>);
 
     fn init_device(&mut self) -> SpinResult<()>;

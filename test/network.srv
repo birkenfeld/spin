@@ -1,0 +1,9 @@
+["test/tcp/dev"]
+type = "network_StringIO"
+host = "localhost"
+port = 4266
+eol = "\r\n"
+
+["test/cryo/dev"]
+type = "cryo_Sensor"
+iodev = "spindb://localhost:9999/test/tcp/dev"

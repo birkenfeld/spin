@@ -18,9 +18,10 @@ pub const API_ERROR:      &'static str = "APIError";
 pub const SOCKET_ERROR:   &'static str = "SocketError";
 pub const ADDRESS_ERROR:  &'static str = "AddressError";
 pub const ZMQ_ERROR:      &'static str = "ZmqError";
+pub const IO_ERROR:       &'static str = "InputOutputError";
 pub const PROTO_ERROR:    &'static str = "ProtocolError";
-pub const CONFIG_ERROR:   &'static str = "ConfigError";
-pub const IO_ERROR:       &'static str = "IoError";
+pub const CONFIG_ERROR:   &'static str = "ConfigurationError";
+pub const COMM_ERROR:     &'static str = "CommunicationError";
 
 
 #[derive(Debug)]
