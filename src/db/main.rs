@@ -22,6 +22,23 @@ struct DbDevice {
     srvmap: HashMap<String, String>,  // server -> address
 }
 
+spin_device_impl!(
+    DbDevice,
+    DbDeviceProps,
+    cmds = [
+        Register   => ("Register a server and its devices.",
+                       StringArray, Void, cmd_register),
+        Unregister => ("Unregister a server and its devices.",
+                       StringArray, Void, cmd_unregister),
+        Query      => ("Query information about a device.",
+                       String, String, cmd_query),
+        List       => ("List all devices, their server names and addresses.",
+                       Void, StringArray, cmd_list)
+    ],
+    attrs = [ ],
+    props = [ ]
+);
+
 impl DbDevice {
     fn create(_name: &str) -> Box<Device> {
         box DbDevice { props: Default::default(),
@@ -94,23 +111,6 @@ impl DbDevice {
         Ok(result)
     }
 }
-
-spin_device_impl!(
-    DbDevice,
-    DbDeviceProps,
-    cmds = [
-        Register   => ("Register a server and its devices.",
-                       StringArray, Void, cmd_register),
-        Unregister => ("Unregister a server and its devices.",
-                       StringArray, Void, cmd_unregister),
-        Query      => ("Query information about a device.",
-                       String, String, cmd_query),
-        List       => ("List all devices, their server names and addresses.",
-                       Void, StringArray, cmd_list)
-    ],
-    attrs = [ ],
-    props = [ ]
-);
 
 
 fn main() {

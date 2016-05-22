@@ -18,6 +18,20 @@ struct EchoDevice {
     value: f64,
 }
 
+spin_device_impl!(
+    EchoDevice,
+    EchoDeviceProps,
+    cmds = [
+        Echo  => ("Sends back the same string.", String, String, cmd_echo)
+    ],
+    attrs = [
+        value => ("A double value.", Double, read_value, write_value)
+    ],
+    props = [
+        default_value => ("Default for 'value' attribute.", Double, 42.0)
+    ]
+);
+
 impl EchoDevice {
     fn create(_name: &str) -> Box<Device> {
         box EchoDevice { value: 0.,
@@ -45,21 +59,6 @@ impl EchoDevice {
         Ok(())
     }
 }
-
-
-spin_device_impl!(
-    EchoDevice,
-    EchoDeviceProps,
-    cmds = [
-        Echo  => ("Sends back the same string.", String, String, cmd_echo)
-    ],
-    attrs = [
-        value => ("A double value.", Double, read_value, write_value)
-    ],
-    props = [
-        default_value => ("Default for 'value' attribute.", Double, 42.0)
-    ]
-);
 
 
 fn main() {
