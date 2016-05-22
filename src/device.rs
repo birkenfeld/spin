@@ -19,8 +19,8 @@ use util;
 pub trait Device : Sync + Send {
     fn init_props(&mut self, HashMap<String, Value>);
 
-    fn init(&mut self) -> SpinResult<()>;
-    fn delete(&mut self);
+    fn init_device(&mut self) -> SpinResult<()>;
+    fn delete_device(&mut self);
 
     fn set_name(&mut self, String);
     fn get_name(&self) -> &str;
@@ -102,8 +102,6 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
             let val = req.take_value();
             match dev.set_prop(req.get_name(), val.into()) {
                 Ok(_) => {
-                    dev.delete();
-                    dev.init(); // TODO: this can fail now
                     rsp.set_rtype(pr::RespType::RespVoid);
                 }
                 Err(err) => {
@@ -159,6 +157,7 @@ macro_rules! device_impl {
         struct $propstruct {
             _name: String,
             _descriptions: Vec<::spin::arg::PropDesc>,
+            _initialized: bool,
             $(
                 $pname: $prusttype,
             )*
@@ -166,9 +165,19 @@ macro_rules! device_impl {
 
         impl ::spin::device::Device for $clsname {
 
-            fn init(&mut self) -> ::spin::error::SpinResult<()> { $clsname::init(self) }
+            fn init_device(&mut self) -> ::spin::error::SpinResult<()> {
+                if let Err(err) = $clsname::init(self) {
+                    error!("could not initialize {}: {}", self.get_name(), err);
+                    return Err(err);
+                }
+                self.props._initialized = true;
+                Ok(())
+            }
 
-            fn delete(&mut self) { $clsname::delete(self) }
+            fn delete_device(&mut self) {
+                self.props._initialized = false;
+                $clsname::delete(self);
+            }
 
             fn set_name(&mut self, name: String) { self.props._name = name; }
             fn get_name(&self) -> &str { &self.props._name }
@@ -189,6 +198,9 @@ macro_rules! device_impl {
             fn exec_cmd(&mut self, cmd: &str, arg: ::spin::arg::Value)
                         -> ::spin::error::SpinResult<::spin::arg::Value>
             {
+                if !self.props._initialized {
+                    self.init_device()?;
+                }
                 match cmd {
                     $(stringify!($cname) => self.$cfunc(arg.extract()?).map(::spin::arg::Value::new),)*
                     _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such command"),
@@ -197,6 +209,9 @@ macro_rules! device_impl {
 
             #[allow(unused_variables)]
             fn read_attr(&mut self, attr: &str) -> ::spin::error::SpinResult<::spin::arg::Value> {
+                if !self.props._initialized {
+                    self.init_device()?;
+                }
                 match attr {
                     $(stringify!($aname) => self.$arfunc().map(::spin::arg::Value::new),)*
                     _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such attribute"),
@@ -207,6 +222,9 @@ macro_rules! device_impl {
             fn write_attr(&mut self, attr: &str, val: ::spin::arg::Value)
                           -> ::spin::error::SpinResult<()>
             {
+                if !self.props._initialized {
+                    self.init_device()?;
+                }
                 match attr {
                     $(stringify!($aname) => self.$awfunc(val.extract()?),)*
                     _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such attribute"),
@@ -246,6 +264,8 @@ macro_rules! device_impl {
                     if prop == stringify!($pname) {
                         if let Some(val) = val.convert($ptype) {
                             self.props.$pname = val.extract().unwrap();
+                            self.delete_device();
+                            self.init_device()?;
                             return Ok(());
                         } else {
                             return ::spin::error::spin_err(::spin::error::ARG_ERROR,

@@ -134,7 +134,8 @@ impl Server {
             let prop_map = HashMap::from_iter(devconfig.props.into_iter()
                                               .map(|p| (p.name, p.value)));
             dev.init_props(prop_map);
-            dev.init();  // TODO: this can fail now
+            // ignore init failures here, we will retry on each RPC call
+            let _ = dev.init_device();
             thread::spawn(move || {
                 // moves dev_sock and dev into this thread
                 run_device(dev_sock, dev);

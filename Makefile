@@ -13,8 +13,7 @@ MODE = release
 MARG := $(if $(filter release,$(MODE)),--release,)
 
 demo:
-	cargo build $(MARG) --bin=spin_db
-	cargo build $(MARG) --bin=spin_echo
+	cargo build $(MARG)
 	cargo build $(MARG) --example=echocl
 	@echo "Starting demo..."
 	@( target/$(MODE)/spin_db db/1 -b :9999 & \
