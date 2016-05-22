@@ -82,7 +82,7 @@ impl Value {
         self.vtype = ::std::option::Option::Some(v);
     }
 
-    pub fn get_vtype<'a>(&self) -> DataType {
+    pub fn get_vtype(&self) -> DataType {
         self.vtype.unwrap_or(DataType::Void)
     }
 
@@ -98,7 +98,7 @@ impl Value {
     }
 
     // Mutable pointer to the field.
-    pub fn mut_bool<'a>(&'a mut self) -> &'a mut ::std::vec::Vec<bool> {
+    pub fn mut_bool(&mut self) -> &mut ::std::vec::Vec<bool> {
         &mut self.bool
     }
 
@@ -107,7 +107,7 @@ impl Value {
         ::std::mem::replace(&mut self.bool, ::std::vec::Vec::new())
     }
 
-    pub fn get_bool<'a>(&'a self) -> &'a [bool] {
+    pub fn get_bool(&self) -> &[bool] {
         &self.bool
     }
 
@@ -123,7 +123,7 @@ impl Value {
     }
 
     // Mutable pointer to the field.
-    pub fn mut_double<'a>(&'a mut self) -> &'a mut ::std::vec::Vec<f64> {
+    pub fn mut_double(&mut self) -> &mut ::std::vec::Vec<f64> {
         &mut self.double
     }
 
@@ -132,7 +132,7 @@ impl Value {
         ::std::mem::replace(&mut self.double, ::std::vec::Vec::new())
     }
 
-    pub fn get_double<'a>(&'a self) -> &'a [f64] {
+    pub fn get_double(&self) -> &[f64] {
         &self.double
     }
 
@@ -148,7 +148,7 @@ impl Value {
     }
 
     // Mutable pointer to the field.
-    pub fn mut_float<'a>(&'a mut self) -> &'a mut ::std::vec::Vec<f32> {
+    pub fn mut_float(&mut self) -> &mut ::std::vec::Vec<f32> {
         &mut self.float
     }
 
@@ -157,7 +157,7 @@ impl Value {
         ::std::mem::replace(&mut self.float, ::std::vec::Vec::new())
     }
 
-    pub fn get_float<'a>(&'a self) -> &'a [f32] {
+    pub fn get_float(&self) -> &[f32] {
         &self.float
     }
 
@@ -173,7 +173,7 @@ impl Value {
     }
 
     // Mutable pointer to the field.
-    pub fn mut_int32<'a>(&'a mut self) -> &'a mut ::std::vec::Vec<i32> {
+    pub fn mut_int32(&mut self) -> &mut ::std::vec::Vec<i32> {
         &mut self.int32
     }
 
@@ -182,7 +182,7 @@ impl Value {
         ::std::mem::replace(&mut self.int32, ::std::vec::Vec::new())
     }
 
-    pub fn get_int32<'a>(&'a self) -> &'a [i32] {
+    pub fn get_int32(&self) -> &[i32] {
         &self.int32
     }
 
@@ -198,7 +198,7 @@ impl Value {
     }
 
     // Mutable pointer to the field.
-    pub fn mut_int64<'a>(&'a mut self) -> &'a mut ::std::vec::Vec<i64> {
+    pub fn mut_int64(&mut self) -> &mut ::std::vec::Vec<i64> {
         &mut self.int64
     }
 
@@ -207,7 +207,7 @@ impl Value {
         ::std::mem::replace(&mut self.int64, ::std::vec::Vec::new())
     }
 
-    pub fn get_int64<'a>(&'a self) -> &'a [i64] {
+    pub fn get_int64(&self) -> &[i64] {
         &self.int64
     }
 
@@ -223,7 +223,7 @@ impl Value {
     }
 
     // Mutable pointer to the field.
-    pub fn mut_uint32<'a>(&'a mut self) -> &'a mut ::std::vec::Vec<u32> {
+    pub fn mut_uint32(&mut self) -> &mut ::std::vec::Vec<u32> {
         &mut self.uint32
     }
 
@@ -232,7 +232,7 @@ impl Value {
         ::std::mem::replace(&mut self.uint32, ::std::vec::Vec::new())
     }
 
-    pub fn get_uint32<'a>(&'a self) -> &'a [u32] {
+    pub fn get_uint32(&self) -> &[u32] {
         &self.uint32
     }
 
@@ -248,7 +248,7 @@ impl Value {
     }
 
     // Mutable pointer to the field.
-    pub fn mut_uint64<'a>(&'a mut self) -> &'a mut ::std::vec::Vec<u64> {
+    pub fn mut_uint64(&mut self) -> &mut ::std::vec::Vec<u64> {
         &mut self.uint64
     }
 
@@ -257,7 +257,7 @@ impl Value {
         ::std::mem::replace(&mut self.uint64, ::std::vec::Vec::new())
     }
 
-    pub fn get_uint64<'a>(&'a self) -> &'a [u64] {
+    pub fn get_uint64(&self) -> &[u64] {
         &self.uint64
     }
 
@@ -273,7 +273,7 @@ impl Value {
     }
 
     // Mutable pointer to the field.
-    pub fn mut_string<'a>(&'a mut self) -> &'a mut ::protobuf::RepeatedField<::std::string::String> {
+    pub fn mut_string(&mut self) -> &mut ::protobuf::RepeatedField<::std::string::String> {
         &mut self.string
     }
 
@@ -282,7 +282,7 @@ impl Value {
         ::std::mem::replace(&mut self.string, ::protobuf::RepeatedField::new())
     }
 
-    pub fn get_string<'a>(&'a self) -> &'a [::std::string::String] {
+    pub fn get_string(&self) -> &[::std::string::String] {
         &self.string
     }
 
@@ -303,7 +303,7 @@ impl Value {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_bytes<'a>(&'a mut self) -> &'a mut ::std::vec::Vec<u8> {
+    pub fn mut_bytes(&mut self) -> &mut ::std::vec::Vec<u8> {
         if self.bytes.is_none() {
             self.bytes.set_default();
         };
@@ -315,7 +315,7 @@ impl Value {
         self.bytes.take().unwrap_or_else(|| ::std::vec::Vec::new())
     }
 
-    pub fn get_bytes<'a>(&'a self) -> &'a [u8] {
+    pub fn get_bytes(&self) -> &[u8] {
         match self.bytes.as_ref() {
             Some(v) => &v,
             None => &[],
@@ -668,7 +668,7 @@ impl Error {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_reason<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_reason(&mut self) -> &mut ::std::string::String {
         if self.reason.is_none() {
             self.reason.set_default();
         };
@@ -680,7 +680,7 @@ impl Error {
         self.reason.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_reason<'a>(&'a self) -> &'a str {
+    pub fn get_reason(&self) -> &str {
         match self.reason.as_ref() {
             Some(v) => &v,
             None => "",
@@ -704,7 +704,7 @@ impl Error {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_desc<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_desc(&mut self) -> &mut ::std::string::String {
         if self.desc.is_none() {
             self.desc.set_default();
         };
@@ -716,7 +716,7 @@ impl Error {
         self.desc.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_desc<'a>(&'a self) -> &'a str {
+    pub fn get_desc(&self) -> &str {
         match self.desc.as_ref() {
             Some(v) => &v,
             None => "",
@@ -740,7 +740,7 @@ impl Error {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_origin<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_origin(&mut self) -> &mut ::std::string::String {
         if self.origin.is_none() {
             self.origin.set_default();
         };
@@ -752,7 +752,7 @@ impl Error {
         self.origin.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_origin<'a>(&'a self) -> &'a str {
+    pub fn get_origin(&self) -> &str {
         match self.origin.as_ref() {
             Some(v) => &v,
             None => "",
@@ -974,7 +974,7 @@ impl CmdDesc {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_name<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_name(&mut self) -> &mut ::std::string::String {
         if self.name.is_none() {
             self.name.set_default();
         };
@@ -986,7 +986,7 @@ impl CmdDesc {
         self.name.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_name<'a>(&'a self) -> &'a str {
+    pub fn get_name(&self) -> &str {
         match self.name.as_ref() {
             Some(v) => &v,
             None => "",
@@ -1010,7 +1010,7 @@ impl CmdDesc {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_doc<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_doc(&mut self) -> &mut ::std::string::String {
         if self.doc.is_none() {
             self.doc.set_default();
         };
@@ -1022,7 +1022,7 @@ impl CmdDesc {
         self.doc.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_doc<'a>(&'a self) -> &'a str {
+    pub fn get_doc(&self) -> &str {
         match self.doc.as_ref() {
             Some(v) => &v,
             None => "",
@@ -1044,7 +1044,7 @@ impl CmdDesc {
         self.intype = ::std::option::Option::Some(v);
     }
 
-    pub fn get_intype<'a>(&self) -> DataType {
+    pub fn get_intype(&self) -> DataType {
         self.intype.unwrap_or(DataType::Void)
     }
 
@@ -1063,7 +1063,7 @@ impl CmdDesc {
         self.outtype = ::std::option::Option::Some(v);
     }
 
-    pub fn get_outtype<'a>(&self) -> DataType {
+    pub fn get_outtype(&self) -> DataType {
         self.outtype.unwrap_or(DataType::Void)
     }
 
@@ -1084,7 +1084,7 @@ impl CmdDesc {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_indoc<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_indoc(&mut self) -> &mut ::std::string::String {
         if self.indoc.is_none() {
             self.indoc.set_default();
         };
@@ -1096,7 +1096,7 @@ impl CmdDesc {
         self.indoc.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_indoc<'a>(&'a self) -> &'a str {
+    pub fn get_indoc(&self) -> &str {
         match self.indoc.as_ref() {
             Some(v) => &v,
             None => "",
@@ -1120,7 +1120,7 @@ impl CmdDesc {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_outdoc<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_outdoc(&mut self) -> &mut ::std::string::String {
         if self.outdoc.is_none() {
             self.outdoc.set_default();
         };
@@ -1132,7 +1132,7 @@ impl CmdDesc {
         self.outdoc.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_outdoc<'a>(&'a self) -> &'a str {
+    pub fn get_outdoc(&self) -> &str {
         match self.outdoc.as_ref() {
             Some(v) => &v,
             None => "",
@@ -1415,7 +1415,7 @@ impl AttrDesc {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_name<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_name(&mut self) -> &mut ::std::string::String {
         if self.name.is_none() {
             self.name.set_default();
         };
@@ -1427,7 +1427,7 @@ impl AttrDesc {
         self.name.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_name<'a>(&'a self) -> &'a str {
+    pub fn get_name(&self) -> &str {
         match self.name.as_ref() {
             Some(v) => &v,
             None => "",
@@ -1451,7 +1451,7 @@ impl AttrDesc {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_doc<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_doc(&mut self) -> &mut ::std::string::String {
         if self.doc.is_none() {
             self.doc.set_default();
         };
@@ -1463,7 +1463,7 @@ impl AttrDesc {
         self.doc.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_doc<'a>(&'a self) -> &'a str {
+    pub fn get_doc(&self) -> &str {
         match self.doc.as_ref() {
             Some(v) => &v,
             None => "",
@@ -1485,7 +1485,7 @@ impl AttrDesc {
         self.field_type = ::std::option::Option::Some(v);
     }
 
-    pub fn get_field_type<'a>(&self) -> DataType {
+    pub fn get_field_type(&self) -> DataType {
         self.field_type.unwrap_or(DataType::Void)
     }
 
@@ -1506,7 +1506,7 @@ impl AttrDesc {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_unit<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_unit(&mut self) -> &mut ::std::string::String {
         if self.unit.is_none() {
             self.unit.set_default();
         };
@@ -1518,7 +1518,7 @@ impl AttrDesc {
         self.unit.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_unit<'a>(&'a self) -> &'a str {
+    pub fn get_unit(&self) -> &str {
         match self.unit.as_ref() {
             Some(v) => &v,
             None => "",
@@ -1759,7 +1759,7 @@ impl PropDesc {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_name<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_name(&mut self) -> &mut ::std::string::String {
         if self.name.is_none() {
             self.name.set_default();
         };
@@ -1771,7 +1771,7 @@ impl PropDesc {
         self.name.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_name<'a>(&'a self) -> &'a str {
+    pub fn get_name(&self) -> &str {
         match self.name.as_ref() {
             Some(v) => &v,
             None => "",
@@ -1795,7 +1795,7 @@ impl PropDesc {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_doc<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_doc(&mut self) -> &mut ::std::string::String {
         if self.doc.is_none() {
             self.doc.set_default();
         };
@@ -1807,7 +1807,7 @@ impl PropDesc {
         self.doc.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_doc<'a>(&'a self) -> &'a str {
+    pub fn get_doc(&self) -> &str {
         match self.doc.as_ref() {
             Some(v) => &v,
             None => "",
@@ -1829,7 +1829,7 @@ impl PropDesc {
         self.field_type = ::std::option::Option::Some(v);
     }
 
-    pub fn get_field_type<'a>(&self) -> DataType {
+    pub fn get_field_type(&self) -> DataType {
         self.field_type.unwrap_or(DataType::Void)
     }
 
@@ -1850,7 +1850,7 @@ impl PropDesc {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_default<'a>(&'a mut self) -> &'a mut Value {
+    pub fn mut_default(&mut self) -> &mut Value {
         if self.default.is_none() {
             self.default.set_default();
         };
@@ -1862,7 +1862,7 @@ impl PropDesc {
         self.default.take().unwrap_or_else(|| Value::new())
     }
 
-    pub fn get_default<'a>(&'a self) -> &'a Value {
+    pub fn get_default(&self) -> &Value {
         self.default.as_ref().unwrap_or_else(|| Value::default_instance())
     }
 }
@@ -2098,7 +2098,7 @@ impl Request {
         self.seqno = ::std::option::Option::Some(v);
     }
 
-    pub fn get_seqno<'a>(&self) -> u32 {
+    pub fn get_seqno(&self) -> u32 {
         self.seqno.unwrap_or(0)
     }
 
@@ -2117,7 +2117,7 @@ impl Request {
         self.rtype = ::std::option::Option::Some(v);
     }
 
-    pub fn get_rtype<'a>(&self) -> ReqType {
+    pub fn get_rtype(&self) -> ReqType {
         self.rtype.unwrap_or(ReqType::ReqPing)
     }
 
@@ -2138,7 +2138,7 @@ impl Request {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_name<'a>(&'a mut self) -> &'a mut ::std::string::String {
+    pub fn mut_name(&mut self) -> &mut ::std::string::String {
         if self.name.is_none() {
             self.name.set_default();
         };
@@ -2150,7 +2150,7 @@ impl Request {
         self.name.take().unwrap_or_else(|| ::std::string::String::new())
     }
 
-    pub fn get_name<'a>(&'a self) -> &'a str {
+    pub fn get_name(&self) -> &str {
         match self.name.as_ref() {
             Some(v) => &v,
             None => "",
@@ -2174,7 +2174,7 @@ impl Request {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_value<'a>(&'a mut self) -> &'a mut Value {
+    pub fn mut_value(&mut self) -> &mut Value {
         if self.value.is_none() {
             self.value.set_default();
         };
@@ -2186,7 +2186,7 @@ impl Request {
         self.value.take().unwrap_or_else(|| Value::new())
     }
 
-    pub fn get_value<'a>(&'a self) -> &'a Value {
+    pub fn get_value(&self) -> &Value {
         self.value.as_ref().unwrap_or_else(|| Value::default_instance())
     }
 }
@@ -2429,7 +2429,7 @@ impl Response {
         self.seqno = ::std::option::Option::Some(v);
     }
 
-    pub fn get_seqno<'a>(&self) -> u32 {
+    pub fn get_seqno(&self) -> u32 {
         self.seqno.unwrap_or(0)
     }
 
@@ -2448,7 +2448,7 @@ impl Response {
         self.rtype = ::std::option::Option::Some(v);
     }
 
-    pub fn get_rtype<'a>(&self) -> RespType {
+    pub fn get_rtype(&self) -> RespType {
         self.rtype.unwrap_or(RespType::RespVoid)
     }
 
@@ -2469,7 +2469,7 @@ impl Response {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_error<'a>(&'a mut self) -> &'a mut Error {
+    pub fn mut_error(&mut self) -> &mut Error {
         if self.error.is_none() {
             self.error.set_default();
         };
@@ -2481,7 +2481,7 @@ impl Response {
         self.error.take().unwrap_or_else(|| Error::new())
     }
 
-    pub fn get_error<'a>(&'a self) -> &'a Error {
+    pub fn get_error(&self) -> &Error {
         self.error.as_ref().unwrap_or_else(|| Error::default_instance())
     }
 
@@ -2502,7 +2502,7 @@ impl Response {
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_value<'a>(&'a mut self) -> &'a mut Value {
+    pub fn mut_value(&mut self) -> &mut Value {
         if self.value.is_none() {
             self.value.set_default();
         };
@@ -2514,7 +2514,7 @@ impl Response {
         self.value.take().unwrap_or_else(|| Value::new())
     }
 
-    pub fn get_value<'a>(&'a self) -> &'a Value {
+    pub fn get_value(&self) -> &Value {
         self.value.as_ref().unwrap_or_else(|| Value::default_instance())
     }
 
@@ -2530,7 +2530,7 @@ impl Response {
     }
 
     // Mutable pointer to the field.
-    pub fn mut_cmds<'a>(&'a mut self) -> &'a mut ::protobuf::RepeatedField<CmdDesc> {
+    pub fn mut_cmds(&mut self) -> &mut ::protobuf::RepeatedField<CmdDesc> {
         &mut self.cmds
     }
 
@@ -2539,7 +2539,7 @@ impl Response {
         ::std::mem::replace(&mut self.cmds, ::protobuf::RepeatedField::new())
     }
 
-    pub fn get_cmds<'a>(&'a self) -> &'a [CmdDesc] {
+    pub fn get_cmds(&self) -> &[CmdDesc] {
         &self.cmds
     }
 
@@ -2555,7 +2555,7 @@ impl Response {
     }
 
     // Mutable pointer to the field.
-    pub fn mut_attrs<'a>(&'a mut self) -> &'a mut ::protobuf::RepeatedField<AttrDesc> {
+    pub fn mut_attrs(&mut self) -> &mut ::protobuf::RepeatedField<AttrDesc> {
         &mut self.attrs
     }
 
@@ -2564,7 +2564,7 @@ impl Response {
         ::std::mem::replace(&mut self.attrs, ::protobuf::RepeatedField::new())
     }
 
-    pub fn get_attrs<'a>(&'a self) -> &'a [AttrDesc] {
+    pub fn get_attrs(&self) -> &[AttrDesc] {
         &self.attrs
     }
 
@@ -2580,7 +2580,7 @@ impl Response {
     }
 
     // Mutable pointer to the field.
-    pub fn mut_props<'a>(&'a mut self) -> &'a mut ::protobuf::RepeatedField<PropDesc> {
+    pub fn mut_props(&mut self) -> &mut ::protobuf::RepeatedField<PropDesc> {
         &mut self.props
     }
 
@@ -2589,7 +2589,7 @@ impl Response {
         ::std::mem::replace(&mut self.props, ::protobuf::RepeatedField::new())
     }
 
-    pub fn get_props<'a>(&'a self) -> &'a [PropDesc] {
+    pub fn get_props(&self) -> &[PropDesc] {
         &self.props
     }
 }
