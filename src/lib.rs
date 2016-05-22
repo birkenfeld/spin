@@ -14,6 +14,7 @@ extern crate log4rs;
 extern crate argparse;
 extern crate protobuf;
 extern crate ansi_term;
+extern crate daemonize;
 extern crate spin_proto;
 
 pub mod arg;

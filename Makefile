@@ -16,7 +16,7 @@ demo:
 	cargo build $(MARG)
 	cargo build $(MARG) --example=echocl
 	@(  echo $$'    \e[01;32mStarting\e[0m DB...'; \
-	    target/$(MODE)/spin_db -v db/1 -b :9999 & \
+	    target/$(MODE)/spin_db -v db/1 --bind :9999 & \
 	    DBPID=$$!; \
 	    sleep 0.2; \
 	    echo $$'    \e[01;32mStarting\e[0m server...'; \

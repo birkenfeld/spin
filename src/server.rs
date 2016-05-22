@@ -2,12 +2,13 @@
 //
 //! Server framework.
 
+use std::env::current_dir;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::sync::{Arc, Mutex};
 use std::thread;
-
 use argparse::*;
+use daemonize;
 use zmq;
 
 use arg::*;
@@ -44,23 +45,49 @@ impl Server {
 
     /// Construct a new server from command-line args.
     pub fn from_args(use_db: bool, config: Option<ServerConfig>) -> Option<Server> {
-        let mut name = String::from("");
+        let mut name = String::new();
         let mut configfile = None;
         let mut address = None;
         let mut database = None;
         let mut debug = false;
         let mut arg_use_db = true;
+        let mut log_path = String::from("log");
+        let mut pid_path = String::from("pid");
+        let mut daemonize = false;
+        let mut user = None::<String>;
+        let mut group = None::<String>;
         let result = {
             let mut ap = ArgumentParser::new();
             ap.refer(&mut name).add_argument("name", Store, "Server name.").required();
             ap.refer(&mut configfile).add_argument("config", StoreOption, "Config file.");
-            ap.refer(&mut address).add_option(&["-b"], StoreOption, "Bind [host]:[port].");
-            ap.refer(&mut database).add_option(&["-d"], StoreOption, "DB [host]:[port].");
-            ap.refer(&mut debug).add_option(&["-v"], StoreTrue, "Debug.");
+            ap.refer(&mut address).add_option(&["--bind"], StoreOption, "Bind [host]:[port].");
+            ap.refer(&mut database).add_option(&["--db"], StoreOption, "DB [host]:[port].");
+            ap.refer(&mut debug).add_option(&["-v"], StoreTrue, "Debug mode.");
             ap.refer(&mut arg_use_db).add_option(&["-n"], StoreFalse, "No database mode.");
+            ap.refer(&mut log_path).add_option(&["--log"], Store, "Logging path.");
+            ap.refer(&mut pid_path).add_option(&["--pid"], Store, "PID path for daemon.");
+            ap.refer(&mut daemonize).add_option(&["-d"], StoreTrue, "Daemonize.");
+            ap.refer(&mut user).add_option(&["--user"], StoreOption, "Daemon user.");
+            ap.refer(&mut group).add_option(&["--group"], StoreOption, "Daemon group.");
             ap.parse_args()
         };
-        let _ = logging::init("log", &name, debug, true);
+        let log_path = current_dir().unwrap().join(log_path);
+        let pid_path = current_dir().unwrap().join(pid_path);
+        let _ = util::ensure_dir(&pid_path);
+        let _ = logging::init(&log_path, &name, debug, !daemonize);
+        if daemonize {
+            let pid_file = pid_path.join(name.replace("/", "-") + ".pid");
+            let mut daemon = daemonize::Daemonize::new().pid_file(pid_file);
+            if let Some(user) = user {
+                daemon = daemon.user(user.as_str());
+            }
+            if let Some(group) = group {
+                daemon = daemon.group(group.as_str());
+            }
+            if let Err(err) = daemon.start() {
+                error!("could not daemonize process: {}", err);
+            }
+        }
         let server_config = config.unwrap_or_else(|| ServerConfig::from_file(configfile));
         result.ok().map(|_| Server::new(&name, server_config, address, database,
                                         use_db && arg_use_db))

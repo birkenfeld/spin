@@ -24,6 +24,7 @@ log4rs = "*"
 argparse = "*"
 protobuf = "*"
 ansi_term = "*"
+daemonize = "*"
 zmq = {"git" = "https://github.com/erickt/rust-zmq"}
 
 [dependencies.spin_proto]
