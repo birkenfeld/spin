@@ -149,34 +149,23 @@ pub struct DeviceAddress {
 }
 
 impl DeviceAddress {
-    fn scheme_mapper(scheme: &str) -> url::SchemeType {
-        match scheme {
-            "spin" => url::SchemeType::Relative(0),
-            "spindb" => url::SchemeType::Relative(9999),
-            _ => url::SchemeType::NonRelative,
-        }
-    }
-
     /// Parse a connection URI.
     pub fn parse_uri(uri: &str) -> SpinResult<DeviceAddress> {
-        let mut parser = url::UrlParser::new();
-        parser.scheme_type_mapper(DeviceAddress::scheme_mapper);
-        match parser.parse(uri) {
+        //let mut parser = url::Url::parse(uri);
+        //parser.scheme_type_mapper(DeviceAddress::scheme_mapper);
+        match url::Url::parse(uri) {
             Err(_)  => spin_err!(ADDRESS_ERROR, "invalid device address"),
             Ok(uri) => {
-                if uri.scheme != "spin" && uri.scheme != "spindb" {
+                if uri.scheme() != "spin" && uri.scheme() != "spindb" {
                     return spin_err!(ADDRESS_ERROR, "invalid scheme");
                 }
                 let host = uri.domain().unwrap_or("localhost");
                 let port = uri.port().unwrap_or(9999);
-                let path = match uri.serialize_path() {
-                    None => return spin_err!(ADDRESS_ERROR, "no devname found"),
-                    Some(ser) => String::from(&ser[1..])
-                };
+                let path = uri.path()[1..].to_owned();
                 Ok(DeviceAddress {
                     devname: path,
                     endpoint: format!("tcp://{}:{}", host, port),
-                    use_db: uri.scheme == "spindb",
+                    use_db: uri.scheme() == "spindb",
                     db_hostport: format!("{}:{}", host, port),
                 })
             }

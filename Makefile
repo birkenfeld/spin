@@ -20,7 +20,7 @@ demo:
 	    DBPID=$$!; \
 	    sleep 0.2; \
 	    printf '    \033[01;32mStarting\033[0m server...\n'; \
-	    target/$(MODE)/spin_echo echo/1 test/echo.srv & \
+	    target/$(MODE)/spin_srv echo/1 test/echo.srv & \
 	    SRVPID=$$!; \
 	    sleep 0.2; \
 	    printf '    \033[01;32mStarting\033[0m client...\n'; \
