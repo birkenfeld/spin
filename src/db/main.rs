@@ -33,10 +33,10 @@ spin_device_impl!(
         Query      => ("Query information about a device.",
                        String, String, cmd_query),
         List       => ("List all devices, their server names and addresses.",
-                       Void, StringArray, cmd_list)
+                       Void, StringArray, cmd_list),
     ],
     attrs = [ ],
-    props = [ ]
+    props = [ ],
 );
 
 impl DbDevice {
@@ -125,7 +125,7 @@ fn main() {
         use_db = false,
         static_config = static_config,
         devtypes = [
-            Db => DbDevice::create
+            Db => DbDevice::create,
         ]
     );
 }

@@ -16,13 +16,13 @@ spin_device_impl!(
     EchoDevice,
     EchoDeviceProps,
     cmds = [
-        Echo  => ("Sends back the same string.", String, String, cmd_echo)
+        Echo  => ("Sends back the same string.", String, String, cmd_echo),
     ],
     attrs = [
-        value => ("A double value.", Double, read_value, write_value)
+        value => ("A double value.", Double, read_value, write_value),
     ],
     props = [
-        default_value => ("Default for 'value' attribute.", Double, 42.0)
+        default_value => ("Default for 'value' attribute.", Double, 42.0),
     ]
 );
 

@@ -269,7 +269,7 @@ macro_rules! spin_server_main {
                                                      devtypes = $($toks)+); };
     (use_db = $use_db:expr,
      static_config = $staticconfig:expr,
-     devtypes = [$($dtype:ident => $dconstr:expr),*]) => {
+     devtypes = [$($dtype:ident => $dconstr:expr),* $(,)*]) => {
         match $crate::server::Server::from_args($use_db, $staticconfig) {
             None => return,
             Some(mut server) => {

@@ -26,18 +26,18 @@ spin_device_impl!(
         Read        => ("Read at most N chars.", UInt32, String, cmd_read),
         Write       => ("Write a string.", String, UInt32, cmd_write),
         ReadLine    => ("Read a line.", Void, String, cmd_readline),
-        WriteLine   => ("Write a line.", String, UInt32, cmd_writeline)
+        WriteLine   => ("Write a line.", String, UInt32, cmd_writeline),
     ],
     attrs = [
-        timeout     => ("Timeout for communication.", Double, read_timeout, write_timeout)
+        timeout     => ("Timeout for communication.", Double, read_timeout, write_timeout),
     ],
     props = [
         host        => ("Host to connect to.", String, String::new()),
         port        => ("Port to connect to.", UInt32, 0),
         sol         => ("Start-of-line string.", String, String::new()),
         eol         => ("End-of-line string.", String, String::from("\n")),
-        timeout     => ("Initial timeout.", Double, 2.0)
-    ]
+        timeout     => ("Initial timeout.", Double, 2.0),
+    ],
 );
 
 impl NetworkDevice {
