@@ -16,10 +16,15 @@ extern crate protobuf;
 extern crate spin_proto;
 
 pub mod arg;
-pub mod client;
-pub mod server;
-pub mod device;
-pub mod config;
 pub mod error;
+pub mod config;
+pub mod device;
+pub mod server;
+pub mod client;
 mod db;
 mod util;
+
+// For client use, re-export the needed API here.
+pub use arg::Value;
+pub use client::Client;
+pub use error::{Error, SpinResult};
