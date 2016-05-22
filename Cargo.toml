@@ -2,6 +2,7 @@
 name = "spin"
 version = "0.1.0"
 authors = ["Georg Brandl <g.brandl@fz-juelich.de>"]
+license = "GPL-2.0"
 
 [lib]
 name = "spin"
