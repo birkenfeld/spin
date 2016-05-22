@@ -9,7 +9,7 @@ use protobuf;
 use protobuf::{Message, RepeatedField};
 use zmq;
 
-use spin_proto as pr;
+use spin_proto::{Request, Response, ReqType, RespType};
 
 use arg::*;
 use error::SpinResult;
@@ -40,77 +40,77 @@ pub trait Device : Sync + Send {
 fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()> {
     let msg = util::recv_message(sock)?;
 
-    let mut req: pr::Request = protobuf::parse_from_bytes(&msg[3])?;
-    let mut rsp = pr::Response::new();
+    let mut req: Request = protobuf::parse_from_bytes(&msg[3])?;
+    let mut rsp = Response::new();
     rsp.set_seqno(req.get_seqno());
 
     match req.get_rtype() {
-        pr::ReqType::ReqPing => {
+        ReqType::ReqPing => {
 
         }
-        pr::ReqType::ReqExecCmd => {
+        ReqType::ReqExecCmd => {
             let val = req.take_value();
             match dev.exec_cmd(req.get_name(), Value::new(val)) {
                 Ok(val) => {
-                    rsp.set_rtype(pr::RespType::RespValue);
+                    rsp.set_rtype(RespType::RespValue);
                     rsp.set_value(val.into_inner());
                 }
                 Err(err) => {
-                    rsp.set_rtype(pr::RespType::RespError);
+                    rsp.set_rtype(RespType::RespError);
                     rsp.set_error(err.into_proto());
                 }
             }
         }
-        pr::ReqType::ReqReadAttr => {
+        ReqType::ReqReadAttr => {
             match dev.read_attr(req.get_name()) {
                 Ok(val) => {
-                    rsp.set_rtype(pr::RespType::RespValue);
+                    rsp.set_rtype(RespType::RespValue);
                     rsp.set_value(val.into_inner());
                 }
                 Err(err) => {
-                    rsp.set_rtype(pr::RespType::RespError);
+                    rsp.set_rtype(RespType::RespError);
                     rsp.set_error(err.into_proto());
                 }
             }
         }
-        pr::ReqType::ReqWriteAttr => {
+        ReqType::ReqWriteAttr => {
             let val = req.take_value();
             match dev.write_attr(req.get_name(), Value::new(val)) {
                 Ok(_) => {
-                    rsp.set_rtype(pr::RespType::RespVoid);
+                    rsp.set_rtype(RespType::RespVoid);
                 }
                 Err(err) => {
-                    rsp.set_rtype(pr::RespType::RespError);
+                    rsp.set_rtype(RespType::RespError);
                     rsp.set_error(err.into_proto());
                 }
             }
         }
-        pr::ReqType::ReqGetProp => {
+        ReqType::ReqGetProp => {
             match dev.get_prop(req.get_name()) {
                 Ok(val) => {
-                    rsp.set_rtype(pr::RespType::RespValue);
+                    rsp.set_rtype(RespType::RespValue);
                     rsp.set_value(val.into_inner());
                 }
                 Err(err) => {
-                    rsp.set_rtype(pr::RespType::RespError);
+                    rsp.set_rtype(RespType::RespError);
                     rsp.set_error(err.into_proto());
                 }
             }
         }
-        pr::ReqType::ReqSetProp => {
+        ReqType::ReqSetProp => {
             let val = req.take_value();
             match dev.set_prop(req.get_name(), Value::new(val)) {
                 Ok(_) => {
-                    rsp.set_rtype(pr::RespType::RespVoid);
+                    rsp.set_rtype(RespType::RespVoid);
                 }
                 Err(err) => {
-                    rsp.set_rtype(pr::RespType::RespError);
+                    rsp.set_rtype(RespType::RespError);
                     rsp.set_error(err.into_proto());
                 }
             }
         }
-        pr::ReqType::ReqQueryAPI => {
-            rsp.set_rtype(pr::RespType::RespAPI);
+        ReqType::ReqQueryAPI => {
+            rsp.set_rtype(RespType::RespAPI);
             rsp.set_cmds(RepeatedField::from_vec(dev.query_cmd_descs()));
             rsp.set_attrs(RepeatedField::from_vec(dev.query_attr_descs()));
             rsp.set_props(RepeatedField::from_vec(dev.query_prop_descs()));
@@ -134,10 +134,10 @@ pub fn run_device(mut sock: zmq::Socket, mut dev: Box<Device>) {
 
 
 pub fn general_error_reply(reason: &str, desc: &str, req: &[u8]) -> SpinResult<Vec<u8>> {
-    let req: pr::Request = protobuf::parse_from_bytes(req)?;
-    let mut rsp = pr::Response::new();
+    let req: Request = protobuf::parse_from_bytes(req)?;
+    let mut rsp = Response::new();
     rsp.set_seqno(req.get_seqno());
-    rsp.set_rtype(pr::RespType::RespError);
+    rsp.set_rtype(RespType::RespError);
     rsp.mut_error().set_reason(reason.into());
     rsp.mut_error().set_desc(desc.into());
     let rsp = rsp.write_to_bytes()?;

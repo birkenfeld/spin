@@ -6,7 +6,7 @@ use protobuf;
 use protobuf::Message;
 use zmq;
 
-use spin_proto as pr;
+use spin_proto::{Request, Response, ReqType, RespType};
 
 use arg::*;
 use error::{SpinResult, spin_err, Error, TIMEOUT_ERROR, API_ERROR};
@@ -51,7 +51,7 @@ impl Client {
         srv_addr.extract()
     }
 
-    fn do_request(&mut self, mut req: pr::Request, exp_type: pr::RespType) -> SpinResult<pr::Response> {
+    fn do_request(&mut self, mut req: Request, exp_type: RespType) -> SpinResult<Response> {
         req.set_seqno(self.seqno);
         self.seqno += 1;
 
@@ -64,12 +64,12 @@ impl Client {
         }
         let reply = util::recv_message(&mut self.socket)?;
 
-        let mut rsp: pr::Response = protobuf::parse_from_bytes(&reply[1])?;
+        let mut rsp: Response = protobuf::parse_from_bytes(&reply[1])?;
 
         if rsp.get_seqno() != req.get_seqno() {
             return spin_err(API_ERROR, "sequence numbers do not match");
         }
-        if rsp.get_rtype() == pr::RespType::RespError {
+        if rsp.get_rtype() == RespType::RespError {
             Err(Error::from_proto(rsp.take_error()))
         } else if rsp.get_rtype() != exp_type {
             spin_err(API_ERROR, "wrong type of response received")
@@ -79,12 +79,12 @@ impl Client {
     }
 
     pub fn exec_cmd<I: Into<Value>>(&mut self, cmd: &str, arg: I) -> SpinResult<Value> {
-        let mut req = pr::Request::new();
-        req.set_rtype(pr::ReqType::ReqExecCmd);
+        let mut req = Request::new();
+        req.set_rtype(ReqType::ReqExecCmd);
         req.set_name(cmd.into());
         req.set_value(arg.into().into_inner());
 
-        let mut rsp = self.do_request(req, pr::RespType::RespValue)?;
+        let mut rsp = self.do_request(req, RespType::RespValue)?;
         Ok(Value::new(rsp.take_value()))
     }
 
@@ -95,11 +95,11 @@ impl Client {
     }
 
     pub fn read_attr(&mut self, attr: &str) -> SpinResult<Value> {
-        let mut req = pr::Request::new();
-        req.set_rtype(pr::ReqType::ReqReadAttr);
+        let mut req = Request::new();
+        req.set_rtype(ReqType::ReqReadAttr);
         req.set_name(attr.into());
 
-        let mut rsp = self.do_request(req, pr::RespType::RespValue)?;
+        let mut rsp = self.do_request(req, RespType::RespValue)?;
         Ok(Value::new(rsp.take_value()))
     }
 
@@ -108,21 +108,21 @@ impl Client {
     }
 
     pub fn write_attr<I: Into<Value>>(&mut self, attr: &str, val: I) -> SpinResult<()> {
-        let mut req = pr::Request::new();
-        req.set_rtype(pr::ReqType::ReqWriteAttr);
+        let mut req = Request::new();
+        req.set_rtype(ReqType::ReqWriteAttr);
         req.set_name(attr.into());
         req.set_value(val.into().into_inner());
 
-        self.do_request(req, pr::RespType::RespVoid)?;
+        self.do_request(req, RespType::RespVoid)?;
         Ok(())
     }
 
     pub fn get_prop(&mut self, prop: &str) -> SpinResult<Value> {
-        let mut req = pr::Request::new();
-        req.set_rtype(pr::ReqType::ReqGetProp);
+        let mut req = Request::new();
+        req.set_rtype(ReqType::ReqGetProp);
         req.set_name(prop.into());
 
-        let mut rsp = self.do_request(req, pr::RespType::RespValue)?;
+        let mut rsp = self.do_request(req, RespType::RespValue)?;
         Ok(Value::new(rsp.take_value()))
     }
 
@@ -131,20 +131,20 @@ impl Client {
     }
 
     pub fn set_prop<I: Into<Value>>(&mut self, prop: &str, val: I) -> SpinResult<()> {
-        let mut req = pr::Request::new();
-        req.set_rtype(pr::ReqType::ReqSetProp);
+        let mut req = Request::new();
+        req.set_rtype(ReqType::ReqSetProp);
         req.set_name(prop.into());
         req.set_value(val.into().into_inner());
 
-        self.do_request(req, pr::RespType::RespVoid)?;
+        self.do_request(req, RespType::RespVoid)?;
         Ok(())
     }
 
     pub fn query_api(&mut self) -> SpinResult<(Vec<CmdDesc>, Vec<AttrDesc>, Vec<PropDesc>)> {
-        let mut req = pr::Request::new();
-        req.set_rtype(pr::ReqType::ReqQueryAPI);
+        let mut req = Request::new();
+        req.set_rtype(ReqType::ReqQueryAPI);
 
-        let mut rsp = self.do_request(req, pr::RespType::RespAPI)?;
+        let mut rsp = self.do_request(req, RespType::RespAPI)?;
         let cmds = rsp.take_cmds();
         let attrs = rsp.take_attrs();
         let props = rsp.take_props();
