@@ -11,7 +11,7 @@ use zmq;
 
 use spin_proto::{Request, Response, ReqType, RespType};
 
-use arg::*;
+use arg::{self, Value};
 use error::SpinResult;
 use util;
 
@@ -25,9 +25,9 @@ pub trait Device : Sync + Send {
     fn set_name(&mut self, String);
     fn get_name(&self) -> &str;
 
-    fn query_cmd_descs(&self) -> Vec<CmdDesc>;
-    fn query_attr_descs(&self) -> Vec<AttrDesc>;
-    fn query_prop_descs(&self) -> Vec<PropDesc>;
+    fn query_cmd_descs(&self) -> Vec<arg::CmdDesc>;
+    fn query_attr_descs(&self) -> Vec<arg::AttrDesc>;
+    fn query_prop_descs(&self) -> Vec<arg::PropDesc>;
 
     fn exec_cmd(&mut self, cmd: &str, arg: Value) -> SpinResult<Value>;
     fn read_attr(&mut self, attr: &str) -> SpinResult<Value>;

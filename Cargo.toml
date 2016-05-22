@@ -12,12 +12,8 @@ name = "spin_db"
 path = "src/db/main.rs"
 
 [[bin]]
-name = "spin_echo"
-path = "src/echo/main.rs"
-
-[[bin]]
-name = "spin_network"
-path = "src/network/main.rs"
+name = "spin_srv"
+path = "src/srv_main.rs"
 
 [dependencies]
 log = "*"

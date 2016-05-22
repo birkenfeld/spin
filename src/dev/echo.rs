@@ -1,19 +1,13 @@
 // Spin RPC library, copyright 2015, 2016 Georg Brandl.
 //
-//! Test echo server executable.
+//! Echo device.
 
-#![feature(box_syntax, question_mark, type_macros)]
-
-#[macro_use]
-extern crate log;
-#[macro_use]
-extern crate spin;
-
-use spin::device::Device;
-use spin::error::SpinResult;
+use device::Device;
+use error::SpinResult;
 
 
-struct EchoDevice {
+#[derive(Default)]
+pub struct EchoDevice {
     props: EchoDeviceProps,
     value: f64,
 }
@@ -33,9 +27,8 @@ spin_device_impl!(
 );
 
 impl EchoDevice {
-    fn create(_name: &str) -> Box<Device> {
-        box EchoDevice { value: 0.,
-                         props: Default::default() }
+    pub fn create(_name: &str) -> Box<Device> {
+        box EchoDevice::default()
     }
 
     fn init(&mut self) -> SpinResult<()> {
@@ -58,11 +51,4 @@ impl EchoDevice {
         self.value = val;
         Ok(())
     }
-}
-
-
-fn main() {
-    spin_server_main!(devtypes = [
-        Echo => EchoDevice::create
-    ]);
 }

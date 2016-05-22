@@ -11,11 +11,11 @@ use argparse::*;
 use daemonize;
 use zmq;
 
-use arg::*;
+use arg::Value;
 use config::{ServerConfig, DevConfig};
-use client::Client;
 use device::{Device, run_device, general_error_reply};
 use error::{SpinResult, SOCKET_ERROR};
+use client::Client;
 use util;
 use logging;
 

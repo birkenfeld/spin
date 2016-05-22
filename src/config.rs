@@ -7,7 +7,7 @@ use std::fs;
 use std::io::Read;
 use toml;
 
-use arg::*;
+use arg::Value;
 
 
 pub struct DevProp {

@@ -1,24 +1,17 @@
 // Spin RPC library, copyright 2015, 2016 Georg Brandl.
 //
-//! Test network server executable.
-
-#![feature(box_syntax, question_mark, type_macros)]
-
-#[macro_use]
-extern crate log;
-#[macro_use]
-extern crate spin;
+//! Network device.
 
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpStream;
 use std::time::Duration;
 
-use spin::device::Device;
-use spin::error::{CONFIG_ERROR, IO_ERROR, SpinResult};
+use device::Device;
+use error::{CONFIG_ERROR, IO_ERROR, SpinResult};
 
 
 #[derive(Default)]
-struct NetworkDevice {
+pub struct NetworkDevice {
     props: NetworkDeviceProps,
     timeout: f64,
     streams: Option<(BufReader<TcpStream>, TcpStream)>,
@@ -48,7 +41,7 @@ spin_device_impl!(
 );
 
 impl NetworkDevice {
-    fn create(_name: &str) -> Box<Device> {
+    pub fn create(_name: &str) -> Box<Device> {
         box NetworkDevice::default()
     }
 
@@ -136,11 +129,4 @@ impl NetworkDevice {
         self.timeout = val;
         Ok(())
     }
-}
-
-
-fn main() {
-    spin_server_main!(devtypes = [
-        NetworkStringIO => NetworkDevice::create
-    ]);
 }

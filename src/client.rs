@@ -8,7 +8,7 @@ use zmq;
 
 use spin_proto::{Request, Response, ReqType, RespType};
 
-use arg::*;
+use arg::{self, Value, FromValue};
 use error::{SpinResult, Error, TIMEOUT_ERROR, API_ERROR};
 use util;
 
@@ -140,7 +140,8 @@ impl Client {
         Ok(())
     }
 
-    pub fn query_api(&mut self) -> SpinResult<(Vec<CmdDesc>, Vec<AttrDesc>, Vec<PropDesc>)> {
+    pub fn query_api(&mut self) -> SpinResult<(Vec<arg::CmdDesc>, Vec<arg::AttrDesc>,
+                                               Vec<arg::PropDesc>)> {
         let mut req = Request::new();
         req.set_rtype(ReqType::ReqQueryAPI);
 
