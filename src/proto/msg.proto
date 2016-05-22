@@ -21,7 +21,7 @@ enum DataType {
     UInt32Array = 16;
     UInt64Array = 17;
     StringArray = 18;
-    Int32StringArray  = 21;
+    Int64StringArray  = 21;
     DoubleStringArray = 22;
 }
 

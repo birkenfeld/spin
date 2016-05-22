@@ -269,19 +269,19 @@ impl FromValue for Vec<String> {
 impl From<(Vec<i32>, Vec<String>)> for Value {
     fn from((ival, sval): (Vec<i32>, Vec<String>)) -> Value {
         let mut v = pr::Value::new();
-        v.set_vtype(DataType::Int32StringArray);
+        v.set_vtype(DataType::Int64StringArray);
         v.set_int32(ival);
         v.set_string(RepeatedField::from_vec(sval));
         Value(v)
     }
 }
 
-impl FromValue for (Vec<i32>, Vec<String>) {
-    fn from_value(mut v: Value) -> SpinResult<(Vec<i32>, Vec<String>)> {
-        if v.0.get_vtype() == DataType::Int32StringArray {
-            Ok((v.0.take_int32(), v.0.take_string().to_vec()))
+impl FromValue for (Vec<i64>, Vec<String>) {
+    fn from_value(mut v: Value) -> SpinResult<(Vec<i64>, Vec<String>)> {
+        if v.0.get_vtype() == DataType::Int64StringArray {
+            Ok((v.0.take_int64(), v.0.take_string().to_vec()))
         } else {
-            let msg = format!("wrong type: {:?}, expected Int32StringArray", v.0.get_vtype());
+            let msg = format!("wrong type: {:?}, expected Int64StringArray", v.0.get_vtype());
             spin_err(ARG_ERROR, &msg)
         }
     }

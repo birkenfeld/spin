@@ -165,7 +165,7 @@ macro_rules! rust_type_for_data_type {
     (UInt32Array) => (Vec<u32>);
     (UInt64Array) => (Vec<u64>);
     (StringArray) => (Vec<String>);
-    (Int32StringArray) => ((Vec<i32>, Vec<String>));
+    (Int64StringArray) => ((Vec<i64>, Vec<String>));
     (DoubleStringArray) => ((Vec<f64>, Vec<String>));
 }
 
