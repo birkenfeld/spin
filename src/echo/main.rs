@@ -34,17 +34,16 @@ impl EchoDevice {
     fn delete(&mut self) {
     }
 
-    fn cmd_echo(&self, arg: Value) -> SpinResult<Value> {
-        let s: String = arg.extract()?;
-        Ok(Value::new(s))
+    fn cmd_echo(&self, arg: String) -> SpinResult<String> {
+        Ok(arg)
     }
 
-    fn read_value(&self) -> SpinResult<Value> {
-        Ok(Value::new(self.value))
+    fn read_value(&self) -> SpinResult<f64> {
+        Ok(self.value)
     }
 
-    fn write_value(&mut self, val: Value) -> SpinResult<()> {
-        self.value = val.extract()?;
+    fn write_value(&mut self, val: f64) -> SpinResult<()> {
+        self.value = val;
         Ok(())
     }
 }

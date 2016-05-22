@@ -245,7 +245,7 @@ macro_rules! device_impl {
             #[allow(unused_variables)]
             fn exec_cmd(&mut self, cmd: &str, arg: ::spin::arg::Value) -> ::spin::error::SpinResult<Value> {
                 match cmd {
-                    $(stringify!($cname) => self.$cfunc(arg),)*
+                    $(stringify!($cname) => self.$cfunc(arg.extract()?).map(Value::new),)*
                     _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such command"),
                 }
             }
@@ -253,7 +253,7 @@ macro_rules! device_impl {
             #[allow(unused_variables)]
             fn read_attr(&mut self, attr: &str) -> ::spin::error::SpinResult<Value> {
                 match attr {
-                    $(stringify!($aname) => self.$arfunc(),)*
+                    $(stringify!($aname) => self.$arfunc().map(Value::new),)*
                     _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such attribute"),
                 }
             }
@@ -261,7 +261,7 @@ macro_rules! device_impl {
             #[allow(unused_variables)]
             fn write_attr(&mut self, attr: &str, val: ::spin::arg::Value) -> ::spin::error::SpinResult<()> {
                 match attr {
-                    $(stringify!($aname) => self.$awfunc(val),)*
+                    $(stringify!($aname) => self.$awfunc(val.extract()?),)*
                     _ => ::spin::error::spin_err(::spin::error::API_ERROR, "No such attribute"),
                 }
             }

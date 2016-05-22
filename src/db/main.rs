@@ -36,24 +36,22 @@ impl DbDevice {
 
     fn delete(&mut self) { }
 
-    fn cmd_register(&mut self, arg: Value) -> SpinResult<Value> {
-        let mut s: Vec<String> = arg.extract()?;
-        if s.len() < 3 {
+    fn cmd_register(&mut self, mut info: Vec<String>) -> SpinResult<()> {
+        if info.len() < 3 {
             return spin_err(DB_ERROR, "need to have at least one devname");
         }
-        let address = s.swap_remove(0);
-        let srvname = s.swap_remove(1);
+        let address = info.swap_remove(0);
+        let srvname = info.swap_remove(1);
         info!("registering server {} at {}...", srvname, address);
-        for devname in s {
+        for devname in info {
             info!("   ... device {}", devname);
             self.devmap.insert(devname, srvname.clone());
         }
         self.srvmap.insert(srvname, address);
-        Ok(Value::void())
+        Ok(())
     }
 
-    fn cmd_query(&self, arg: Value) -> SpinResult<Value> {
-        let devname: String = arg.extract()?;
+    fn cmd_query(&self, devname: String) -> SpinResult<String> {
         info!("requested {}", devname);
         match self.devmap.get(&devname) {
             None => spin_err(DB_ERROR, "device not found"),
@@ -61,7 +59,7 @@ impl DbDevice {
                 None => spin_err(DB_ERROR, "server not found"),
                 Some(srvaddr) => {
                     info!("   ... is at {}", srvaddr);
-                    Ok(Value::from(srvaddr.clone()))
+                    Ok(srvaddr.clone())
                 }
             }
         }

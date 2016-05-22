@@ -150,6 +150,25 @@ impl Into<pr::Value> for Value {
     }
 }
 
+impl From<()> for Value {
+    fn from(_: ()) -> Value {
+        let mut v = pr::Value::new();
+        v.set_vtype(DataType::Void);
+        Value(v)
+    }
+}
+
+impl FromValue for () {
+    fn from_value(v: Value) -> SpinResult<()> {
+        if v.0.get_vtype() == DataType::Void {
+            Ok(())
+        } else {
+            let msg = format!("wrong type: {:?}, expected Void", v.0.get_vtype());
+            spin_err(ARG_ERROR, &msg)
+        }
+    }
+}
+
 impl From<&'static str> for Value {
     fn from(val: &'static str) -> Value {
         let mut v = pr::Value::new();
