@@ -3,8 +3,6 @@
 //! Server framework.
 
 use std::collections::HashMap;
-use std::io;
-use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -31,11 +29,12 @@ pub struct Server<'srv> {
 impl<'srv> Server<'srv> {
 
     /// Construct a new "empty" server.
-    pub fn new(name: &str, address: Option<&str>, debug: bool) -> Server<'srv> {
+    pub fn new(name: &str, addr: Option<String>, db_addr: Option<String>,
+               use_db: bool, debug: bool) -> Server<'srv> {
         util::setup_logging(debug);
         Server {
             name: name.into(),
-            address: util::ServerAddress::parse(address),
+            address: util::ServerAddress::new(addr, db_addr, use_db),
             context: Arc::new(Mutex::new(zmq::Context::new())),
             clsmap: HashMap::new(),
             devmap: HashMap::new(),
@@ -44,18 +43,22 @@ impl<'srv> Server<'srv> {
     }
 
     /// Construct a new server from command-line args.
-    pub fn from_args() -> Option<Server<'srv>> {
+    pub fn from_args(use_db: bool) -> Option<Server<'srv>> {
         let mut name = String::from("");
-        let mut address = String::from("");
+        let mut address = None;
+        let mut database = None;
         let mut debug = false;
+        let mut arg_use_db = true;
         let result = {
             let mut ap = ArgumentParser::new();
             ap.refer(&mut name).add_argument("name", Store, "Server name.").required();
-            ap.refer(&mut address).add_option(&["-b"], Store, "Bind address.");
-            ap.refer(&mut debug).add_option(&["-d"], StoreTrue, "Debug.");
+            ap.refer(&mut address).add_option(&["-b"], StoreOption, "Bind [host]:[port].");
+            ap.refer(&mut database).add_option(&["-d"], StoreOption, "DB [host]:[port].");
+            ap.refer(&mut debug).add_option(&["-v"], StoreTrue, "Debug.");
+            ap.refer(&mut arg_use_db).add_option(&["-n"], StoreFalse, "No database mode.");
             ap.parse_args()
         };
-        result.ok().map(|_| Server::new(&name, Some(&address), debug))
+        result.ok().map(|_| Server::new(&name, address, database, use_db && arg_use_db, debug))
     }
 
     /// Add a constructed device.
@@ -70,12 +73,12 @@ impl<'srv> Server<'srv> {
     fn bind_external(&mut self) -> SpinResult<zmq::Socket> {
         // external socket that takes requests
         let mut sock = try!(util::create_socket(&self.context, zmq::ROUTER));
-        if self.address.srv_port == 0 {
+        if self.address.use_random_port {
             // random port!
             let mut port = Server::MIN_PORT;
             loop {
-                let addr = format!("tcp://{}:{}", self.address.srv_host, port);
-                match sock.bind(&addr) {
+                self.address.port = port;
+                match sock.bind(&self.address.get_endpoint()) {
                     Ok(_) => break,
                     Err(zmq::Error::EADDRINUSE) => port += 1,
                     Err(e) => return Err(e.into()),
@@ -84,24 +87,20 @@ impl<'srv> Server<'srv> {
                     return spin_err("SocketError", "cannot find free port");
                 }
             }
-            self.address.srv_port = port;
         } else {
-            let addr = format!("tcp://{}:{}", self.address.srv_host, self.address.srv_port);
-            try!(sock.bind(&addr));
+            try!(sock.bind(&self.address.get_endpoint()));
         }
+        info!("bound to {}", self.address.get_endpoint());
         Ok(sock)
     }
 
     fn register_to_db(&mut self) -> SpinResult<()> {
-        if let Some((ref host, ref port)) = self.address.db_addr {
-            let db_addr = format!("spin://{}:{}", host, port);
-            debug!("connecting to database: {:?}", db_addr);
-            let mut db_cl = try!(Client::new(&(db_addr + "/sys/spin/db")));
-            let ad_host = &self.address.srv_host;
-            let localhost = String::from("localhost");
-            let host = if ad_host == "*" { &localhost } else { ad_host };
-            let my_addr = format!("tcp://{}:{}", host, self.address.srv_port);
-            let mut my_devs = vec![my_addr, self.name.clone()];
+        if self.address.use_db {
+            let db_uri = format!("spin://{}/sys/spin/db", self.address.db_hostport);
+            info!("registering to database: {:?}", db_uri);
+            let mut db_cl = try!(Client::new(&db_uri));
+            let mut my_devs = vec![self.address.get_ext_endpoint(),
+                                   self.name.clone()];
             for (name, _dev) in &self.devmap {
                 my_devs.push(name.clone());
             }

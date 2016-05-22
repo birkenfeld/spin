@@ -73,39 +73,69 @@ pub fn send_full_message(sock: &mut zmq::Socket, parts: Vec<Vec<u8>>) -> ZmqResu
 /// Helper object for server address handling.
 #[derive(Debug)]
 pub struct ServerAddress {
-    // we don't use SocketAddr because zmq doesn't either
-    pub srv_host: String,
-    pub srv_port: u16,  // 0 means: random
-    pub db_addr: Option<(String, u16)>,
+    bind_host: String,
+    ext_host: String,
+    pub port: u16,
+    pub use_random_port: bool,
+    pub use_db: bool,
+    pub db_hostport: String,
 }
 
 impl ServerAddress {
-    pub fn parse(arg: Option<&str>) -> ServerAddress {
-        let mut addr = ServerAddress { srv_host: "*".into(), srv_port: 0, db_addr: None };
-        if let Ok(ref val) = env::var("SPINDB") {
-            addr.db_addr = ServerAddress::parse_host_port(val, db::DEFAULT_DB_PORT);
+    pub fn new(addr_arg: Option<String>, db_arg: Option<String>, use_db: bool) -> ServerAddress {
+        let mut addr = ServerAddress { bind_host: "*".into(),
+                                       ext_host: "localhost".into(),  // XXX
+                                       port: 0,
+                                       use_random_port: true,
+                                       use_db: use_db,
+                                       db_hostport: "".into() };
+        let db_spec = match db_arg {
+            Some(arg) => arg,
+            None => match env::var("SPINDB") {
+                Ok(val) => val,
+                Err(_) => "".into(),
+            }
+        };
+        if let Some((host, port)) = ServerAddress::parse_host_port(&db_spec, "localhost",
+                                                                   db::DEFAULT_DB_PORT) {
+            addr.db_hostport = format!("{}:{}", host, port);
         }
-        if let Some(arg) = arg {
-            if let Some((host, port)) = ServerAddress::parse_host_port(arg, 0) {
-                addr.srv_host = host;
-                addr.srv_port = port;
+        if let Some(arg) = addr_arg {
+            if let Some((host, port)) = ServerAddress::parse_host_port(&arg, "*", 0) {
+                if host != "*" {
+                    addr.ext_host = host.clone();
+                }
+                addr.bind_host = host;
+                addr.port = port;
+                if port != 0 {
+                    addr.use_random_port = false;
+                }
             }
         }
         addr
     }
 
-    fn parse_host_port(arg: &str, defaultport: u16) -> Option<(String, u16)> {
+    fn parse_host_port(arg: &str, defaulthost: &'static str,
+                       defaultport: u16) -> Option<(String, u16)> {
         let mut parts_iter = arg.splitn(2, ':');
         match parts_iter.next() {
             Some(mut host) => {
                 let port = parts_iter.next()
                     .and_then(|v| v.parse().ok())
                     .unwrap_or(defaultport);
-                if host == "" { host = "*"; }
+                if host == "" { host = defaulthost; }
                 Some((host.into(), port))
             }
             None => None,
         }
+    }
+
+    pub fn get_endpoint(&self) -> String {
+        format!("tcp://{}:{}", self.bind_host, self.port)
+    }
+
+    pub fn get_ext_endpoint(&self) -> String {
+        format!("tcp://{}:{}", self.ext_host, self.port)
     }
 }
 
@@ -115,6 +145,7 @@ pub struct DeviceAddress {
     pub devname: String,
     pub endpoint: String,
     pub use_db: bool,
+    pub db_hostport: String,
 }
 
 impl DeviceAddress {
@@ -146,6 +177,7 @@ impl DeviceAddress {
                     devname: path,
                     endpoint: format!("tcp://{}:{}", host, port),
                     use_db: uri.scheme == "spindb",
+                    db_hostport: format!("{}:{}", host, port),
                 })
             }
         }

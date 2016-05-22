@@ -31,7 +31,7 @@ impl DbDevice {
         }
         let address = s.swap_remove(0);
         let srvname = s.swap_remove(1);
-        info!("Registering server {} at {}...", srvname, address);
+        info!("registering server {} at {}...", srvname, address);
         self.srvmap.insert(srvname.clone(), address);
         for devname in s {
             info!("   ... device {}", devname);
@@ -44,10 +44,13 @@ impl DbDevice {
         let devname = try!(String::from_value(arg));
         info!("requested {}", devname);
         match self.devmap.get(&devname) {
-            None => Ok(Value::from("")),
+            None => spin_err("DbError", "device not found"),
             Some(srvname) => match self.srvmap.get(srvname) {
-                None => Ok(Value::from("")),
-                Some(srvaddr) => Ok(Value::from(srvaddr.clone()))
+                None => spin_err("DbError", "server not found"),
+                Some(srvaddr) => {
+                    info!("   ... is at {}", srvaddr);
+                    Ok(Value::from(srvaddr.clone()))
+                }
             }
         }
     }
@@ -61,8 +64,10 @@ impl device::Device for DbDevice {
 
     fn get_commands(&self) -> Vec<CommandDesc> {
         vec![
-            cmd_info("Register", "Register a server and its devices.", DataType::StringArray, DataType::Void),
-            cmd_info("Query", "Query information about a device.", DataType::String, DataType::String),
+            cmd_info("Register", "Register a server and its devices.",
+                     DataType::StringArray, DataType::Void),
+            cmd_info("Query", "Query information about a device.",
+                     DataType::String, DataType::String),
             ]
     }
 
@@ -89,7 +94,7 @@ impl device::Device for DbDevice {
 
 
 fn main() {
-    match server::Server::from_args() {
+    match server::Server::from_args(false) {
         None => return,
         Some(mut server) => {
             let dev = DbDevice { name: "sys/spin/db".into(),
@@ -97,7 +102,7 @@ fn main() {
                                  srvmap: HashMap::new() };
             server.add_device(Box::new(dev));
 
-            info!("Database server running...");
+            info!("database server running...");
             if let Err(e) = server.run() {
                 error!("Error running server: {}", e);
             }

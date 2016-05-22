@@ -78,13 +78,13 @@ impl device::Device for EchoDevice {
 
 
 fn main() {
-    match server::Server::from_args() {
+    match server::Server::from_args(true) {
         None => return,
         Some(mut server) => {
             let echodev = EchoDevice { name: "test/dev/echo".into(), value: 0. };
             server.add_device(Box::new(echodev));
 
-            info!("Echo server running...");
+            info!("echo server running...");
             if let Err(e) = server.run() {
                 error!("Error running server: {}", e);
             }

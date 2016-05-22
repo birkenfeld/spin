@@ -30,7 +30,6 @@ impl Client {
         } else {
             addr.endpoint
         };
-        println!("endpoint = {}", endpoint);
         try!(sock.connect(&endpoint));
         Ok(Client { _context: ctx,
                      socket:  sock,
