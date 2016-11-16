@@ -2,7 +2,7 @@
 
 //! Database server executable.
 
-#![feature(box_syntax, question_mark)]
+#![feature(box_syntax)]
 
 #[macro_use]
 extern crate log;

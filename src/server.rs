@@ -5,7 +5,6 @@
 use std::env::current_dir;
 use std::collections::HashMap;
 use std::iter::FromIterator;
-use std::sync::{Arc, Mutex};
 use std::thread;
 use argparse::*;
 use daemonize;
@@ -25,7 +24,7 @@ pub struct Server {
     pub name: String,
     pub config: ServerConfig,
     pub address: util::ServerAddress,
-    context: Arc<Mutex<zmq::Context>>,
+    context: zmq::Context,
     devcons: Vec<(DevConfig, DevConstructor)>,
 }
 
@@ -37,7 +36,7 @@ impl Server {
         Server {
             name: name.into(),
             address: util::ServerAddress::new(addr, db_addr, use_db),
-            context: Arc::new(Mutex::new(zmq::Context::new())),
+            context: zmq::Context::new(),
             devcons: Vec::with_capacity(config.devices.len()),
             config: config,
         }

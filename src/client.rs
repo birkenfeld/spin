@@ -14,7 +14,6 @@ use util;
 
 
 pub struct Client {
-    _context: zmq::Context,  // we have to keep it!
     socket: zmq::Socket,
     devname: Vec<u8>,
     seqno: u32,
@@ -23,9 +22,7 @@ pub struct Client {
 
 impl Client {
     pub fn new(uri: &str) -> SpinResult<Client> {
-        let mut ctx = zmq::Context::new();
-        let mut sock = ctx.socket(zmq::REQ)?;
-        sock.set_linger(0)?;  // no infinite wait for delivery on shutdown
+        let mut sock = util::create_socket(&zmq::Context::new(), zmq::REQ)?;
         let addr = util::DeviceAddress::parse_uri(uri)?;
         let endpoint = if addr.use_db {
             Client::query_db(&addr)?
@@ -33,8 +30,7 @@ impl Client {
             addr.endpoint
         };
         sock.connect(&endpoint)?;
-        Ok(Client { _context: ctx,
-                    socket:  sock,
+        Ok(Client { socket:  sock,
                     devname: String::from(addr.devname).into_bytes(),
                     seqno:   0,
                     timeout: 1000, })
@@ -152,10 +148,4 @@ impl Client {
         Ok((cmds.to_vec(), attrs.to_vec(), props.to_vec()))
     }
 
-}
-
-impl Drop for Client {
-    fn drop(&mut self) {
-        let _ignored = self.socket.close();
-    }
 }

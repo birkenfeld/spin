@@ -6,7 +6,6 @@ use std::io;
 use std::env;
 use std::fs::{File, OpenOptions, DirBuilder};
 use std::path::Path;
-use std::sync::{Arc, Mutex};
 
 use zmq;
 use url;
@@ -19,8 +18,7 @@ pub type ZmqResult<T> = Result<T, zmq::Error>;
 
 
 /// Create a new Zmq socket from a thread-shared Context
-pub fn create_socket(ctx: &Arc<Mutex<zmq::Context>>, ty: zmq::SocketType) -> ZmqResult<zmq::Socket> {
-    let mut ctx = ctx.lock().unwrap();
+pub fn create_socket(ctx: &zmq::Context, ty: zmq::SocketType) -> ZmqResult<zmq::Socket> {
     let sock = ctx.socket(ty)?;
     sock.set_linger(0)?;
     Ok(sock)
