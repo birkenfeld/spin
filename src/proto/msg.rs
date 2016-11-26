@@ -7,11 +7,15 @@
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 
+#![allow(box_pointers)]
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
+#![allow(trivial_casts)]
+#![allow(unsafe_code)]
 #![allow(unused_imports)]
+#![allow(unused_results)]
 
 use protobuf::Message as Message_imported_for_functions;
 use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
@@ -381,7 +385,7 @@ impl ::protobuf::Message for Value {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        for value in self.vtype.iter() {
+        for value in &self.vtype {
             my_size += ::protobuf::rt::enum_size(10, *value);
         };
         if !self.bool.is_empty() {
@@ -405,10 +409,10 @@ impl ::protobuf::Message for Value {
         if !self.uint64.is_empty() {
             my_size += ::protobuf::rt::vec_packed_varint_size(7, &self.uint64);
         };
-        for value in self.string.iter() {
+        for value in &self.string {
             my_size += ::protobuf::rt::string_size(8, &value);
         };
-        for value in self.bytes.iter() {
+        for value in &self.bytes {
             my_size += ::protobuf::rt::bytes_size(9, &value);
         };
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
@@ -424,7 +428,7 @@ impl ::protobuf::Message for Value {
             try!(os.write_tag(1, ::protobuf::wire_format::WireTypeLengthDelimited));
             // TODO: Data size is computed again, it should be cached
             try!(os.write_raw_varint32((self.bool.len() * 1) as u32));
-            for v in self.bool.iter() {
+            for v in &self.bool {
                 try!(os.write_bool_no_tag(*v));
             };
         };
@@ -432,7 +436,7 @@ impl ::protobuf::Message for Value {
             try!(os.write_tag(2, ::protobuf::wire_format::WireTypeLengthDelimited));
             // TODO: Data size is computed again, it should be cached
             try!(os.write_raw_varint32((self.double.len() * 8) as u32));
-            for v in self.double.iter() {
+            for v in &self.double {
                 try!(os.write_double_no_tag(*v));
             };
         };
@@ -440,7 +444,7 @@ impl ::protobuf::Message for Value {
             try!(os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited));
             // TODO: Data size is computed again, it should be cached
             try!(os.write_raw_varint32((self.float.len() * 4) as u32));
-            for v in self.float.iter() {
+            for v in &self.float {
                 try!(os.write_float_no_tag(*v));
             };
         };
@@ -448,7 +452,7 @@ impl ::protobuf::Message for Value {
             try!(os.write_tag(4, ::protobuf::wire_format::WireTypeLengthDelimited));
             // TODO: Data size is computed again, it should be cached
             try!(os.write_raw_varint32(::protobuf::rt::vec_packed_varint_zigzag_data_size(&self.int32)));
-            for v in self.int32.iter() {
+            for v in &self.int32 {
                 try!(os.write_sint32_no_tag(*v));
             };
         };
@@ -456,7 +460,7 @@ impl ::protobuf::Message for Value {
             try!(os.write_tag(5, ::protobuf::wire_format::WireTypeLengthDelimited));
             // TODO: Data size is computed again, it should be cached
             try!(os.write_raw_varint32(::protobuf::rt::vec_packed_varint_zigzag_data_size(&self.int64)));
-            for v in self.int64.iter() {
+            for v in &self.int64 {
                 try!(os.write_sint64_no_tag(*v));
             };
         };
@@ -464,7 +468,7 @@ impl ::protobuf::Message for Value {
             try!(os.write_tag(6, ::protobuf::wire_format::WireTypeLengthDelimited));
             // TODO: Data size is computed again, it should be cached
             try!(os.write_raw_varint32(::protobuf::rt::vec_packed_varint_data_size(&self.uint32)));
-            for v in self.uint32.iter() {
+            for v in &self.uint32 {
                 try!(os.write_uint32_no_tag(*v));
             };
         };
@@ -472,11 +476,11 @@ impl ::protobuf::Message for Value {
             try!(os.write_tag(7, ::protobuf::wire_format::WireTypeLengthDelimited));
             // TODO: Data size is computed again, it should be cached
             try!(os.write_raw_varint32(::protobuf::rt::vec_packed_varint_data_size(&self.uint64)));
-            for v in self.uint64.iter() {
+            for v in &self.uint64 {
                 try!(os.write_uint64_no_tag(*v));
             };
         };
-        for v in self.string.iter() {
+        for v in &self.string {
             try!(os.write_string(8, &v));
         };
         if let Some(v) = self.bytes.as_ref() {
@@ -799,13 +803,13 @@ impl ::protobuf::Message for Error {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        for value in self.reason.iter() {
+        for value in &self.reason {
             my_size += ::protobuf::rt::string_size(1, &value);
         };
-        for value in self.desc.iter() {
+        for value in &self.desc {
             my_size += ::protobuf::rt::string_size(2, &value);
         };
-        for value in self.origin.iter() {
+        for value in &self.origin {
             my_size += ::protobuf::rt::string_size(3, &value);
         };
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
@@ -1205,22 +1209,22 @@ impl ::protobuf::Message for CmdDesc {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        for value in self.name.iter() {
+        for value in &self.name {
             my_size += ::protobuf::rt::string_size(1, &value);
         };
-        for value in self.doc.iter() {
+        for value in &self.doc {
             my_size += ::protobuf::rt::string_size(2, &value);
         };
-        for value in self.intype.iter() {
+        for value in &self.intype {
             my_size += ::protobuf::rt::enum_size(3, *value);
         };
-        for value in self.outtype.iter() {
+        for value in &self.outtype {
             my_size += ::protobuf::rt::enum_size(4, *value);
         };
-        for value in self.indoc.iter() {
+        for value in &self.indoc {
             my_size += ::protobuf::rt::string_size(5, &value);
         };
-        for value in self.outdoc.iter() {
+        for value in &self.outdoc {
             my_size += ::protobuf::rt::string_size(6, &value);
         };
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
@@ -1575,16 +1579,16 @@ impl ::protobuf::Message for AttrDesc {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        for value in self.name.iter() {
+        for value in &self.name {
             my_size += ::protobuf::rt::string_size(1, &value);
         };
-        for value in self.doc.iter() {
+        for value in &self.doc {
             my_size += ::protobuf::rt::string_size(2, &value);
         };
-        for value in self.field_type.iter() {
+        for value in &self.field_type {
             my_size += ::protobuf::rt::enum_size(3, *value);
         };
-        for value in self.unit.iter() {
+        for value in &self.unit {
             my_size += ::protobuf::rt::string_size(4, &value);
         };
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
@@ -1913,16 +1917,16 @@ impl ::protobuf::Message for PropDesc {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        for value in self.name.iter() {
+        for value in &self.name {
             my_size += ::protobuf::rt::string_size(1, &value);
         };
-        for value in self.doc.iter() {
+        for value in &self.doc {
             my_size += ::protobuf::rt::string_size(2, &value);
         };
-        for value in self.field_type.iter() {
+        for value in &self.field_type {
             my_size += ::protobuf::rt::enum_size(3, *value);
         };
-        for value in self.default.iter() {
+        for value in &self.default {
             let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         };
@@ -2238,16 +2242,16 @@ impl ::protobuf::Message for Request {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        for value in self.seqno.iter() {
+        for value in &self.seqno {
             my_size += ::protobuf::rt::value_size(1, *value, ::protobuf::wire_format::WireTypeVarint);
         };
-        for value in self.rtype.iter() {
+        for value in &self.rtype {
             my_size += ::protobuf::rt::enum_size(2, *value);
         };
-        for value in self.name.iter() {
+        for value in &self.name {
             my_size += ::protobuf::rt::string_size(3, &value);
         };
-        for value in self.value.iter() {
+        for value in &self.value {
             let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         };
@@ -2650,29 +2654,29 @@ impl ::protobuf::Message for Response {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        for value in self.seqno.iter() {
+        for value in &self.seqno {
             my_size += ::protobuf::rt::value_size(1, *value, ::protobuf::wire_format::WireTypeVarint);
         };
-        for value in self.rtype.iter() {
+        for value in &self.rtype {
             my_size += ::protobuf::rt::enum_size(2, *value);
         };
-        for value in self.error.iter() {
+        for value in &self.error {
             let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         };
-        for value in self.value.iter() {
+        for value in &self.value {
             let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         };
-        for value in self.cmds.iter() {
+        for value in &self.cmds {
             let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         };
-        for value in self.attrs.iter() {
+        for value in &self.attrs {
             let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         };
-        for value in self.props.iter() {
+        for value in &self.props {
             let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         };
@@ -2698,17 +2702,17 @@ impl ::protobuf::Message for Response {
             try!(os.write_raw_varint32(v.get_cached_size()));
             try!(v.write_to_with_cached_sizes(os));
         };
-        for v in self.cmds.iter() {
+        for v in &self.cmds {
             try!(os.write_tag(6, ::protobuf::wire_format::WireTypeLengthDelimited));
             try!(os.write_raw_varint32(v.get_cached_size()));
             try!(v.write_to_with_cached_sizes(os));
         };
-        for v in self.attrs.iter() {
+        for v in &self.attrs {
             try!(os.write_tag(7, ::protobuf::wire_format::WireTypeLengthDelimited));
             try!(os.write_raw_varint32(v.get_cached_size()));
             try!(v.write_to_with_cached_sizes(os));
         };
-        for v in self.props.iter() {
+        for v in &self.props {
             try!(os.write_tag(8, ::protobuf::wire_format::WireTypeLengthDelimited));
             try!(os.write_raw_varint32(v.get_cached_size()));
             try!(v.write_to_with_cached_sizes(os));
