@@ -18,6 +18,7 @@ path = "src/srv_main.rs"
 [dependencies]
 log = "*"
 url = "*"
+zmq = "*"
 time = "*"
 toml = "*"
 log4rs = "*"
@@ -25,7 +26,6 @@ argparse = "*"
 protobuf = "*"
 ansi_term = "*"
 daemonize = "*"
-zmq = {"git" = "https://github.com/erickt/rust-zmq"}
 
 [dependencies.spin_proto]
 path = "src/proto"

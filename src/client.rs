@@ -22,7 +22,7 @@ pub struct Client {
 
 impl Client {
     pub fn new(uri: &str) -> SpinResult<Client> {
-        let mut sock = util::create_socket(&zmq::Context::new(), zmq::REQ)?;
+        let sock = util::create_socket(&zmq::Context::new(), zmq::REQ)?;
         let addr = util::DeviceAddress::parse_uri(uri)?;
         let endpoint = if addr.use_db {
             Client::query_db(&addr)?

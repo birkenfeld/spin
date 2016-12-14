@@ -122,7 +122,7 @@ impl Server {
         const MAX_PORT: u16 = 65000;
 
         // external socket that takes requests
-        let mut sock = util::create_socket(&self.context, zmq::ROUTER)?;
+        let sock = util::create_socket(&self.context, zmq::ROUTER)?;
         if self.address.use_random_port {
             // random port!
             let mut port = MIN_PORT;
@@ -167,10 +167,10 @@ impl Server {
         // create a socket pair and a thread for every device
         for (devconfig, dev_const) in self.devcons.drain(..) {
             let inproc_addr = String::from("inproc://") + &devconfig.name;
-            let mut dev_sock = util::create_socket(&self.context, zmq::REP)?;
+            let dev_sock = util::create_socket(&self.context, zmq::REP)?;
             dev_sock.bind(&inproc_addr)?;  // must bind before connect
 
-            let mut local_sock = util::create_socket(&self.context, zmq::REQ)?;
+            let local_sock = util::create_socket(&self.context, zmq::REQ)?;
             local_sock.connect(&inproc_addr)?;
             devsockets.insert(devconfig.name.clone(), pollsockets.len());
             pollsockets.push(local_sock);
