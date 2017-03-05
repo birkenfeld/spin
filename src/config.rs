@@ -2,6 +2,7 @@
 
 //! Server config file handling.
 
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::io::Read;
@@ -42,11 +43,7 @@ impl ServerConfig {
     fn parse(filename: &str) -> Result<ServerConfig, Box<Error>> {
         let mut text = String::new();
         fs::File::open(filename)?.read_to_string(&mut text)?;
-        let mut parser = toml::Parser::new(&text);
-        let parsed = match parser.parse() {
-            Some(value) => value,
-            None => return Err(parser.errors.pop().unwrap().into()),
-        };
+        let parsed: HashMap<String, toml::Value> = toml::from_str(&text)?;
         let mut devices = Vec::with_capacity(parsed.len());
         for (key, value) in parsed {
             let mut devtype = None;
