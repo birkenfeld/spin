@@ -58,9 +58,8 @@ impl Value {
             ($arr:ident, $el:ident, $variant:ident) => {{
                 let mut all = Vec::with_capacity($arr.len() + 1);
                 for el in $arr {
-                    match el {
-                        toml::Value::$variant(s) => all.push(s),
-                        _ => {}
+                    if let toml::Value::$variant(s) = el {
+                        all.push(s);
                     }
                 }
                 all.push($el);

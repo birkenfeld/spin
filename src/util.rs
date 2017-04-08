@@ -56,11 +56,11 @@ pub fn send_message(sock: &mut zmq::Socket, parts: &[&[u8]]) -> ZmqResult<()> {
     for part in parts.iter().take(parts.len() - 1) {
         sock.send(part, zmq::SNDMORE)?;
     }
-    sock.send(&parts[parts.len()-1], 0)
+    sock.send(parts[parts.len()-1], 0)
 }
 
 /// Write a multipart message (as vec of vecs) to a socket.
-pub fn send_full_message(sock: &mut zmq::Socket, parts: Vec<Vec<u8>>) -> ZmqResult<()> {
+pub fn send_full_message(sock: &mut zmq::Socket, parts: &[Vec<u8>]) -> ZmqResult<()> {
     for part in parts.iter().take(parts.len() - 1) {
         sock.send(part, zmq::SNDMORE)?;
     }

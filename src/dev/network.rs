@@ -76,9 +76,9 @@ impl NetworkDevice {
 
     fn cmd_communicate(&mut self, arg: String) -> SpinResult<String> {
         if let Some((ref mut rstream, ref mut wstream)) = self.streams {
-            wstream.write(self.props.sol.as_bytes())?;
-            wstream.write(arg.as_bytes())?;
-            wstream.write(self.props.eol.as_bytes())?;
+            wstream.write_all(self.props.sol.as_bytes())?;
+            wstream.write_all(arg.as_bytes())?;
+            wstream.write_all(self.props.eol.as_bytes())?;
             Self::_read_line(rstream, &self.props.eol)
         } else {
             spin_err!(IO_ERROR, "connection not open")

@@ -220,7 +220,7 @@ impl Server {
                     },
                     Some(&sindex) => {
                         let sock = &mut pollsockets[sindex];
-                        util::send_full_message(sock, msg)?;
+                        util::send_full_message(sock, &msg)?;
                     },
                 }
             }
@@ -255,7 +255,7 @@ impl Server {
                     self.msg_from_extern(msg, &devsockets, &mut pollsockets)?;
                 } else {
                     // else it is a reply, send it back to outside
-                    util::send_full_message(&mut pollsockets[0], msg)?;
+                    util::send_full_message(&mut pollsockets[0], &msg)?;
                 }
             }
         }
