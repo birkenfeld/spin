@@ -1,4 +1,4 @@
-// Spin RPC library, copyright 2015, 2016 Georg Brandl.
+// Spin RPC library, copyright 2015-2017 Georg Brandl.
 
 //! Database server executable.
 
