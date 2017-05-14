@@ -85,7 +85,7 @@ impl ServerAddress {
                                        ext_host: "localhost".into(),  // XXX
                                        port: 0,
                                        use_random_port: true,
-                                       use_db: use_db,
+                                       use_db,
                                        db_hostport: "".into() };
         let db_spec = match db_arg {
             Some(arg) => arg,

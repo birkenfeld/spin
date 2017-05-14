@@ -11,17 +11,17 @@ use protobuf;
 
 use spin_proto as pr;
 
-pub const DB_ERROR:       &'static str = "DbError";
-pub const ARG_ERROR:      &'static str = "ArgError";
-pub const TIMEOUT_ERROR:  &'static str = "TimeoutError";
-pub const API_ERROR:      &'static str = "APIError";
-pub const SOCKET_ERROR:   &'static str = "SocketError";
-pub const ADDRESS_ERROR:  &'static str = "AddressError";
-pub const ZMQ_ERROR:      &'static str = "ZmqError";
-pub const IO_ERROR:       &'static str = "InputOutputError";
-pub const PROTO_ERROR:    &'static str = "ProtocolError";
-pub const CONFIG_ERROR:   &'static str = "ConfigurationError";
-pub const COMM_ERROR:     &'static str = "CommunicationError";
+pub const DB_ERROR:       &str = "DbError";
+pub const ARG_ERROR:      &str = "ArgError";
+pub const TIMEOUT_ERROR:  &str = "TimeoutError";
+pub const API_ERROR:      &str = "APIError";
+pub const SOCKET_ERROR:   &str = "SocketError";
+pub const ADDRESS_ERROR:  &str = "AddressError";
+pub const ZMQ_ERROR:      &str = "ZmqError";
+pub const IO_ERROR:       &str = "InputOutputError";
+pub const PROTO_ERROR:    &str = "ProtocolError";
+pub const CONFIG_ERROR:   &str = "ConfigurationError";
+pub const COMM_ERROR:     &str = "CommunicationError";
 
 
 #[derive(Debug)]

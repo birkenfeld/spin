@@ -38,7 +38,7 @@ impl Server {
             address: util::ServerAddress::new(addr, db_addr, use_db),
             context: zmq::Context::new(),
             devcons: Vec::with_capacity(config.devices.len()),
-            config: config,
+            config,
         }
     }
 

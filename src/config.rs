@@ -64,12 +64,12 @@ impl ServerConfig {
             }
             if let Some(devtype) = devtype {
                 devices.push(DevConfig { name: key.to_owned(),
-                                         devtype: devtype,
+                                         devtype,
                                          props: devprops })
             } else {
                 warn!("ignoring device {}, it has no proper type", key);
             }
         }
-        Ok(ServerConfig { devices: devices })
+        Ok(ServerConfig { devices })
     }
 }
