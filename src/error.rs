@@ -83,6 +83,11 @@ pub type SpinResult<T> = Result<T, Error>;
 
 #[macro_export]
 macro_rules! spin_err {
+    ($reason:expr, $msg:expr, $($args:tt),+) => {
+        Err($crate::error::Error { reason: $reason.to_string(),
+                                   desc: format!($msg, $($args),*),
+                                   origin: module_path!().into() })
+    };
     ($reason:expr, $msg:expr) => {
         Err($crate::error::Error { reason: $reason.to_string(),
                                    desc: $msg.to_string(),

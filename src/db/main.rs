@@ -6,16 +6,18 @@
 
 #[macro_use]
 extern crate log;
+extern crate fnv;
 #[macro_use]
 extern crate spin;
 
-use std::collections::HashMap;
+use fnv::FnvHashMap as HashMap;
 
 use spin::config::{ServerConfig, DevConfig};
 use spin::device::Device;
 use spin::error::{DB_ERROR, SpinResult};
 
 
+#[derive(Default)]
 struct DbDevice {
     props: DbDeviceProps,
     devmap: HashMap<String, String>,  // device -> server
@@ -41,9 +43,7 @@ spin_device_impl!(
 
 impl DbDevice {
     fn create(_name: &str) -> Box<Device> {
-        box DbDevice { props: Default::default(),
-                       devmap: HashMap::new(),
-                       srvmap: HashMap::new() }
+        box DbDevice::default()
     }
 
     fn init(&mut self) -> SpinResult<()> { Ok(()) }

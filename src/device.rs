@@ -3,8 +3,8 @@
 //! Device trait.
 
 use std::ops::DerefMut;
-use std::collections::HashMap;
 
+use fnv::FnvHashMap as HashMap;
 use protobuf;
 use protobuf::{Message, RepeatedField};
 use zmq;
@@ -266,7 +266,7 @@ macro_rules! spin_device_impl {
             }
 
             #[allow(unused_variables, unused_mut)]
-            fn init_props(&mut self, mut cfg_prop_map: ::std::collections::HashMap<String, $crate::Value>) {
+            fn init_props(&mut self, mut cfg_prop_map: ::fnv::FnvHashMap<String, $crate::Value>) {
                 debug!("{}: init properties", self.get_name());
                 $(
                     self.props._descriptions.push(
@@ -280,6 +280,7 @@ macro_rules! spin_device_impl {
                             debug!("{}: property {} from config: {:?}", self.get_name(),
                                    stringify!($pname), self.props.$pname);
                         } else {
+                            warn!("XXX property conversion failure");
                             debug!("{}: property {} from default: {:?}", self.get_name(),
                                    stringify!($pname), self.props.$pname);
                         }

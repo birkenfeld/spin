@@ -3,9 +3,9 @@
 //! Server framework.
 
 use std::env::current_dir;
-use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::thread;
+use fnv::FnvHashMap as HashMap;
 use argparse::*;
 use daemonize;
 use zmq;
@@ -162,20 +162,20 @@ impl Server {
     }
 
     fn start_devices(&mut self, pollsockets: &mut Vec<zmq::Socket>)
-                     -> SpinResult<HashMap<String, usize>> {
-        let mut devsockets = HashMap::new();
+                     -> SpinResult<HashMap<Vec<u8>, usize>> {
+        let mut devsockets = HashMap::default();
         // create a socket pair and a thread for every device
-        for (devconfig, dev_const) in self.devcons.drain(..) {
+        for (devconfig, dev_constructor) in self.devcons.drain(..) {
             let inproc_addr = String::from("inproc://") + &devconfig.name;
             let dev_sock = util::create_socket(&self.context, zmq::REP)?;
             dev_sock.bind(&inproc_addr)?;  // must bind before connect
 
             let local_sock = util::create_socket(&self.context, zmq::REQ)?;
             local_sock.connect(&inproc_addr)?;
-            devsockets.insert(devconfig.name.clone(), pollsockets.len());
+            devsockets.insert(devconfig.name.clone().into(), pollsockets.len());
             pollsockets.push(local_sock);
 
-            let mut dev = dev_const(&devconfig.name);
+            let mut dev = dev_constructor(&devconfig.name);
             dev.set_name(devconfig.name);
             let prop_map = HashMap::from_iter(devconfig.props.into_iter()
                                               .map(|p| (p.name, p.value)));
@@ -191,7 +191,7 @@ impl Server {
     }
 
     fn msg_from_extern(&mut self, msg: Vec<Vec<u8>>,
-                       devsockets: &HashMap<String, usize>,
+                       devsockets: &HashMap<Vec<u8>, usize>,
                        pollsockets: &mut Vec<zmq::Socket>) -> SpinResult<()> {
         // check number of message parts:
         // 0 - zmq client socket id
@@ -205,25 +205,17 @@ impl Server {
             return Ok(());
         }
         // must decode the device name from bytes
-        match String::from_utf8(msg[2].clone()) {
-            Err(_) => {
-                warn!("invalid utf-8 in device name");
-                let rsp = general_error_reply("DeviceError", "ill formed message", &msg[3])?;
+        let devname = &msg[2];
+        match devsockets.get(devname) {
+            None => {
+                warn!("device not found: {}", String::from_utf8_lossy(devname));
+                let rsp = general_error_reply("DeviceError", "no such device", &msg[3])?;
                 util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &msg[2], &rsp])?;
             },
-            Ok(ref devname) => {
-                match devsockets.get(devname) {
-                    None => {
-                        warn!("device not found: {}", devname);
-                        let rsp = general_error_reply("DeviceError", "no such device", &msg[3])?;
-                        util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &msg[2], &rsp])?;
-                    },
-                    Some(&sindex) => {
-                        let sock = &mut pollsockets[sindex];
-                        util::send_full_message(sock, &msg)?;
-                    },
-                }
-            }
+            Some(&sindex) => {
+                let sock = &mut pollsockets[sindex];
+                util::send_full_message(sock, &msg)?;
+            },
         }
         Ok(())
     }

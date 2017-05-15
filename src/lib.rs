@@ -8,6 +8,7 @@
 extern crate log;
 extern crate url;
 extern crate zmq;
+extern crate fnv;
 extern crate time;
 extern crate toml;
 extern crate log4rs;
