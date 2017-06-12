@@ -8,6 +8,7 @@ use std::thread;
 use fnv::FnvHashMap as HashMap;
 use argparse::*;
 use daemonize;
+use mlzlog;
 use zmq;
 
 use arg::Value;
@@ -16,7 +17,6 @@ use device::{Device, run_device, general_error_reply};
 use error::{SpinResult, SOCKET_ERROR};
 use client::Client;
 use util;
-use logging;
 
 pub type DevConstructor = fn(&str) -> Box<Device>;
 
@@ -91,7 +91,7 @@ impl Server {
         let log_path = current_dir().unwrap().join(log_path).join(name.replace("/", "-"));
         let pid_path = current_dir().unwrap().join(pid_path);
         let _ = util::ensure_dir(&pid_path);
-        let _ = logging::init(&log_path, &name, debug, !daemonize);
+        let _ = mlzlog::init(&log_path, &name, true, debug, !daemonize);
         if daemonize {
             let pid_file = pid_path.join(name.replace("/", "-") + ".pid");
             let mut daemon = daemonize::Daemonize::new().pid_file(pid_file);

@@ -7,6 +7,7 @@ use std::ops::DerefMut;
 use fnv::FnvHashMap as HashMap;
 use protobuf;
 use protobuf::{Message, RepeatedField};
+use mlzlog;
 use zmq;
 
 use spin_proto::{Request, Response, ReqType, RespType};
@@ -125,9 +126,10 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
 
 pub fn run_device(mut sock: zmq::Socket, mut dev: Box<Device>) {
     let dev = dev.deref_mut();
+    mlzlog::set_thread_prefix(format!("{}: ", dev.get_name()));
     loop {
         if let Err(e) = handle_one_message(&mut sock, dev) {
-            warn!("{}: error handling request: {:?}", dev.get_name(), e);
+            warn!("error handling request: {:?}", e);
         }
     }
 }
@@ -189,9 +191,9 @@ macro_rules! spin_device_impl {
         impl $crate::device::Device for $clsname {
 
             fn init_device(&mut self) -> $crate::SpinResult<()> {
-                debug!("{}: initializing device", self.get_name());
+                debug!("initializing device");
                 if let Err(err) = $clsname::init(self) {
-                    error!("{}: could not initialize: {}", self.get_name(), err);
+                    error!("could not initialize: {}", err);
                     return Err(err);
                 }
                 self.props._initialized = true;
@@ -199,7 +201,7 @@ macro_rules! spin_device_impl {
             }
 
             fn delete_device(&mut self) {
-                debug!("{}: deleting device", self.get_name());
+                debug!("deleting device");
                 self.props._initialized = false;
                 $clsname::delete(self);
             }
@@ -228,7 +230,7 @@ macro_rules! spin_device_impl {
                 if !self.props._initialized {
                     self.init_device()?;
                 }
-                debug!("{}: executing command {}({:?})", self.get_name(), cmd, arg);
+                debug!("executing command {}({:?})", cmd, arg);
                 let res = match cmd {
                     $(stringify!($cname) => self.$cfunc(arg.extract()?).map($crate::Value::from),)*
                     _ => spin_err!($crate::error::API_ERROR, "No such command"),
@@ -242,7 +244,7 @@ macro_rules! spin_device_impl {
                 if !self.props._initialized {
                     self.init_device()?;
                 }
-                debug!("{}: reading attribute {}", self.get_name(), attr);
+                debug!("reading attribute {}", attr);
                 let res = match attr {
                     $(stringify!($aname) => self.$arfunc().map($crate::Value::from),)*
                     _ => spin_err!($crate::error::API_ERROR, "No such attribute"),
@@ -256,7 +258,7 @@ macro_rules! spin_device_impl {
                 if !self.props._initialized {
                     self.init_device()?;
                 }
-                debug!("{}: writing attribute {} = {:?}", self.get_name(), attr, val);
+                debug!("writing attribute {} = {:?}", attr, val);
                 let res = match attr {
                     $(stringify!($aname) => self.$awfunc(val.extract()?),)*
                     _ => spin_err!($crate::error::API_ERROR, "No such attribute"),
@@ -267,7 +269,7 @@ macro_rules! spin_device_impl {
 
             #[allow(unused_variables, unused_mut)]
             fn init_props(&mut self, mut cfg_prop_map: ::fnv::FnvHashMap<String, $crate::Value>) {
-                debug!("{}: init properties", self.get_name());
+                debug!("init properties");
                 $(
                     self.props._descriptions.push(
                         $crate::arg::prop_info(stringify!($pname), $pdoc,
@@ -277,15 +279,15 @@ macro_rules! spin_device_impl {
                     if let Some(cfg_value) = cfg_prop_map.remove(stringify!($pname)) {
                         if let Some(value) = cfg_value.convert($crate::arg::DataType::$ptype) {
                             self.props.$pname = value.extract().unwrap();
-                            debug!("{}: property {} from config: {:?}", self.get_name(),
+                            debug!("property {} from config: {:?}",
                                    stringify!($pname), self.props.$pname);
                         } else {
                             warn!("XXX property conversion failure");
-                            debug!("{}: property {} from default: {:?}", self.get_name(),
+                            debug!("property {} from default: {:?}",
                                    stringify!($pname), self.props.$pname);
                         }
                     } else {
-                        debug!("{}: property {} from default: {:?}", self.get_name(),
+                        debug!("property {} from default: {:?}",
                                stringify!($pname), self.props.$pname);
                     }
                 )*
@@ -293,7 +295,7 @@ macro_rules! spin_device_impl {
 
             #[allow(unused_variables)]
             fn get_prop(&mut self, prop: &str) -> $crate::SpinResult<$crate::Value> {
-                debug!("{}: get property {}", self.get_name(), prop);
+                debug!("get property {}", prop);
                 $(
                     if prop == stringify!($pname) {
                         return Ok($crate::Value::from(self.props.$pname.clone()));
@@ -304,7 +306,7 @@ macro_rules! spin_device_impl {
 
             #[allow(unused_variables)]
             fn set_prop(&mut self, prop: &str, val: $crate::Value) -> $crate::SpinResult<()> {
-                debug!("{}: set property {} = {:?}", self.get_name(), prop, val);
+                debug!("set property {} = {:?}", prop, val);
                 $(
                     if prop == stringify!($pname) {
                         if let Some(val) = val.convert($crate::arg::DataType::$ptype) {

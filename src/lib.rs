@@ -11,10 +11,9 @@ extern crate zmq;
 extern crate fnv;
 extern crate time;
 extern crate toml;
-extern crate log4rs;
+extern crate mlzlog;
 extern crate argparse;
 extern crate protobuf;
-extern crate ansi_term;
 extern crate daemonize;
 extern crate spin_proto;
 
@@ -29,7 +28,6 @@ pub mod client;
 pub mod dev;
 mod db;
 mod util;
-mod logging;
 
 // For client use, re-export the needed API here.
 pub use arg::{Value, FromValue};

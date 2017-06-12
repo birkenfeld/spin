@@ -22,10 +22,9 @@ zmq = "*"
 fnv = "*"
 time = "*"
 toml = "*"
-log4rs = "*"
+mlzlog = "*"
 argparse = "*"
 protobuf = "*"
-ansi_term = "*"
 daemonize = "*"
 
 [dependencies.spin_proto]

@@ -4,7 +4,7 @@
 
 use std::io;
 use std::env;
-use std::fs::{File, OpenOptions, DirBuilder};
+use std::fs::DirBuilder;
 use std::path::Path;
 
 use zmq;
@@ -169,21 +169,6 @@ impl DeviceAddress {
             }
         }
     }
-}
-
-
-/// A less verbose way of opening files.
-pub fn open_file<P: AsRef<Path>>(path: P, mode: &str) -> io::Result<File> {
-    let mut opt = OpenOptions::new();
-    for ch in mode.chars() {
-        match ch {
-            'r' => { opt.read(true); },
-            'w' => { opt.write(true).create(true); },
-            'a' => { opt.write(true).append(true); },
-            _   => { },  // ignore unsupported chars
-        }
-    }
-    opt.open(path)
 }
 
 
