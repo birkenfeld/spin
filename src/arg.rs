@@ -20,6 +20,8 @@ pub fn cmd_info(name: &str, doc: &str, intype: DataType, outtype: DataType) -> C
     c.set_doc(doc.into());
     c.set_intype(intype);
     c.set_outtype(outtype);
+    c.set_indoc("".into());
+    c.set_outdoc("".into());
     c
 }
 
@@ -28,6 +30,7 @@ pub fn attr_info(name: &str, doc: &str, dtype: DataType) -> AttrDesc {
     a.set_name(name.into());
     a.set_doc(doc.into());
     a.set_field_type(dtype);
+    a.set_unit("".into());
     a
 }
 

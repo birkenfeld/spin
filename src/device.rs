@@ -47,7 +47,7 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
 
     match req.get_rtype() {
         ReqType::ReqPing => {
-
+            rsp.set_rtype(RespType::RespVoid);
         }
         ReqType::ReqExecCmd => {
             let val = req.take_value();
