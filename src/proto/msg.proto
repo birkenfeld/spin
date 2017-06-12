@@ -2,6 +2,8 @@
 
 //! Protocol buffers: definition of message format sent over 0MQ.
 
+syntax = "proto2";
+
 enum DataType {
     Void   = 0;
     Bool   = 1;
