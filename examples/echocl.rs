@@ -35,9 +35,9 @@ fn main() {
 
     // Query API
     let res = clnt.query_api().unwrap();
-    let cnames: Vec<_> = res.0.iter().map(|ci| ci.get_name()).collect();
-    let anames: Vec<_> = res.1.iter().map(|ai| ai.get_name()).collect();
-    let pnames: Vec<_> = res.2.iter().map(|pi| pi.get_name()).collect();
+    let cnames: Vec<_> = res.0.iter().map(|ci| &ci.name).collect();
+    let anames: Vec<_> = res.1.iter().map(|ai| &ai.name).collect();
+    let pnames: Vec<_> = res.2.iter().map(|pi| &pi.name).collect();
     println!("query_api:  {:?} {:?} {:?}", cnames, anames, pnames);
 
     // Time the simple Echo call

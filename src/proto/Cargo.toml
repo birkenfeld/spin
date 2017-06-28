@@ -9,4 +9,9 @@ name = "spin_proto"
 path = "lib.rs"
 
 [dependencies]
-protobuf = "*"
+prost = "*"
+prost-derive = "*"
+bytes = "*"
+
+[build-dependencies]
+prost-build = "*"

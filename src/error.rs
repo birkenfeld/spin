@@ -7,7 +7,6 @@ use std::fmt;
 use std::io;
 
 use zmq;
-use protobuf;
 
 use spin_proto as pr;
 
@@ -33,18 +32,18 @@ pub struct Error {
 
 impl Error {
     pub fn into_proto(self) -> pr::Error {
-        let mut err = pr::Error::new();
-        err.set_desc(self.desc);
-        err.set_reason(self.reason);
-        err.set_origin(self.origin);
-        err
+        pr::Error {
+            desc: self.desc,
+            reason: self.reason,
+            origin: self.origin,
+        }
     }
 
-    pub fn from_proto(mut err: pr::Error) -> Error {
+    pub fn from_proto(err: pr::Error) -> Error {
         Error {
-            reason: err.take_reason(),
-            origin: err.take_origin(),
-            desc: err.take_desc()
+            reason: err.reason,
+            origin: err.origin,
+            desc: err.desc,
         }
     }
 }
@@ -77,7 +76,6 @@ macro_rules! error_impl {
 
 error_impl!(io::Error => IO_ERROR);
 error_impl!(zmq::Error => ZMQ_ERROR);
-error_impl!(protobuf::ProtobufError => PROTO_ERROR);
 
 pub type SpinResult<T> = Result<T, Error>;
 

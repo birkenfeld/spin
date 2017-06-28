@@ -11,9 +11,10 @@ extern crate zmq;
 extern crate fnv;
 extern crate time;
 extern crate toml;
+extern crate prost;
+extern crate bytes;
 extern crate mlzlog;
 extern crate argparse;
-extern crate protobuf;
 extern crate daemonize;
 extern crate spin_proto;
 

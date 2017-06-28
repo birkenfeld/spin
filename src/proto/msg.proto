@@ -4,27 +4,29 @@
 
 syntax = "proto2";
 
+package spin_proto;
+
 enum DataType {
-    Void   = 0;
-    Bool   = 1;
-    Double = 2;
-    Float  = 3;
-    Int32  = 4;
-    Int64  = 5;
-    UInt32 = 6;
-    UInt64 = 7;
-    String = 8;
-    ByteArray   = 10;
-    BoolArray	= 11;
-    DoubleArray = 12;
-    FloatArray	= 13;
-    Int32Array	= 14;
-    Int64Array	= 15;
-    UInt32Array = 16;
-    UInt64Array = 17;
-    StringArray = 18;
-    Int64StringArray  = 21;
-    DoubleStringArray = 22;
+    void   = 0;
+    bool   = 1;
+    double = 2;
+    float  = 3;
+    int32  = 4;
+    int64  = 5;
+    uint32 = 6;
+    uint64 = 7;
+    string = 8;
+    byte_array   = 10;
+    bool_array	= 11;
+    double_array = 12;
+    float_array	= 13;
+    int32_array	= 14;
+    int64_array	= 15;
+    uint32_array = 16;
+    uint64_array = 17;
+    string_array = 18;
+    int64_string_array  = 21;
+    double_string_array = 22;
 }
 
 message Value {
@@ -74,13 +76,13 @@ message PropDesc {
 ////////////////////////////////////////////////////////////////////////////////
 
 enum ReqType {
-    ReqPing = 0;
-    ReqExecCmd = 1;
-    ReqReadAttr = 2;
-    ReqWriteAttr = 3;
-    ReqGetProp = 4;
-    ReqSetProp = 5;
-    ReqQueryAPI = 10;
+    ping = 0;
+    exec_cmd = 1;
+    read_attr = 2;
+    write_attr = 3;
+    get_prop = 4;
+    set_prop = 5;
+    query_api = 10;
 }
 
 message Request {
@@ -91,10 +93,10 @@ message Request {
 }
 
 enum RespType {
-    RespVoid = 0;
-    RespError = 1;
-    RespValue = 2;
-    RespAPI = 3;
+    ok = 0;
+    error = 1;
+    value = 2;
+    api = 3;
 }
 
 message Response {

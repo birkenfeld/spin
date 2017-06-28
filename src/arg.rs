@@ -3,7 +3,6 @@
 //! Argument type library, wrapper around some protobuf types.
 
 use toml;
-use protobuf::RepeatedField;
 use spin_proto as pr;
 
 pub use spin_proto::DataType;
@@ -15,32 +14,32 @@ use error::{SpinResult, ARG_ERROR};
 
 
 pub fn cmd_info(name: &str, doc: &str, intype: DataType, outtype: DataType) -> CmdDesc {
-    let mut c = CmdDesc::new();
-    c.set_name(name.into());
-    c.set_doc(doc.into());
-    c.set_intype(intype);
-    c.set_outtype(outtype);
-    c.set_indoc("".into());
-    c.set_outdoc("".into());
-    c
+    CmdDesc {
+        name: name.into(),
+        doc: doc.into(),
+        intype: intype.into(),
+        outtype: outtype.into(),
+        indoc: "".into(),
+        outdoc: "".into(),
+    }
 }
 
 pub fn attr_info(name: &str, doc: &str, dtype: DataType) -> AttrDesc {
-    let mut a = AttrDesc::new();
-    a.set_name(name.into());
-    a.set_doc(doc.into());
-    a.set_field_type(dtype);
-    a.set_unit("".into());
-    a
+    AttrDesc {
+        name: name.into(),
+        doc: doc.into(),
+        type_: dtype.into(),
+        unit: "".into(),
+    }
 }
 
 pub fn prop_info(name: &str, doc: &str, dtype: DataType, default: Value) -> PropDesc {
-    let mut a = PropDesc::new();
-    a.set_name(name.into());
-    a.set_doc(doc.into());
-    a.set_field_type(dtype);
-    a.set_default(default.into_inner());
-    a
+    PropDesc {
+        name: name.into(),
+        doc: doc.into(),
+        type_: dtype.into(),
+        default: Some(default.into_inner()),  // XXX
+    }
 }
 
 
@@ -76,7 +75,7 @@ impl Value {
             toml::Value::Boolean(b) => Some(Value::from(b)),
             toml::Value::Array(mut arr) => match arr.pop() {
                 None => Some(Value::from(())),  // we don't know a type
-                // All array elements have the same TOML type. (This is not
+                // All Array elements have the same TOML type. (This is not
                 // encoded in the datatype.) Therefore we can just switch on
                 // the last value.
                 Some(last) => match last {
@@ -105,89 +104,89 @@ impl Value {
                 Some(Value::from($arr.into_iter().map(|v| v as $ty).collect::<Vec<_>>()))
             }
         }
-        if self.0.get_vtype() == newtype {
+        if self.0.vtype() == Some(newtype) {
             return Some(self);
         }
-        let mut inner = self.into_inner();
-        match inner.get_vtype() {
+        let inner = self.into_inner();
+        match inner.vtype().unwrap() {
             DataType::Double => match newtype {
-                DataType::Float => Some(Value::from(inner.get_double()[0] as f32)),
+                DataType::Float => Some(Value::from(inner.double[0] as f32)),
                 _ => None
             },
             DataType::Float => match newtype {
-                DataType::Double => Some(Value::from(inner.get_float()[0] as f64)),
+                DataType::Double => Some(Value::from(inner.float[0] as f64)),
                 _ => None
             },
             DataType::Int32 => match newtype {
-                DataType::Int64 => Some(Value::from(inner.get_int32()[0] as i64)),
-                DataType::UInt32 => Some(Value::from(inner.get_int32()[0] as u32)),
-                DataType::UInt64 => Some(Value::from(inner.get_int32()[0] as u64)),
-                DataType::Float => Some(Value::from(inner.get_int32()[0] as f32)),
-                DataType::Double => Some(Value::from(inner.get_int32()[0] as f64)),
+                DataType::Int64 => Some(Value::from(inner.int32[0] as i64)),
+                DataType::Uint32 => Some(Value::from(inner.int32[0] as u32)),
+                DataType::Uint64 => Some(Value::from(inner.int32[0] as u64)),
+                DataType::Float => Some(Value::from(inner.int32[0] as f32)),
+                DataType::Double => Some(Value::from(inner.int32[0] as f64)),
                 _ => None
             },
             DataType::Int64 => match newtype {
-                DataType::Int32 => Some(Value::from(inner.get_int64()[0] as i32)),
-                DataType::UInt32 => Some(Value::from(inner.get_int64()[0] as u32)),
-                DataType::UInt64 => Some(Value::from(inner.get_int64()[0] as u64)),
-                DataType::Float => Some(Value::from(inner.get_int64()[0] as f32)),
-                DataType::Double => Some(Value::from(inner.get_int64()[0] as f64)),
+                DataType::Int32 => Some(Value::from(inner.int64[0] as i32)),
+                DataType::Uint32 => Some(Value::from(inner.int64[0] as u32)),
+                DataType::Uint64 => Some(Value::from(inner.int64[0] as u64)),
+                DataType::Float => Some(Value::from(inner.int64[0] as f32)),
+                DataType::Double => Some(Value::from(inner.int64[0] as f64)),
                 _ => None
             },
-            DataType::UInt32 => match newtype {
-                DataType::Int32 => Some(Value::from(inner.get_uint32()[0] as i32)),
-                DataType::Int64 => Some(Value::from(inner.get_uint32()[0] as i64)),
-                DataType::UInt64 => Some(Value::from(inner.get_uint32()[0] as u64)),
-                DataType::Float => Some(Value::from(inner.get_uint32()[0] as f32)),
-                DataType::Double => Some(Value::from(inner.get_uint32()[0] as f64)),
+            DataType::Uint32 => match newtype {
+                DataType::Int32 => Some(Value::from(inner.uint32[0] as i32)),
+                DataType::Int64 => Some(Value::from(inner.uint32[0] as i64)),
+                DataType::Uint64 => Some(Value::from(inner.uint32[0] as u64)),
+                DataType::Float => Some(Value::from(inner.uint32[0] as f32)),
+                DataType::Double => Some(Value::from(inner.uint32[0] as f64)),
                 _ => None
             },
-            DataType::UInt64 => match newtype {
-                DataType::Int32 => Some(Value::from(inner.get_uint64()[0] as i32)),
-                DataType::Int64 => Some(Value::from(inner.get_uint64()[0] as i64)),
-                DataType::UInt32 => Some(Value::from(inner.get_uint64()[0] as u32)),
-                DataType::Float => Some(Value::from(inner.get_uint64()[0] as f32)),
-                DataType::Double => Some(Value::from(inner.get_uint64()[0] as f64)),
+            DataType::Uint64 => match newtype {
+                DataType::Int32 => Some(Value::from(inner.uint64[0] as i32)),
+                DataType::Int64 => Some(Value::from(inner.uint64[0] as i64)),
+                DataType::Uint32 => Some(Value::from(inner.uint64[0] as u32)),
+                DataType::Float => Some(Value::from(inner.uint64[0] as f32)),
+                DataType::Double => Some(Value::from(inner.uint64[0] as f64)),
                 _ => None
             },
             DataType::DoubleArray => match newtype {
-                DataType::FloatArray => conv_arr!(inner.take_double(), f32),
+                DataType::FloatArray => conv_arr!(inner.double, f32),
                 _ => None
             },
             DataType::FloatArray => match newtype {
-                DataType::DoubleArray => conv_arr!(inner.take_float(), f64),
+                DataType::DoubleArray => conv_arr!(inner.float, f64),
                 _ => None
             },
             DataType::Int32Array => match newtype {
-                DataType::Int64Array => conv_arr!(inner.take_int32(), i64),
-                DataType::UInt32Array => conv_arr!(inner.take_int32(), u32),
-                DataType::UInt64Array => conv_arr!(inner.take_int32(), u64),
-                DataType::FloatArray => conv_arr!(inner.take_int32(), f32),
-                DataType::DoubleArray => conv_arr!(inner.take_int32(), f64),
+                DataType::Int64Array => conv_arr!(inner.int32, i64),
+                DataType::Uint32Array => conv_arr!(inner.int32, u32),
+                DataType::Uint64Array => conv_arr!(inner.int32, u64),
+                DataType::FloatArray => conv_arr!(inner.int32, f32),
+                DataType::DoubleArray => conv_arr!(inner.int32, f64),
                 _ => None
             },
             DataType::Int64Array => match newtype {
-                DataType::Int32Array => conv_arr!(inner.take_int64(), i32),
-                DataType::UInt32Array => conv_arr!(inner.take_int64(), u32),
-                DataType::UInt64Array => conv_arr!(inner.take_int64(), u64),
-                DataType::FloatArray => conv_arr!(inner.take_int64(), f32),
-                DataType::DoubleArray => conv_arr!(inner.take_int64(), f64),
+                DataType::Int32Array => conv_arr!(inner.int64, i32),
+                DataType::Uint32Array => conv_arr!(inner.int64, u32),
+                DataType::Uint64Array => conv_arr!(inner.int64, u64),
+                DataType::FloatArray => conv_arr!(inner.int64, f32),
+                DataType::DoubleArray => conv_arr!(inner.int64, f64),
                 _ => None
             },
-            DataType::UInt32Array => match newtype {
-                DataType::Int32Array => conv_arr!(inner.take_uint32(), i32),
-                DataType::Int64Array => conv_arr!(inner.take_uint32(), i64),
-                DataType::UInt64Array => conv_arr!(inner.take_uint32(), u64),
-                DataType::FloatArray => conv_arr!(inner.take_uint32(), f32),
-                DataType::DoubleArray => conv_arr!(inner.take_uint32(), f64),
+            DataType::Uint32Array => match newtype {
+                DataType::Int32Array => conv_arr!(inner.uint32, i32),
+                DataType::Int64Array => conv_arr!(inner.uint32, i64),
+                DataType::Uint64Array => conv_arr!(inner.uint32, u64),
+                DataType::FloatArray => conv_arr!(inner.uint32, f32),
+                DataType::DoubleArray => conv_arr!(inner.uint32, f64),
                 _ => None
             },
-            DataType::UInt64Array => match newtype {
-                DataType::Int32Array => conv_arr!(inner.take_uint64(), i32),
-                DataType::Int64Array => conv_arr!(inner.take_uint64(), i64),
-                DataType::UInt32Array => conv_arr!(inner.take_uint64(), u32),
-                DataType::FloatArray => conv_arr!(inner.take_uint64(), f32),
-                DataType::DoubleArray => conv_arr!(inner.take_uint64(), f64),
+            DataType::Uint64Array => match newtype {
+                DataType::Int32Array => conv_arr!(inner.uint64, i32),
+                DataType::Int64Array => conv_arr!(inner.uint64, i64),
+                DataType::Uint32Array => conv_arr!(inner.uint64, u32),
+                DataType::FloatArray => conv_arr!(inner.uint64, f32),
+                DataType::DoubleArray => conv_arr!(inner.uint64, f64),
                 _ => None
             },
             _ => None
@@ -196,18 +195,18 @@ impl Value {
 
     // Helper for the FromValue implementations.
     fn ensure_type(self, dtype: DataType) -> SpinResult<pr::Value> {
-        if self.0.get_vtype() == dtype {
+        if self.0.vtype() == Some(dtype) {
             Ok(self.0)
         } else {
             let msg = format!("wrong argument type: {:?}, expected {:?}",
-                              self.0.get_vtype(), dtype);
+                              self.0.vtype(), dtype);
             spin_err!(ARG_ERROR, &msg)
         }
     }
 
     // Helper for the From implementations.
     fn construct<F: FnOnce(&mut pr::Value)>(dtype: DataType, populate: F) -> Value {
-        let mut v = pr::Value::new();
+        let mut v = pr::Value::default();
         v.set_vtype(dtype);
         populate(&mut v);
         Value(v)
@@ -234,107 +233,107 @@ impl FromValue for () {
 
 impl<'a> From<&'a str> for Value {
     fn from(val: &'a str) -> Value {
-        Value::construct(DataType::String, |v| v.mut_string().push(val.into()))
+        Value::construct(DataType::String, |v| v.string.push(val.into()))
     }
 }
 
 impl From<String> for Value {
     fn from(val: String) -> Value {
-        Value::construct(DataType::String, |v| v.mut_string().push(val))
+        Value::construct(DataType::String, |v| v.string.push(val))
     }
 }
 
 impl FromValue for String {
     fn from_value(v: Value) -> SpinResult<String> {
-        Ok(v.ensure_type(DataType::String)?.take_string().pop().unwrap())
+        Ok(v.ensure_type(DataType::String)?.string.pop().unwrap())
     }
 }
 
 impl From<Vec<String>> for Value {
     fn from(val: Vec<String>) -> Value {
-        Value::construct(DataType::StringArray, |v| v.set_string(RepeatedField::from_vec(val)))
+        Value::construct(DataType::StringArray, |v| v.string = val)
     }
 }
 
 impl FromValue for Vec<String> {
     fn from_value(v: Value) -> SpinResult<Vec<String>> {
-        Ok(v.ensure_type(DataType::StringArray)?.take_string().to_vec())
+        Ok(v.ensure_type(DataType::StringArray)?.string)
     }
 }
 
 impl From<(Vec<i32>, Vec<String>)> for Value {
     fn from((ival, sval): (Vec<i32>, Vec<String>)) -> Value {
         Value::construct(DataType::Int64StringArray, |v| {
-            v.set_int32(ival);
-            v.set_string(RepeatedField::from_vec(sval));
+            v.int32 = ival;
+            v.string = sval;
         })
     }
 }
 
 impl FromValue for (Vec<i64>, Vec<String>) {
     fn from_value(v: Value) -> SpinResult<(Vec<i64>, Vec<String>)> {
-        let mut inner = v.ensure_type(DataType::Int64StringArray)?;
-        Ok((inner.take_int64(), inner.take_string().to_vec()))
+        let inner = v.ensure_type(DataType::Int64StringArray)?;
+        Ok((inner.int64, inner.string))
     }
 }
 
 impl From<(Vec<f64>, Vec<String>)> for Value {
     fn from((fval, sval): (Vec<f64>, Vec<String>)) -> Value {
         Value::construct(DataType::DoubleStringArray, |v| {
-            v.set_double(fval);
-            v.set_string(RepeatedField::from_vec(sval));
+            v.double = fval;
+            v.string = sval;
         })
     }
 }
 
 impl FromValue for (Vec<f64>, Vec<String>) {
     fn from_value(v: Value) -> SpinResult<(Vec<f64>, Vec<String>)> {
-        let mut inner = v.ensure_type(DataType::DoubleStringArray)?;
-        Ok((inner.take_double(), inner.take_string().to_vec()))
+        let inner = v.ensure_type(DataType::DoubleStringArray)?;
+        Ok((inner.double, inner.string))
     }
 }
 
 impl From<Vec<u8>> for Value {
     fn from(val: Vec<u8>) -> Value {
-        Value::construct(DataType::ByteArray, |v| v.set_bytes(val))
+        Value::construct(DataType::ByteArray, |v| v.bytes = Some(val))
     }
 }
 
 impl FromValue for Vec<u8> {
     fn from_value(v: Value) -> SpinResult<Vec<u8>> {
-        Ok(v.ensure_type(DataType::ByteArray)?.take_bytes())
+        Ok(v.ensure_type(DataType::ByteArray)?.bytes.unwrap())
     }
 }
 
 macro_rules! impl_traits {
-    ($ty:ty, $dtype:ident, $vectype:ident, $setter:ident, $getter:ident) => {
+    ($ty:ty, $dtype:ident, $vectype:ident, $member:ident) => {
         impl From<$ty> for Value {
             fn from(val: $ty) -> Value {
-                Value::construct(DataType::$dtype, |v| v.$setter(vec![val]))
+                Value::construct(DataType::$dtype, |v| v.$member = vec![val])
             }
         }
         impl FromValue for $ty {
             fn from_value(v: Value) -> SpinResult<$ty> {
-                Ok(v.ensure_type(DataType::$dtype)?.$getter()[0])
+                Ok(v.ensure_type(DataType::$dtype)?.$member[0])
             }
         }
         impl From<Vec<$ty>> for Value {
             fn from(val: Vec<$ty>) -> Value {
-                Value::construct(DataType::$vectype, |v| v.$setter(val))
+                Value::construct(DataType::$vectype, |v| v.$member = val)
             }
         }
         impl FromValue for Vec<$ty> {
             fn from_value(v: Value) -> SpinResult<Vec<$ty>> {
-                Ok(v.ensure_type(DataType::$vectype)?.$getter())
+                Ok(v.ensure_type(DataType::$vectype)?.$member)
             }
         }
     }
 }
 
-impl_traits!(bool, Bool, BoolArray, set_bool, take_bool);
-impl_traits!(f64, Double, DoubleArray, set_double, take_double);
-impl_traits!(f32, Float, FloatArray, set_float, take_float);
-impl_traits!(i32, Int32, Int32Array, set_int32, take_int32);
-impl_traits!(i64, Int64, Int64Array, set_int64, take_int64);
-impl_traits!(u32, UInt32, UInt32Array, set_uint32, take_uint32);
-impl_traits!(u64, UInt64, UInt64Array, set_uint64, take_uint64);
+impl_traits!(bool, Bool, BoolArray, bool);
+impl_traits!(f64, Double, DoubleArray, double);
+impl_traits!(f32, Float, FloatArray, float);
+impl_traits!(i32, Int32, Int32Array, int32);
+impl_traits!(i64, Int64, Int64Array, int64);
+impl_traits!(u32, Uint32, Uint32Array, uint32);
+impl_traits!(u64, Uint64, Uint64Array, uint64);

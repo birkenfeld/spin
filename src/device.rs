@@ -2,15 +2,15 @@
 
 //! Device trait.
 
+use std::io::Cursor;
 use std::ops::DerefMut;
 
 use fnv::FnvHashMap as HashMap;
-use protobuf;
-use protobuf::{Message, RepeatedField};
+use prost::Message;
 use mlzlog;
 use zmq;
 
-use spin_proto::{Request, Response, ReqType, RespType};
+use spin_proto::{Request, Response, ReqType, RespType, Error};
 
 use arg::{self, Value};
 use error::SpinResult;
@@ -41,85 +41,86 @@ pub trait Device : Send {
 fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()> {
     let msg = util::recv_message(sock)?;
 
-    let mut req: Request = protobuf::parse_from_bytes(&msg[3])?;
-    let mut rsp = Response::new();
-    rsp.set_seqno(req.get_seqno());
+    let req: Request = Request::decode_length_delimited(&mut Cursor::new(&msg[3]))?;
+    let mut rsp = Response::default();
+    rsp.seqno = req.seqno;
 
-    match req.get_rtype() {
-        ReqType::ReqPing => {
-            rsp.set_rtype(RespType::RespVoid);
+    match req.rtype().unwrap() {
+        ReqType::Ping => {
+            rsp.set_rtype(RespType::Ok);
         }
-        ReqType::ReqExecCmd => {
-            let val = req.take_value();
-            match dev.exec_cmd(req.get_name(), Value::new(val)) {
+        ReqType::ExecCmd => {
+            let val = req.value.unwrap();
+            match dev.exec_cmd(&req.name.unwrap(), Value::new(val)) {
                 Ok(val) => {
-                    rsp.set_rtype(RespType::RespValue);
-                    rsp.set_value(val.into_inner());
+                    rsp.set_rtype(RespType::Value);
+                    rsp.value = Some(val.into_inner());
                 }
                 Err(err) => {
-                    rsp.set_rtype(RespType::RespError);
-                    rsp.set_error(err.into_proto());
+                    rsp.set_rtype(RespType::Error);
+                    rsp.error = Some(err.into_proto());
                 }
             }
         }
-        ReqType::ReqReadAttr => {
-            match dev.read_attr(req.get_name()) {
+        ReqType::ReadAttr => {
+            match dev.read_attr(&req.name.unwrap()) {
                 Ok(val) => {
-                    rsp.set_rtype(RespType::RespValue);
-                    rsp.set_value(val.into_inner());
+                    rsp.set_rtype(RespType::Value);
+                    rsp.value = Some(val.into_inner());
                 }
                 Err(err) => {
-                    rsp.set_rtype(RespType::RespError);
-                    rsp.set_error(err.into_proto());
+                    rsp.set_rtype(RespType::Error);
+                    rsp.error = Some(err.into_proto());
                 }
             }
         }
-        ReqType::ReqWriteAttr => {
-            let val = req.take_value();
-            match dev.write_attr(req.get_name(), Value::new(val)) {
+        ReqType::WriteAttr => {
+            let val = req.value.unwrap();
+            match dev.write_attr(&req.name.unwrap(), Value::new(val)) {
                 Ok(_) => {
-                    rsp.set_rtype(RespType::RespVoid);
+                    rsp.set_rtype(RespType::Ok);
                 }
                 Err(err) => {
-                    rsp.set_rtype(RespType::RespError);
-                    rsp.set_error(err.into_proto());
+                    rsp.set_rtype(RespType::Error);
+                    rsp.error = Some(err.into_proto());
                 }
             }
         }
-        ReqType::ReqGetProp => {
-            match dev.get_prop(req.get_name()) {
+        ReqType::GetProp => {
+            match dev.get_prop(&req.name.unwrap()) {
                 Ok(val) => {
-                    rsp.set_rtype(RespType::RespValue);
-                    rsp.set_value(val.into_inner());
+                    rsp.set_rtype(RespType::Value);
+                    rsp.value = Some(val.into_inner());
                 }
                 Err(err) => {
-                    rsp.set_rtype(RespType::RespError);
-                    rsp.set_error(err.into_proto());
+                    rsp.set_rtype(RespType::Error);
+                    rsp.error = Some(err.into_proto());
                 }
             }
         }
-        ReqType::ReqSetProp => {
-            let val = req.take_value();
-            match dev.set_prop(req.get_name(), Value::new(val)) {
+        ReqType::SetProp => {
+            let val = req.value.unwrap();
+            match dev.set_prop(&req.name.unwrap(), Value::new(val)) {
                 Ok(_) => {
-                    rsp.set_rtype(RespType::RespVoid);
+                    rsp.set_rtype(RespType::Ok);
                 }
                 Err(err) => {
-                    rsp.set_rtype(RespType::RespError);
-                    rsp.set_error(err.into_proto());
+                    rsp.set_rtype(RespType::Error);
+                    rsp.error = Some(err.into_proto());
                 }
             }
         }
-        ReqType::ReqQueryAPI => {
-            rsp.set_rtype(RespType::RespAPI);
-            rsp.set_cmds(RepeatedField::from_vec(dev.query_cmd_descs()));
-            rsp.set_attrs(RepeatedField::from_vec(dev.query_attr_descs()));
-            rsp.set_props(RepeatedField::from_vec(dev.query_prop_descs()));
+        ReqType::QueryApi => {
+            rsp.set_rtype(RespType::Api);
+            rsp.cmds = dev.query_cmd_descs();
+            rsp.attrs = dev.query_attr_descs();
+            rsp.props = dev.query_prop_descs();
         }
     }
 
-    let rsp = rsp.write_to_bytes()?;
-    util::send_message(sock, &[&msg[0], &msg[1], &msg[2], &rsp])?;
+    let mut buf = Vec::new();
+    rsp.encode_length_delimited(&mut buf)?;
+    util::send_message(sock, &[&msg[0], &msg[1], &msg[2], &buf])?;
     Ok(())
 }
 
@@ -136,14 +137,18 @@ pub fn run_device(mut sock: zmq::Socket, mut dev: Box<Device>) {
 
 
 pub fn general_error_reply(reason: &str, desc: &str, req: &[u8]) -> SpinResult<Vec<u8>> {
-    let req: Request = protobuf::parse_from_bytes(req)?;
-    let mut rsp = Response::new();
-    rsp.set_seqno(req.get_seqno());
-    rsp.set_rtype(RespType::RespError);
-    rsp.mut_error().set_reason(reason.into());
-    rsp.mut_error().set_desc(desc.into());
-    let rsp = rsp.write_to_bytes()?;
-    Ok(rsp)
+    let req: Request = Request::decode_length_delimited(&mut Cursor::new(req))?;
+    let mut rsp = Response::default();
+    rsp.seqno = req.seqno;
+    rsp.set_rtype(RespType::Error);
+    rsp.error = Some(Error {
+        reason: reason.into(),
+        desc: desc.into(),
+        origin: "".into(),
+    });
+    let mut buf = Vec::new();
+    rsp.encode_length_delimited(&mut buf)?;
+    Ok(buf)
 }
 
 // Returns the Rust type for a given DataType type.
@@ -155,20 +160,20 @@ macro_rules! rust_type_for_data_type {
     (Float) => (f32);
     (Int32) => (i32);
     (Int64) => (i64);
-    (UInt32) => (u32);
-    (UInt64) => (u64);
+    (Uint32) => (u32);
+    (Uint64) => (u64);
     (String) => (String);
-    (ByteArray) => (Vec<u8>);
-    (BoolArray) => (Vec<bool>);
-    (DoubleArray) => (Vec<f64>);
-    (FloatArray) => (Vec<f32>);
-    (Int32Array) => (Vec<i32>);
-    (Int64Array) => (Vec<i64>);
-    (UInt32Array) => (Vec<u32>);
-    (UInt64Array) => (Vec<u64>);
-    (StringArray) => (Vec<String>);
-    (Int64StringArray) => ((Vec<i64>, Vec<String>));
-    (DoubleStringArray) => ((Vec<f64>, Vec<String>));
+    (Bytearray) => (Vec<u8>);
+    (Boolarray) => (Vec<bool>);
+    (Doublearray) => (Vec<f64>);
+    (Floatarray) => (Vec<f32>);
+    (Int32array) => (Vec<i32>);
+    (Int64array) => (Vec<i64>);
+    (UInt32array) => (Vec<u32>);
+    (UInt64array) => (Vec<u64>);
+    (Stringarray) => (Vec<String>);
+    (Int64stringarray) => ((Vec<i64>, Vec<String>));
+    (Doublestringarray) => ((Vec<f64>, Vec<String>));
 }
 
 #[macro_export]
