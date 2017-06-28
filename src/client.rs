@@ -7,7 +7,9 @@ use std::io::Cursor;
 use zmq;
 use prost::Message;
 
-use spin_proto::{Request, Response, ReqType, RespType};
+use spin_proto::{Request, Response, NameValue, ApiDesc};
+use spin_proto::request::ReqType;
+use spin_proto::response::RspType;
 
 use arg::{self, Value, FromValue};
 use error::{SpinResult, Error, TIMEOUT_ERROR, API_ERROR};
@@ -48,8 +50,11 @@ impl Client {
         srv_addr.extract()
     }
 
-    fn do_request(&mut self, mut req: Request, exp_type: RespType) -> SpinResult<Response> {
-        req.seqno = self.seqno;
+    fn do_request(&mut self, req_type: Option<ReqType>) -> SpinResult<Option<RspType>> {
+        let req = Request {
+            seqno: self.seqno,
+            req_type: req_type,
+        };
         self.seqno += 1;
 
         let mut buf = Vec::new();
@@ -62,28 +67,26 @@ impl Client {
         }
         let reply = util::recv_message(&mut self.socket)?;
 
-        let rsp: Response = Response::decode_length_delimited(&mut Cursor::new(&reply[1]))?;
+        let rsp = Response::decode_length_delimited(&mut Cursor::new(&reply[1]))?;
 
         if rsp.seqno != req.seqno {
             return spin_err!(API_ERROR, "sequence numbers do not match");
         }
-        if rsp.rtype() == Some(RespType::Error) {
-            Err(Error::from_proto(rsp.error.unwrap()))
-        } else if rsp.rtype() != Some(exp_type) {
-            spin_err!(API_ERROR, "wrong type of response received")
+        if let Some(RspType::Error(e)) = rsp.rsp_type {
+            Err(Error::from_proto(e))
         } else {
-            Ok(rsp)
+            Ok(rsp.rsp_type)
         }
     }
 
     pub fn exec_cmd<I: Into<Value>>(&mut self, cmd: &str, arg: I) -> SpinResult<Value> {
-        let mut req = Request::default();
-        req.set_rtype(ReqType::ExecCmd);
-        req.name = Some(cmd.into());
-        req.value = Some(arg.into().into_inner());
-
-        let rsp = self.do_request(req, RespType::Value)?;
-        Ok(Value::new(rsp.value.unwrap()))
+        let args = NameValue { name: cmd.into(), value: arg.into().into_inner() };
+        let rsp = self.do_request(Some(ReqType::ExecCmd(args)))?;
+        if let Some(RspType::Value(value)) = rsp {
+            Ok(Value::new(value))
+        } else {
+            spin_err!(API_ERROR, "wrong type of response received")
+        }
     }
 
     pub fn exec_cmd_as<I, O>(&mut self, cmd: &str, arg: I) -> SpinResult<O>
@@ -93,12 +96,12 @@ impl Client {
     }
 
     pub fn read_attr(&mut self, attr: &str) -> SpinResult<Value> {
-        let mut req = Request::default();
-        req.set_rtype(ReqType::ReadAttr);
-        req.name = Some(attr.into());
-
-        let rsp = self.do_request(req, RespType::Value)?;
-        Ok(Value::new(rsp.value.unwrap()))
+        let rsp = self.do_request(Some(ReqType::ReadAttr(attr.into())))?;
+        if let Some(RspType::Value(value)) = rsp {
+            Ok(Value::new(value))
+        } else {
+            spin_err!(API_ERROR, "wrong type of response received")
+        }
     }
 
     pub fn read_attr_as<O: FromValue>(&mut self, attr: &str) -> SpinResult<O> {
@@ -106,22 +109,22 @@ impl Client {
     }
 
     pub fn write_attr<I: Into<Value>>(&mut self, attr: &str, val: I) -> SpinResult<()> {
-        let mut req = Request::default();
-        req.set_rtype(ReqType::WriteAttr);
-        req.name = Some(attr.into());
-        req.value = Some(val.into().into_inner());
-
-        self.do_request(req, RespType::Ok)?;
-        Ok(())
+        let args = NameValue { name: attr.into(), value: val.into().into_inner() };
+        let rsp = self.do_request(Some(ReqType::WriteAttr(args)))?;
+        if rsp.is_none() {
+            Ok(())
+        } else {
+            spin_err!(API_ERROR, "wrong type of response received")
+        }
     }
 
     pub fn get_prop(&mut self, prop: &str) -> SpinResult<Value> {
-        let mut req = Request::default();
-        req.set_rtype(ReqType::GetProp);
-        req.name = Some(prop.into());
-
-        let rsp = self.do_request(req, RespType::Value)?;
-        Ok(Value::new(rsp.value.unwrap()))
+        let rsp = self.do_request(Some(ReqType::GetProp(prop.into())))?;
+        if let Some(RspType::Value(value)) = rsp {
+            Ok(Value::new(value))
+        } else {
+            spin_err!(API_ERROR, "wrong type of response received")
+        }
     }
 
     pub fn get_prop_as<O: FromValue>(&mut self, prop: &str) -> SpinResult<O> {
@@ -129,25 +132,23 @@ impl Client {
     }
 
     pub fn set_prop<I: Into<Value>>(&mut self, prop: &str, val: I) -> SpinResult<()> {
-        let mut req = Request::default();
-        req.set_rtype(ReqType::SetProp);
-        req.name = Some(prop.into());
-        req.value = Some(val.into().into_inner());
-
-        self.do_request(req, RespType::Ok)?;
-        Ok(())
+        let args = NameValue { name: prop.into(), value: val.into().into_inner() };
+        let rsp = self.do_request(Some(ReqType::SetProp(args)))?;
+        if rsp.is_none() {
+            Ok(())
+        } else {
+            spin_err!(API_ERROR, "wrong type of response received")
+        }
     }
 
     pub fn query_api(&mut self) -> SpinResult<(Vec<arg::CmdDesc>, Vec<arg::AttrDesc>,
                                                Vec<arg::PropDesc>)> {
-        let mut req = Request::default();
-        req.set_rtype(ReqType::QueryApi);
-
-        let rsp = self.do_request(req, RespType::Api)?;
-        let cmds = rsp.cmds;
-        let attrs = rsp.attrs;
-        let props = rsp.props;
-        Ok((cmds, attrs, props))
+        let rsp = self.do_request(Some(ReqType::QueryApi(0)))?;
+        if let Some(RspType::ApiDesc(ApiDesc { cmds, attrs, props})) = rsp {
+            Ok((cmds, attrs, props))
+        } else {
+            spin_err!(API_ERROR, "wrong type of response received")
+        }
     }
 
 }

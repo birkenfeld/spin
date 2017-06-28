@@ -10,7 +10,9 @@ use prost::Message;
 use mlzlog;
 use zmq;
 
-use spin_proto::{Request, Response, ReqType, RespType, Error};
+use spin_proto::{Request, Response, NameValue, ApiDesc, Error};
+use spin_proto::request::ReqType;
+use spin_proto::response::RspType;
 
 use arg::{self, Value};
 use error::SpinResult;
@@ -41,80 +43,50 @@ pub trait Device : Send {
 fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()> {
     let msg = util::recv_message(sock)?;
 
-    let req: Request = Request::decode_length_delimited(&mut Cursor::new(&msg[3]))?;
-    let mut rsp = Response::default();
-    rsp.seqno = req.seqno;
+    let req = Request::decode_length_delimited(&mut Cursor::new(&msg[3]))?;
+    let mut rsp = Response {
+        seqno: req.seqno,
+        rsp_type: None,
+    };
 
-    match req.rtype().unwrap() {
-        ReqType::Ping => {
-            rsp.set_rtype(RespType::Ok);
-        }
-        ReqType::ExecCmd => {
-            let val = req.value.unwrap();
-            match dev.exec_cmd(&req.name.unwrap(), Value::new(val)) {
-                Ok(val) => {
-                    rsp.set_rtype(RespType::Value);
-                    rsp.value = Some(val.into_inner());
-                }
-                Err(err) => {
-                    rsp.set_rtype(RespType::Error);
-                    rsp.error = Some(err.into_proto());
-                }
+    match req.req_type {
+        None => { }  // empty message == ok
+        Some(ReqType::ExecCmd(NameValue { name, value })) => {
+            match dev.exec_cmd(&name, Value::new(value)) {
+                Ok(val)  => rsp.rsp_type = Some(RspType::Value(val.into_inner())),
+                Err(err) => rsp.rsp_type = Some(RspType::Error(err.into_proto())),
             }
         }
-        ReqType::ReadAttr => {
-            match dev.read_attr(&req.name.unwrap()) {
-                Ok(val) => {
-                    rsp.set_rtype(RespType::Value);
-                    rsp.value = Some(val.into_inner());
-                }
-                Err(err) => {
-                    rsp.set_rtype(RespType::Error);
-                    rsp.error = Some(err.into_proto());
-                }
+        Some(ReqType::ReadAttr(name)) => {
+            match dev.read_attr(&name) {
+                Ok(val)  => rsp.rsp_type = Some(RspType::Value(val.into_inner())),
+                Err(err) => rsp.rsp_type = Some(RspType::Error(err.into_proto())),
             }
         }
-        ReqType::WriteAttr => {
-            let val = req.value.unwrap();
-            match dev.write_attr(&req.name.unwrap(), Value::new(val)) {
-                Ok(_) => {
-                    rsp.set_rtype(RespType::Ok);
-                }
-                Err(err) => {
-                    rsp.set_rtype(RespType::Error);
-                    rsp.error = Some(err.into_proto());
-                }
+        Some(ReqType::WriteAttr(NameValue { name, value })) => {
+            match dev.write_attr(&name, Value::new(value)) {
+                Ok(_)    => { },
+                Err(err) => rsp.rsp_type = Some(RspType::Error(err.into_proto())),
             }
         }
-        ReqType::GetProp => {
-            match dev.get_prop(&req.name.unwrap()) {
-                Ok(val) => {
-                    rsp.set_rtype(RespType::Value);
-                    rsp.value = Some(val.into_inner());
-                }
-                Err(err) => {
-                    rsp.set_rtype(RespType::Error);
-                    rsp.error = Some(err.into_proto());
-                }
+        Some(ReqType::GetProp(name)) => {
+            match dev.get_prop(&name) {
+                Ok(val)  => rsp.rsp_type = Some(RspType::Value(val.into_inner())),
+                Err(err) => rsp.rsp_type = Some(RspType::Error(err.into_proto())),
             }
         }
-        ReqType::SetProp => {
-            let val = req.value.unwrap();
-            match dev.set_prop(&req.name.unwrap(), Value::new(val)) {
-                Ok(_) => {
-                    rsp.set_rtype(RespType::Ok);
-                }
-                Err(err) => {
-                    rsp.set_rtype(RespType::Error);
-                    rsp.error = Some(err.into_proto());
-                }
+        Some(ReqType::SetProp(NameValue { name, value })) => {
+            match dev.set_prop(&name, Value::new(value)) {
+                Ok(_)    => { },
+                Err(err) => rsp.rsp_type = Some(RspType::Error(err.into_proto())),
             }
         }
-        ReqType::QueryApi => {
-            rsp.set_rtype(RespType::Api);
-            rsp.cmds = dev.query_cmd_descs();
-            rsp.attrs = dev.query_attr_descs();
-            rsp.props = dev.query_prop_descs();
+        Some(ReqType::QueryApi(_)) => {
+            rsp.rsp_type = Some(RspType::ApiDesc(ApiDesc {
+                cmds:  dev.query_cmd_descs(),
+                attrs: dev.query_attr_descs(),
+                props: dev.query_prop_descs(),
+            }));
         }
     }
 
@@ -137,15 +109,15 @@ pub fn run_device(mut sock: zmq::Socket, mut dev: Box<Device>) {
 
 
 pub fn general_error_reply(reason: &str, desc: &str, req: &[u8]) -> SpinResult<Vec<u8>> {
-    let req: Request = Request::decode_length_delimited(&mut Cursor::new(req))?;
-    let mut rsp = Response::default();
-    rsp.seqno = req.seqno;
-    rsp.set_rtype(RespType::Error);
-    rsp.error = Some(Error {
-        reason: reason.into(),
-        desc: desc.into(),
-        origin: "".into(),
-    });
+    let req = Request::decode_length_delimited(&mut Cursor::new(req))?;
+    let rsp = Response {
+        seqno: req.seqno,
+        rsp_type: Some(RspType::Error(Error {
+            reason: reason.into(),
+            desc: desc.into(),
+            origin: "".into(),
+        })),
+    };
     let mut buf = Vec::new();
     rsp.encode_length_delimited(&mut buf)?;
     Ok(buf)
