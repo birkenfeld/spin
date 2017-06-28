@@ -59,15 +59,14 @@ impl Client {
 
         let mut buf = Vec::new();
         req.encode_length_delimited(&mut buf)?;
-        util::send_message(&mut self.socket, &[&self.devname, &buf])?;
+        self.socket.send_multipart(&[&self.devname, &buf], 0)?;
 
         let num = zmq::poll(&mut [self.socket.as_poll_item(zmq::POLLIN)], self.timeout)?;
         if num == 0 {
             return spin_err!(TIMEOUT_ERROR, "no reply within client timeout");
         }
-        let reply = util::recv_message(&mut self.socket)?;
-
-        let rsp = Response::decode_length_delimited(&mut Cursor::new(&reply[1]))?;
+        let reply = util::recv_final_message_part(&mut self.socket)?;
+        let rsp = Response::decode_length_delimited(&mut Cursor::new(reply))?;
 
         if rsp.seqno != req.seqno {
             return spin_err!(API_ERROR, "sequence numbers do not match");

@@ -39,24 +39,15 @@ pub fn poll_sockets(sockets: &[zmq::Socket], timeout: i64) -> Result<Vec<usize>,
     Ok(rv)
 }
 
-/// Get a multipart message from a socket.
-pub fn recv_message(sock: &mut zmq::Socket) -> ZmqResult<Vec<Vec<u8>>> {
-    let mut result = Vec::new();
-    loop  {
-        let msg = sock.recv_msg(0)?;
-        result.push((*msg).to_vec());
+/// Get the final multipart from a socket.
+pub fn recv_final_message_part(sock: &mut zmq::Socket) -> ZmqResult<Vec<u8>> {
+    let mut msg = zmq::Message::new()?;
+    loop {
+        sock.recv(&mut msg, 0)?;
         if !sock.get_rcvmore()? {
-            return Ok(result);
+            return Ok(msg.to_vec());
         }
     }
-}
-
-/// Write a multipart message to a socket.
-pub fn send_message(sock: &mut zmq::Socket, parts: &[&[u8]]) -> ZmqResult<()> {
-    for part in parts.iter().take(parts.len() - 1) {
-        sock.send(part, zmq::SNDMORE)?;
-    }
-    sock.send(parts[parts.len()-1], 0)
 }
 
 /// Write a multipart message (as vec of vecs) to a socket.

@@ -198,23 +198,22 @@ impl Server {
         // 1 - empty
         // 2 - device name
         // 3 - serialized request
-        if msg.len() < 4 {
+        if msg.len() != 4 {
             warn!("ill formed message");
             // no need to send a serialized error response; client doesn't observe our protocol
-            util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &[], &[]])?;
+            pollsockets[0].send_multipart(&[&msg[0], &[], &[], &[]], 0)?;
             return Ok(());
         }
-        // must decode the device name from bytes
         let devname = &msg[2];
         match devsockets.get(devname) {
             None => {
                 warn!("device not found: {}", String::from_utf8_lossy(devname));
                 let rsp = general_error_reply("DeviceError", "no such device", &msg[3])?;
-                util::send_message(&mut pollsockets[0], &[&msg[0], &msg[1], &msg[2], &rsp])?;
+                pollsockets[0].send_multipart(&[&msg[0], &[], &msg[2], &rsp], 0)?;
             },
             Some(&sindex) => {
-                let sock = &mut pollsockets[sindex];
-                util::send_full_message(sock, &msg)?;
+                // send request on to the device thread
+                util::send_full_message(&mut pollsockets[sindex], &msg)?;
             },
         }
         Ok(())
@@ -238,10 +237,7 @@ impl Server {
         loop {
             for index in util::poll_sockets(&pollsockets, 1000)? {
                 // receive a message
-                let msg = {
-                    let socket = &mut pollsockets[index];
-                    util::recv_message(socket)?
-                };
+                let msg = pollsockets[index].recv_multipart(0)?;
                 if index == 0 {
                     // if it came from outside, forward it
                     self.msg_from_extern(msg, &devsockets, &mut pollsockets)?;

@@ -16,7 +16,6 @@ use spin_proto::response::RspType;
 
 use arg::{self, Value};
 use error::SpinResult;
-use util;
 
 
 pub trait Device : Send {
@@ -41,7 +40,7 @@ pub trait Device : Send {
 
 
 fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()> {
-    let msg = util::recv_message(sock)?;
+    let msg = sock.recv_multipart(0)?;
 
     let req = Request::decode_length_delimited(&mut Cursor::new(&msg[3]))?;
     let mut rsp = Response {
@@ -92,7 +91,7 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
 
     let mut buf = Vec::new();
     rsp.encode_length_delimited(&mut buf)?;
-    util::send_message(sock, &[&msg[0], &msg[1], &msg[2], &buf])?;
+    sock.send_multipart(&[&msg[0], &[], &msg[2], &buf], 0)?;
     Ok(())
 }
 
