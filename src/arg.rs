@@ -254,38 +254,6 @@ impl<'a> From<&'a str> for Value {
     }
 }
 
-impl From<String> for Value {
-    fn from(val: String) -> Value {
-        Value(pr::Value { val: Some(Val::String(val)) })
-    }
-}
-
-impl FromValue for String {
-    fn from_value(v: Value) -> SpinResult<String> {
-        if let Some(Val::String(string)) = v.0.val {
-            Ok(string)
-        } else {
-            v.invalid_type(DataType::String)
-        }
-    }
-}
-
-impl From<Vec<String>> for Value {
-    fn from(val: Vec<String>) -> Value {
-        Value(pr::Value { val: Some(Val::StringArray(pr::StringArray { array: val }))})
-    }
-}
-
-impl FromValue for Vec<String> {
-    fn from_value(v: Value) -> SpinResult<Vec<String>> {
-        if let Some(Val::StringArray(pr::StringArray { array })) = v.0.val {
-            Ok(array)
-        } else {
-            v.invalid_type(DataType::StringArray)
-        }
-    }
-}
-
 impl From<(Vec<i64>, Vec<String>)> for Value {
     fn from((ival, sval): (Vec<i64>, Vec<String>)) -> Value {
         Value(pr::Value { val: Some(Val::Int64StringArray(
@@ -380,3 +348,4 @@ impl_traits!(i32, Int32, Int32Array, int32);
 impl_traits!(i64, Int64, Int64Array, int64);
 impl_traits!(u32, Uint32, Uint32Array, uint32);
 impl_traits!(u64, Uint64, Uint64Array, uint64);
+impl_traits!(String, String, StringArray, string);
