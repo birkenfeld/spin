@@ -368,6 +368,11 @@ macro_rules! impl_traits {
                 ))})
             }
         }
+        impl<'a> From<&'a [$ty]> for Value {
+            fn from(val: &'a [$ty]) -> Value {
+                Value::from(val.to_vec())
+            }
+        }
         impl FromValue for Vec<$ty> {
             fn from_value(v: Value) -> SpinResult<Vec<$ty>> {
                 if let Some(Val::$vectype(pr::$vectype { array })) = v.0.val {
