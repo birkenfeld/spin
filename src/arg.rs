@@ -2,6 +2,8 @@
 
 //! Argument type library, wrapper around some protobuf types.
 
+use std::fmt;
+
 use toml;
 use spin_proto as pr;
 
@@ -44,7 +46,7 @@ pub fn prop_info(name: &str, doc: &str, dtype: DataType, default: Value) -> Prop
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Value(pr::Value);
 
 impl Value {
@@ -224,6 +226,43 @@ impl Value {
         let msg = format!("wrong argument type: {:?}, expected {:?}",
                           self.get_dtype(), dtype);
         spin_err!(ARG_ERROR, &msg)
+    }
+}
+
+impl fmt::Debug for Value {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.0.val {
+            None => write!(f, "Value(())"),
+            Some(Val::Bool(v)) => write!(f, "Value({})", v),
+            Some(Val::Double(v)) => write!(f, "Value({})", v),
+            Some(Val::Float(v)) => write!(f, "Value({})", v),
+            Some(Val::Int32(v)) => write!(f, "Value({})", v),
+            Some(Val::Int64(v)) => write!(f, "Value({})", v),
+            Some(Val::Uint32(v)) => write!(f, "Value({})", v),
+            Some(Val::Uint64(v)) => write!(f, "Value({})", v),
+            Some(Val::String(ref v)) => write!(f, "Value({:?})", v),
+            Some(Val::ByteArray(ref v)) => write!(f, "Value({:?})", v),
+            Some(Val::BoolArray(pr::BoolArray { ref array })) =>
+                write!(f, "Value({:?})", array),
+            Some(Val::DoubleArray(pr::DoubleArray { ref array })) =>
+                write!(f, "Value({:?})", array),
+            Some(Val::FloatArray(pr::FloatArray { ref array })) =>
+                write!(f, "Value({:?})", array),
+            Some(Val::Int32Array(pr::Int32Array { ref array })) =>
+                write!(f, "Value({:?})", array),
+            Some(Val::Int64Array(pr::Int64Array { ref array })) =>
+                write!(f, "Value({:?})", array),
+            Some(Val::Uint32Array(pr::Uint32Array { ref array })) =>
+                write!(f, "Value({:?})", array),
+            Some(Val::Uint64Array(pr::Uint64Array { ref array })) =>
+                write!(f, "Value({:?})", array),
+            Some(Val::StringArray(pr::StringArray { ref array })) =>
+                write!(f, "Value({:?})", array),
+            Some(Val::Int64StringArray(pr::Int64StringArray { ref intarray, ref strarray })) =>
+                write!(f, "Value({:?}, {:?})", intarray, strarray),
+            Some(Val::DoubleStringArray(pr::DoubleStringArray { ref dblarray, ref strarray })) =>
+                write!(f, "Value({:?}, {:?})", dblarray, strarray),
+        }
     }
 }
 
