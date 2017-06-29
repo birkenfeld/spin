@@ -24,39 +24,31 @@ pub const COMM_ERROR:     &str = "CommunicationError";
 
 
 #[derive(Debug)]
-pub struct Error {
-    pub reason: String,
-    pub desc:   String,
-    pub origin: String,
-}
+pub struct Error(pr::Error);
 
 impl Error {
-    pub fn into_proto(self) -> pr::Error {
-        pr::Error {
-            desc: self.desc,
-            reason: self.reason,
-            origin: self.origin,
-        }
+    pub fn new(err: pr::Error) -> Error {
+        Error(err)
     }
 
-    pub fn from_proto(err: pr::Error) -> Error {
-        Error {
-            reason: err.reason,
-            origin: err.origin,
-            desc: err.desc,
-        }
+    pub fn with(reason: String, desc: String, origin: String) -> Error {
+        Error(pr::Error { reason, desc, origin })
+    }
+
+    pub fn into_inner(self) -> pr::Error {
+        self.0
     }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(fmt, "{}: {}", self.reason, self.desc)
+        write!(fmt, "{}: {}", self.0.reason, self.0.desc)
     }
 }
 
 impl error::Error for Error {
     fn description(&self) -> &str {
-        &self.desc
+        &self.0.desc
     }
 }
 
@@ -64,11 +56,11 @@ macro_rules! error_impl {
     ($errcls:ty => $errconst:ident) => {
         impl From<$errcls> for Error {
             fn from(e: $errcls) -> Error {
-                Error {
+                Error(pr::Error {
                     reason: $errconst.into(),
                     desc:   error::Error::description(&e).into(),
                     origin: String::new(),
-                }
+                })
             }
         }
     }
@@ -82,13 +74,13 @@ pub type SpinResult<T> = Result<T, Error>;
 #[macro_export]
 macro_rules! spin_err {
     ($reason:expr, $msg:expr, $($args:tt),+) => {
-        Err($crate::error::Error { reason: $reason.to_string(),
-                                   desc: format!($msg, $($args),*),
-                                   origin: module_path!().into() })
+        Err($crate::error::Error::with($reason.to_string(),
+                                       format!($msg, $($args),*),
+                                       module_path!().into()))
     };
     ($reason:expr, $msg:expr) => {
-        Err($crate::error::Error { reason: $reason.to_string(),
-                                   desc: $msg.to_string(),
-                                   origin: module_path!().into() })
+        Err($crate::error::Error::with($reason.to_string(),
+                                       $msg.to_string(),
+                                       module_path!().into()))
     }
 }

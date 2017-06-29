@@ -72,7 +72,7 @@ impl Client {
             return spin_err!(API_ERROR, "sequence numbers do not match");
         }
         if let Some(RspType::Error(e)) = rsp.rsp_type {
-            Err(Error::from_proto(e))
+            Err(Error::new(e))
         } else {
             Ok(rsp.rsp_type)
         }

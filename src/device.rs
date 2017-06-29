@@ -53,33 +53,34 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
         Some(ReqType::ExecCmd(NameValue { name, value })) => {
             match dev.exec_cmd(&name, Value::new(value)) {
                 Ok(val)  => rsp.rsp_type = Some(RspType::Value(val.into_inner())),
-                Err(err) => rsp.rsp_type = Some(RspType::Error(err.into_proto())),
+                Err(err) => rsp.rsp_type = Some(RspType::Error(err.into_inner())),
             }
         }
         Some(ReqType::ReadAttr(name)) => {
             match dev.read_attr(&name) {
                 Ok(val)  => rsp.rsp_type = Some(RspType::Value(val.into_inner())),
-                Err(err) => rsp.rsp_type = Some(RspType::Error(err.into_proto())),
+                Err(err) => rsp.rsp_type = Some(RspType::Error(err.into_inner())),
             }
         }
         Some(ReqType::WriteAttr(NameValue { name, value })) => {
             match dev.write_attr(&name, Value::new(value)) {
                 Ok(_)    => { },
-                Err(err) => rsp.rsp_type = Some(RspType::Error(err.into_proto())),
+                Err(err) => rsp.rsp_type = Some(RspType::Error(err.into_inner())),
             }
         }
         Some(ReqType::GetProp(name)) => {
             match dev.get_prop(&name) {
                 Ok(val)  => rsp.rsp_type = Some(RspType::Value(val.into_inner())),
-                Err(err) => rsp.rsp_type = Some(RspType::Error(err.into_proto())),
+                Err(err) => rsp.rsp_type = Some(RspType::Error(err.into_inner())),
             }
         }
         Some(ReqType::SetProp(NameValue { name, value })) => {
             match dev.set_prop(&name, Value::new(value)) {
                 Ok(_)    => { },
-                Err(err) => rsp.rsp_type = Some(RspType::Error(err.into_proto())),
+                Err(err) => rsp.rsp_type = Some(RspType::Error(err.into_inner())),
             }
         }
+        // XXX: instead, pack ApiDesc into a ByteArray and send as Value?
         Some(ReqType::QueryApi(_)) => {
             rsp.rsp_type = Some(RspType::ApiDesc(ApiDesc {
                 cmds:  dev.query_cmd_descs(),
