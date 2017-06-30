@@ -27,6 +27,7 @@ bytes = "*"
 mlzlog = "*"
 argparse = "*"
 daemonize = "*"
+lazy_static = "*"
 
 [dependencies.spin_proto]
 path = "src/proto"

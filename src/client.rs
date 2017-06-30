@@ -18,6 +18,7 @@ use util;
 
 pub struct Client {
     socket: zmq::Socket,
+    local: bool,
     devname: Vec<u8>,
     seqno: u32,
     timeout: i64,  // in ms
@@ -25,22 +26,38 @@ pub struct Client {
 
 impl Client {
     pub fn new(uri: &str) -> SpinResult<Client> {
-        let sock = util::create_socket(&zmq::Context::new(), zmq::REQ)?;
+        let sock = util::create_socket(zmq::REQ)?;
         let addr = util::DeviceAddress::parse_uri(uri)?;
-        let endpoint = if addr.use_db {
-            Client::query_db(&addr)?
+
+        let (local, endpoint) = if Self::query_responder(&addr.devname)? {
+            (true, format!("inproc://{}", addr.devname))
+        } else if addr.use_db {
+            (false, Self::query_db(&addr)?)
         } else {
-            addr.endpoint
+            (false, addr.endpoint)
         };
         sock.connect(&endpoint)?;
         Ok(Client { socket:  sock,
-                    devname: String::from(addr.devname).into_bytes(),
+                    local:   local,
+                    devname: addr.devname.into_bytes(),
                     seqno:   0,
                     timeout: 1000, })
     }
 
     pub fn set_timeout(&mut self, timeout: i64) {
         self.timeout = timeout;
+    }
+
+    fn query_responder(addr: &str) -> SpinResult<bool> {
+        let sock = util::create_socket(zmq::REQ)?;
+        sock.connect("inproc://device_responder")?;
+        sock.send(addr.as_bytes(), 0)?;
+        let num = zmq::poll(&mut [sock.as_poll_item(zmq::POLLIN)], 50)?;
+        if num == 0 {
+            return Ok(false);
+        }
+        let reply = sock.recv_bytes(0)?;
+        Ok(reply == b"1")
     }
 
     fn query_db(addr: &util::DeviceAddress) -> SpinResult<String> {
@@ -59,7 +76,11 @@ impl Client {
 
         let mut buf = Vec::new();
         req.encode_length_delimited(&mut buf)?;
-        self.socket.send_multipart(&[&self.devname, &buf], 0)?;
+        if self.local {
+            self.socket.send_multipart(&[b"", b"", &self.devname, &buf], 0)?;
+        } else {
+            self.socket.send_multipart(&[&self.devname, &buf], 0)?;
+        }
 
         let num = zmq::poll(&mut [self.socket.as_poll_item(zmq::POLLIN)], self.timeout)?;
         if num == 0 {

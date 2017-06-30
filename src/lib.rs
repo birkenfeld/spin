@@ -16,6 +16,9 @@ extern crate bytes;
 extern crate mlzlog;
 extern crate argparse;
 extern crate daemonize;
+#[macro_use]
+extern crate lazy_static;
+
 extern crate spin_proto;
 
 #[macro_use]

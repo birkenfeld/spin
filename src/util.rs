@@ -16,10 +16,14 @@ use error::{SpinResult, ADDRESS_ERROR};
 /// Make it easier to write our signatures.
 pub type ZmqResult<T> = Result<T, zmq::Error>;
 
+lazy_static! {
+    static ref CONTEXT: zmq::Context = zmq::Context::new();
+}
+
 
 /// Create a new Zmq socket from a thread-shared Context
-pub fn create_socket(ctx: &zmq::Context, ty: zmq::SocketType) -> ZmqResult<zmq::Socket> {
-    let sock = ctx.socket(ty)?;
+pub fn create_socket(ty: zmq::SocketType) -> ZmqResult<zmq::Socket> {
+    let sock = CONTEXT.socket(ty)?;
     sock.set_linger(0)?;
     Ok(sock)
 }

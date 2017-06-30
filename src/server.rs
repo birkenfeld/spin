@@ -6,6 +6,7 @@ use std::env::current_dir;
 use std::iter::FromIterator;
 use std::thread;
 use fnv::FnvHashMap as HashMap;
+use fnv::FnvHashSet as HashSet;
 use argparse::*;
 use daemonize;
 use mlzlog;
@@ -24,7 +25,6 @@ pub struct Server {
     pub name: String,
     pub config: ServerConfig,
     pub address: util::ServerAddress,
-    context: zmq::Context,
     devcons: Vec<(DevConfig, DevConstructor)>,
 }
 
@@ -36,7 +36,6 @@ impl Server {
         Server {
             name: name.into(),
             address: util::ServerAddress::new(addr, db_addr, use_db),
-            context: zmq::Context::new(),
             devcons: Vec::with_capacity(config.devices.len()),
             config,
         }
@@ -122,7 +121,7 @@ impl Server {
         const MAX_PORT: u16 = 65000;
 
         // external socket that takes requests
-        let sock = util::create_socket(&self.context, zmq::ROUTER)?;
+        let sock = util::create_socket(zmq::ROUTER)?;
         if self.address.use_random_port {
             // random port!
             let mut port = MIN_PORT;
@@ -161,6 +160,21 @@ impl Server {
         Ok(())
     }
 
+    fn start_device_responder(&mut self) -> SpinResult<()> {
+        let devnames = HashSet::from_iter(self.devcons.iter().map(|v| v.0.name.clone().into_bytes()));
+        let sock = util::create_socket(zmq::REP)?;
+        sock.bind("inproc://device_responder")?;
+        thread::spawn(move || {
+            loop {
+                if let Ok(devname) = sock.recv_bytes(0) {
+                    let rep = if devnames.contains(&devname) { b"1" } else { b"0" };
+                    sock.send(rep, 0).unwrap();
+                }
+            }
+        });
+        Ok(())
+    }
+
     fn start_devices(&mut self, pollsockets: &mut Vec<zmq::Socket>)
                      -> SpinResult<HashMap<Vec<u8>, usize>> {
         let mut devsockets = HashMap::default();
@@ -168,10 +182,10 @@ impl Server {
         for (devconfig, dev_constructor) in self.devcons.drain(..) {
             // create an in-process socket pair
             let inproc_addr = format!("inproc://{}", devconfig.name);
-            let dev_sock = util::create_socket(&self.context, zmq::PAIR)?;
+            let dev_sock = util::create_socket(zmq::REP)?;
             dev_sock.bind(&inproc_addr)?;  // must bind before connect
 
-            let local_sock = util::create_socket(&self.context, zmq::PAIR)?;
+            let local_sock = util::create_socket(zmq::REQ)?;
             local_sock.connect(&inproc_addr)?;
 
             // store index of our local_sock in the "devsockets" as a Vec<u8>
@@ -233,6 +247,9 @@ impl Server {
 
         let mut pollsockets = Vec::new();
         pollsockets.push(ext_sock);
+
+        // create a thread that replies to "is this a local device" queries
+        self.start_device_responder()?;
 
         // create a thread per device and add its socket to pollsockets
         let devsockets = self.start_devices(&mut pollsockets)?;
