@@ -135,23 +135,24 @@ macro_rules! rust_type_for_data_type {
     (Uint32) => (u32);
     (Uint64) => (u64);
     (String) => (String);
-    (Bytearray) => (Vec<u8>);
-    (Boolarray) => (Vec<bool>);
-    (Doublearray) => (Vec<f64>);
-    (Floatarray) => (Vec<f32>);
-    (Int32array) => (Vec<i32>);
-    (Int64array) => (Vec<i64>);
-    (UInt32array) => (Vec<u32>);
-    (UInt64array) => (Vec<u64>);
-    (Stringarray) => (Vec<String>);
-    (Int64stringarray) => ((Vec<i64>, Vec<String>));
-    (Doublestringarray) => ((Vec<f64>, Vec<String>));
+    (ByteArray) => (Vec<u8>);
+    (BoolArray) => (Vec<bool>);
+    (DoubleArray) => (Vec<f64>);
+    (FloatArray) => (Vec<f32>);
+    (Int32Array) => (Vec<i32>);
+    (Int64Array) => (Vec<i64>);
+    (Uint32Array) => (Vec<u32>);
+    (Uint64Array) => (Vec<u64>);
+    (StringArray) => (Vec<String>);
+    (Int64StringArray) => ((Vec<i64>, Vec<String>));
+    (DoubleStringArray) => ((Vec<f64>, Vec<String>));
 }
 
 #[macro_export]
 macro_rules! spin_device_impl {
     ($clsname:ident,
      $propstruct:ident,
+     bases = [$($base:ident),* $(,)*],
      cmds = [$($cname:ident => ($cdoc:expr, $cintype:ident, $couttype:ident, $cfunc:ident)),* $(,)*],
      attrs = [$($aname:ident => ($adoc:expr, $atype:ident, $arfunc:ident, $awfunc:ident)),* $(,)*],
      props = [$($pname:ident => ($pdoc:expr, $ptype:ident, $pdef:expr)),* $(,)*] $(,)*) => {
@@ -160,6 +161,9 @@ macro_rules! spin_device_impl {
             _name: String,
             _descriptions: Vec<$crate::arg::PropDesc>,
             _initialized: bool,
+            $(
+                $base: $crate::base::$base::Props,
+            )*
             $(
                 $pname: rust_type_for_data_type!($ptype),
             )*
@@ -187,18 +191,36 @@ macro_rules! spin_device_impl {
             fn get_name(&self) -> &str { &self.props._name }
 
             fn query_cmd_descs(&self) -> Vec<$crate::arg::CmdDesc> {
-                vec![$($crate::arg::cmd_info(stringify!($cname), $cdoc,
-                                             $crate::arg::DataType::$cintype,
-                                             $crate::arg::DataType::$couttype),)*]
+                let mut res = Vec::new();
+                $(
+                    res.append(&mut <Self as $crate::base::$base::Base>::query_cmd_descs());
+                )*
+                // XXX correct handling of overrides
+                res.append(&mut vec![$($crate::arg::cmd_info(stringify!($cname), $cdoc,
+                                                             $crate::arg::DataType::$cintype,
+                                                             $crate::arg::DataType::$couttype),)*]);
+                res
             }
 
             fn query_attr_descs(&self) -> Vec<$crate::arg::AttrDesc> {
-                vec![$($crate::arg::attr_info(stringify!($aname), $adoc,
-                                              $crate::arg::DataType::$atype),)*]
+                let mut res = Vec::new();
+                $(
+                    res.append(&mut <Self as $crate::base::$base::Base>::query_attr_descs());
+                )*
+                // XXX correct handling of overrides
+                res.append(&mut vec![$($crate::arg::attr_info(stringify!($aname), $adoc,
+                                                              $crate::arg::DataType::$atype),)*]);
+                res
             }
 
             fn query_prop_descs(&self) -> Vec<$crate::arg::PropDesc> {
-                self.props._descriptions.clone()
+                let mut res = Vec::new();
+                $(
+                    res.append(&mut <Self as $crate::base::$base::Base>::query_prop_descs(&self.props.$base));
+                )*
+                // XXX correct handling of overrides
+                res.append(&mut self.props._descriptions.clone());
+                res
             }
 
             #[allow(unused_variables)]
@@ -210,7 +232,15 @@ macro_rules! spin_device_impl {
                 debug!("executing command {}({:?})", cmd, arg);
                 let res = match cmd {
                     $(stringify!($cname) => self.$cfunc(arg.extract()?).map($crate::Value::from),)*
-                    _ => spin_err!($crate::error::API_ERROR, "No such command"),
+                    _ => {
+                        // try base trait methods
+                        $(
+                            if let Some(res) = $crate::base::$base::Base::exec_cmd(self, cmd, arg) {
+                                return res;
+                            }
+                        )*
+                        spin_err!($crate::error::API_ERROR, "No such command")
+                    }
                 };
                 debug!("   ... result: {:?}", res);
                 res
@@ -224,7 +254,15 @@ macro_rules! spin_device_impl {
                 debug!("reading attribute {}", attr);
                 let res = match attr {
                     $(stringify!($aname) => self.$arfunc().map($crate::Value::from),)*
-                    _ => spin_err!($crate::error::API_ERROR, "No such attribute"),
+                    _ => {
+                        // try base trait attributes
+                        $(
+                            if let Some(res) = $crate::base::$base::Base::read_attr(self, attr) {
+                                return res;
+                            }
+                        )*
+                        spin_err!($crate::error::API_ERROR, "No such attribute")
+                    }
                 };
                 debug!("   ... result: {:?}", res);
                 res
@@ -238,7 +276,15 @@ macro_rules! spin_device_impl {
                 debug!("writing attribute {} = {:?}", attr, val);
                 let res = match attr {
                     $(stringify!($aname) => self.$awfunc(val.extract()?),)*
-                    _ => spin_err!($crate::error::API_ERROR, "No such attribute"),
+                    _ => {
+                        // try base trait attributes
+                        $(
+                            if let Some(res) = $crate::base::$base::Base::write_attr(self, attr, val) {
+                                return res;
+                            }
+                        )*
+                        spin_err!($crate::error::API_ERROR, "No such attribute")
+                    }
                 };
                 debug!("   ... result: {:?}", res);
                 res
@@ -268,6 +314,10 @@ macro_rules! spin_device_impl {
                                stringify!($pname), self.props.$pname);
                     }
                 )*
+                $(
+                    <Self as $crate::base::$base::Base>::init_props(&mut self.props.$base,
+                                                                    &mut cfg_prop_map);
+                )*
             }
 
             #[allow(unused_variables)]
@@ -278,6 +328,12 @@ macro_rules! spin_device_impl {
                         return Ok($crate::Value::from(self.props.$pname.clone()));
                     }
                 )*;
+                // try base trait properties
+                $(
+                    if let Some(res) = <Self as $crate::base::$base::Base>::get_prop(&self.props.$base, prop) {
+                        return res;
+                    }
+                )*
                 spin_err!($crate::error::API_ERROR, "No such property")
             }
 
@@ -299,8 +355,28 @@ macro_rules! spin_device_impl {
                         }
                     }
                 )*;
+                // try base trait properties
+                $(
+                    if let Some(res) = <Self as $crate::base::$base::Base>::set_prop(
+                        &mut self.props.$base, prop, val)
+                    {
+                        if res.is_ok() {
+                            self.delete_device();
+                            self.init_device()?;
+                        }
+                        return res;
+                    }
+                )*
                 spin_err!($crate::error::API_ERROR, "No such property")
             }
         }
+
+        $(
+            impl $crate::base::$base::GetProps for $clsname {
+                fn mut_props(&mut self) -> &mut $crate::base::$base::Props {
+                    &mut self.props.$base
+                }
+            }
+        )*
     }
 }

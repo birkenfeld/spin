@@ -21,6 +21,7 @@ pub const IO_ERROR:       &str = "InputOutputError";
 pub const PROTO_ERROR:    &str = "ProtocolError";
 pub const CONFIG_ERROR:   &str = "ConfigurationError";
 pub const COMM_ERROR:     &str = "CommunicationError";
+pub const MISSING_ERROR:  &str = "NotImplementedError";
 
 
 #[derive(Debug)]

@@ -5,7 +5,7 @@
 use client::Client;
 use device::Device;
 use error::{CONFIG_ERROR, IO_ERROR, API_ERROR, COMM_ERROR, SpinResult};
-
+use base::AnalogInput;
 
 #[derive(Default)]
 pub struct CryoDevice {
@@ -16,11 +16,11 @@ pub struct CryoDevice {
 spin_device_impl!(
     CryoDevice,
     CryoDeviceProps,
-    cmds = [
+    bases = [
+        analog_input
     ],
-    attrs = [
-        value       => ("Read value.", Double, read_value, write_value)
-    ],
+    cmds = [ ],
+    attrs = [ ],
     props = [
         iodev       => ("Network device.", String, String::new())
     ]
@@ -43,16 +43,19 @@ impl CryoDevice {
         self.iodev.take();
     }
 
+    fn get_iodev(&mut self) -> SpinResult<&mut Client> {
+        self.iodev.as_mut().map_or_else(|| spin_err!(IO_ERROR, "no iodev initialized"), Ok)
+    }
+}
+
+impl AnalogInput for CryoDevice {
     fn read_value(&mut self) -> SpinResult<f64> {
-        if let Some(ref mut iodev) = self.iodev {
-            let reply: String = iodev.exec_cmd_as("Communicate", "MEAS?")?;
-            let num = reply.split_whitespace().next().unwrap_or("");
-            match num.parse() {
-                Ok(val) => Ok(val),
-                Err(_) => spin_err!(COMM_ERROR, format!("invalid response: {:?}", reply))
-            }
-        } else {
-            spin_err!(IO_ERROR, "no iodev initialized")
+        let iodev = self.get_iodev()?;
+        let reply: String = iodev.exec_cmd_as("Communicate", "MEAS?")?;
+        let num = reply.split_whitespace().next().unwrap_or("");
+        match num.parse() {
+            Ok(val) => Ok(val),
+            Err(_) => spin_err!(COMM_ERROR, format!("invalid response: {:?}", reply))
         }
     }
 

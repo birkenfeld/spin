@@ -5,7 +5,6 @@
 use device::Device;
 use error::SpinResult;
 
-
 #[derive(Default)]
 pub struct EchoDevice {
     props: EchoDeviceProps,
@@ -15,6 +14,8 @@ pub struct EchoDevice {
 spin_device_impl!(
     EchoDevice,
     EchoDeviceProps,
+    bases = [
+    ],
     cmds = [
         Echo  => ("Sends back the same string.", String, String, cmd_echo),
     ],

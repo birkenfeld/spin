@@ -26,6 +26,7 @@ pub mod config;
 pub mod device;
 pub mod server;
 pub mod client;
+pub mod base;
 pub mod dev;
 mod db;
 mod util;

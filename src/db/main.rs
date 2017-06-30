@@ -27,6 +27,7 @@ struct DbDevice {
 spin_device_impl!(
     DbDevice,
     DbDeviceProps,
+    bases = [ ],
     cmds = [
         Register   => ("Register a server and its devices.",
                        StringArray, Void, cmd_register),
