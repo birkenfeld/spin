@@ -164,23 +164,28 @@ impl Server {
     fn start_devices(&mut self, pollsockets: &mut Vec<zmq::Socket>)
                      -> SpinResult<HashMap<Vec<u8>, usize>> {
         let mut devsockets = HashMap::default();
-        // create a socket pair and a thread for every device
+        // for every device...
         for (devconfig, dev_constructor) in self.devcons.drain(..) {
-            let inproc_addr = String::from("inproc://") + &devconfig.name;
-            let dev_sock = util::create_socket(&self.context, zmq::REP)?;
+            // create an in-process socket pair
+            let inproc_addr = format!("inproc://{}", devconfig.name);
+            let dev_sock = util::create_socket(&self.context, zmq::PAIR)?;
             dev_sock.bind(&inproc_addr)?;  // must bind before connect
 
-            let local_sock = util::create_socket(&self.context, zmq::REQ)?;
+            let local_sock = util::create_socket(&self.context, zmq::PAIR)?;
             local_sock.connect(&inproc_addr)?;
+
+            // store index of our local_sock in the "devsockets" as a Vec<u8>
             devsockets.insert(devconfig.name.clone().into(), pollsockets.len());
             pollsockets.push(local_sock);
 
+            // create the device
             let mut dev = dev_constructor(&devconfig.name);
             dev.set_name(devconfig.name);
             let prop_map = HashMap::from_iter(devconfig.props.into_iter()
                                               .map(|p| (p.name, p.value)));
             dev.init_props(prop_map);
-            // ignore init failures here, we will retry on each RPC call
+            // init the device proper -- ignore init failures here, we have a
+            // chance to retry on each RPC call
             let _ = dev.init_device();
             thread::spawn(move || {
                 // moves dev_sock and dev into this thread
@@ -209,7 +214,7 @@ impl Server {
             None => {
                 warn!("device not found: {}", String::from_utf8_lossy(devname));
                 let rsp = general_error_reply("DeviceError", "no such device", &msg[3])?;
-                pollsockets[0].send_multipart(&[&msg[0], &[], &msg[2], &rsp], 0)?;
+                pollsockets[0].send_multipart(&[&msg[0], &[], devname, &rsp], 0)?;
             },
             Some(&sindex) => {
                 // send request on to the device thread
