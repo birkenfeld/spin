@@ -48,6 +48,7 @@ impl NetworkDevice {
         let timeout = Duration::from_millis((self.timeout * 1000.) as u64);
         wstream.set_read_timeout(Some(timeout))?;
         wstream.set_write_timeout(Some(timeout))?;
+        wstream.set_nodelay(true)?;
         let rstream = BufReader::new(wstream.try_clone()?);
         self.streams = Some((rstream, wstream));
         info!("connection established to {}", address);
