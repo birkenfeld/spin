@@ -1,58 +1,71 @@
 // Spin RPC library, copyright 2015-2017 Georg Brandl.
 
-//! Network device.
+//! Serial port device.
 
-use std::net::TcpStream;
+use std::error;
 use std::time::Duration;
+use serialport::{self, SerialPort, BaudRate};
 
 use device::Device;
-use error::{CONFIG_ERROR, IO_ERROR, SpinResult};
+use error::{Error as SpinError, SpinResult, CONFIG_ERROR, IO_ERROR};
 use base::StringIO;
 
 use support::comm::{CommThread, CommClient};
 
 #[derive(Default)]
-pub struct NetworkDevice {
-    props: NetworkDeviceProps,
+pub struct SerialDevice {
+    props: SerialDeviceProps,
     timeout: f64,
-    comm: Option<CommClient<TcpStream>>,
+    comm: Option<CommClient<Box<SerialPort + 'static>>>,
 }
 
 spin_device_impl!(
-    NetworkDevice,
-    NetworkDeviceProps,
+    SerialDevice,
+    SerialDeviceProps,
     bases = [
         string_io
     ],
     cmds = [ ],
     attrs = [ ],
     props = [
-        host        => ("Host to connect to.", String, String::new()),
-        port        => ("Port to connect to.", Uint32, 0),
+        devfile  => ("Device file name.", String, String::new()),
+        baudrate => ("Baud rate.", Uint32, 9600),
     ],
 );
 
-impl NetworkDevice {
+struct Error(serialport::Error);
+
+impl From<Error> for SpinError {
+    fn from(e: Error) -> SpinError {
+        SpinError::with(IO_ERROR.into(),
+                        error::Error::description(&e.0).into(),
+                        module_path!().into())
+    }
+}
+
+impl SerialDevice {
     pub fn create(_name: &str) -> Box<Device> {
-        box NetworkDevice::default()
+        box SerialDevice::default()
     }
 
     fn init(&mut self) -> SpinResult<()> {
-        if self.props.host.is_empty() || self.props.port == 0 {
-            return spin_err!(CONFIG_ERROR, "need a host and port != 0 configured");
+        if self.props.devfile.is_empty() {
+            return spin_err!(CONFIG_ERROR, "need a devfile configured");
         }
         self.timeout = self.props.string_io.timeout;
-        let address = format!("{}:{}", self.props.host, self.props.port);
         let timeout = Duration::from_millis((self.timeout * 1000.) as u64);
+        let devfile = self.props.devfile.clone();
+        let baudrate = self.props.baudrate;
 
-        let connect = move || -> SpinResult<(TcpStream, TcpStream)> {
-            info!("connecting to {}...", address);
-            let wstream = TcpStream::connect(address.as_str())?;
-            wstream.set_write_timeout(Some(timeout))?;
-            wstream.set_nodelay(true)?;
-            let rstream = wstream.try_clone()?;
-            info!("connection established to {}", address);
-            Ok((rstream, wstream))
+        let connect = move || -> SpinResult<(Box<SerialPort>, Box<SerialPort>)> {
+            info!("opening {}...", devfile);
+            let mut port = serialport::open(&devfile).map_err(Error)?;
+            let mut settings = port.settings();
+            settings.baud_rate = BaudRate::BaudOther(baudrate);
+            port.set_all(&settings).unwrap();
+            let mut rport = serialport::open(&devfile).map_err(Error)?;
+            rport.set_all(&settings).unwrap();
+            Ok((rport, port))
         };
 
         self.comm = Some(CommThread::spawn(Box::new(connect), self.props.string_io.sol.as_bytes(),
@@ -70,7 +83,7 @@ impl NetworkDevice {
     }
 }
 
-impl StringIO for NetworkDevice {
+impl StringIO for SerialDevice {
     fn cmd_communicate(&mut self, arg: String) -> SpinResult<String> {
         if let Some(ref comm) = self.comm {
             self.convert(comm.communicate(arg.as_bytes()))

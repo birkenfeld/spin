@@ -16,6 +16,8 @@ extern crate bytes;
 extern crate mlzlog;
 extern crate argparse;
 extern crate daemonize;
+extern crate serialport;
+extern crate parking_lot;
 #[macro_use]
 extern crate lazy_static;
 
@@ -24,13 +26,14 @@ extern crate spin_proto;
 #[macro_use]
 pub mod error;
 pub mod arg;
-pub mod config;
 #[macro_use]
 pub mod device;
+pub mod config;
 pub mod server;
 pub mod client;
 pub mod base;
 pub mod dev;
+pub mod support;
 mod db;
 mod util;
 

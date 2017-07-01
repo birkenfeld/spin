@@ -4,4 +4,5 @@
 
 pub mod echo;
 pub mod network;
+pub mod serial;
 pub mod cryo;

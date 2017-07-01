@@ -27,6 +27,8 @@ bytes = "*"
 mlzlog = "*"
 argparse = "*"
 daemonize = "*"
+serialport = {git = "https://gitlab.com/susurrus/serialport-rs"}
+parking_lot = "*"
 lazy_static = "*"
 
 [dependencies.spin_proto]
