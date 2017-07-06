@@ -6,11 +6,10 @@ use std::error;
 use std::time::Duration;
 use serialport::{self, SerialPort, BaudRate};
 
-use device::Device;
-use error::{Error as SpinError, SpinResult, CONFIG_ERROR, IO_ERROR};
-use base::StringIO;
-
-use support::comm::{CommThread, CommClient};
+use spin::device::Device;
+use spin::error::{Error as SpinError, SpinResult, CONFIG_ERROR, IO_ERROR};
+use spin::base::StringIO;
+use spin::support::comm::{CommThread, CommClient};
 
 #[derive(Default)]
 pub struct SerialDevice {
@@ -45,7 +44,7 @@ impl From<Error> for SpinError {
 
 impl SerialDevice {
     pub fn create(_name: &str) -> Box<Device> {
-        box SerialDevice::default()
+        Box::new(SerialDevice::default())
     }
 
     fn init(&mut self) -> SpinResult<()> {

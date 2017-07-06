@@ -4,32 +4,23 @@ version = "0.1.0"
 authors = ["Georg Brandl <g.brandl@fz-juelich.de>"]
 license = "GPL-2.0"
 
-[lib]
-name = "spin"
+[workspace]
+
+[[bin]]
+name = "spin_srv"
+path = "src/srv/main.rs"
 
 [[bin]]
 name = "spin_db"
 path = "src/db/main.rs"
 
-[[bin]]
-name = "spin_srv"
-path = "src/srv_main.rs"
-
 [dependencies]
 log = "*"
-url = "*"
-zmq = "*"
 fnv = "*"
 time = "*"
-toml = "*"
-prost = "*"
-bytes = "*"
-mlzlog = "*"
-argparse = "*"
-daemonize = "*"
-serialport = {git = "https://gitlab.com/susurrus/serialport-rs"}
-parking_lot = "*"
-lazy_static = "*"
 
-[dependencies.spin_proto]
-path = "src/proto"
+[dependencies.spin_core]
+path = "src/core"
+
+[dependencies.spin_devices]
+path = "src/dev"

@@ -2,10 +2,13 @@
 
 //! Universal server executable.
 
-#[macro_use] extern crate log;
-#[macro_use] extern crate spin;
+#[macro_use]
+extern crate spin;
+extern crate spin_devices;
+#[macro_use]
+extern crate log;
 
-use spin::dev::*;
+use spin_devices::*;
 
 
 fn main() {

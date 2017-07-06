@@ -6,9 +6,6 @@ all:
 release:
 	cargo build --release
 
-proto:
-	(cd src/proto; protoc --rust_out=. msg.proto)
-
 MODE = release
 MARG := $(if $(filter release,$(MODE)),--release,)
 

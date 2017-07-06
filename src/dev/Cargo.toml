@@ -1,0 +1,17 @@
+[package]
+name = "spin_devices"
+version = "0.1.0"
+authors = ["Georg Brandl <g.brandl@fz-juelich.de>"]
+license = "GPL-2.0"
+
+[lib]
+name = "spin_devices"
+path = "lib.rs"
+
+[dependencies]
+fnv = "*"
+log = "*"
+serialport = {git = "https://gitlab.com/susurrus/serialport-rs"}
+
+[dependencies.spin_core]
+path = "../core"

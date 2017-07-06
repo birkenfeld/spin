@@ -2,10 +2,10 @@
 
 //! Test "cryo" device.
 
-use client::Client;
-use device::Device;
-use error::{CONFIG_ERROR, IO_ERROR, API_ERROR, COMM_ERROR, SpinResult};
-use base::AnalogInput;
+use spin::client::Client;
+use spin::device::Device;
+use spin::error::{CONFIG_ERROR, IO_ERROR, API_ERROR, COMM_ERROR, SpinResult};
+use spin::base::AnalogInput;
 
 #[derive(Default)]
 pub struct CryoDevice {
@@ -28,7 +28,7 @@ spin_device_impl!(
 
 impl CryoDevice {
     pub fn create(_name: &str) -> Box<Device> {
-        box CryoDevice::default()
+        Box::new(CryoDevice::default())
     }
 
     fn init(&mut self) -> SpinResult<()> {

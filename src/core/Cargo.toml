@@ -1,0 +1,26 @@
+[package]
+name = "spin_core"
+version = "0.1.0"
+authors = ["Georg Brandl <g.brandl@fz-juelich.de>"]
+license = "GPL-2.0"
+
+[lib]
+name = "spin"
+path = "lib.rs"
+
+[dependencies]
+log = "*"
+url = "*"
+zmq = "*"
+fnv = "*"
+toml = "*"
+prost = "*"
+bytes = "*"
+mlzlog = "*"
+argparse = "*"
+daemonize = "*"
+parking_lot = "*"
+lazy_static = "*"
+
+[dependencies.spin_proto]
+path = "../proto"

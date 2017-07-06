@@ -9,14 +9,12 @@ extern crate log;
 extern crate url;
 extern crate zmq;
 extern crate fnv;
-extern crate time;
 extern crate toml;
 extern crate prost;
 extern crate bytes;
 extern crate mlzlog;
 extern crate argparse;
 extern crate daemonize;
-extern crate serialport;
 extern crate parking_lot;
 #[macro_use]
 extern crate lazy_static;
@@ -32,9 +30,7 @@ pub mod config;
 pub mod server;
 pub mod client;
 pub mod base;
-pub mod dev;
 pub mod support;
-mod db;
 mod util;
 
 // For client use, re-export the needed API here.

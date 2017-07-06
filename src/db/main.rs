@@ -16,6 +16,8 @@ use spin::config::{ServerConfig, DevConfig};
 use spin::device::Device;
 use spin::error::{DB_ERROR, SpinResult};
 
+pub const DEFAULT_DB_PORT: u16 = 9999;
+
 
 #[derive(Default)]
 struct DbDevice {

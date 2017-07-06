@@ -5,11 +5,10 @@
 use std::net::TcpStream;
 use std::time::Duration;
 
-use device::Device;
-use error::{CONFIG_ERROR, IO_ERROR, SpinResult};
-use base::StringIO;
-
-use support::comm::{CommThread, CommClient};
+use spin::device::Device;
+use spin::error::{CONFIG_ERROR, IO_ERROR, SpinResult};
+use spin::base::StringIO;
+use spin::support::comm::{CommThread, CommClient};
 
 #[derive(Default)]
 pub struct NetworkDevice {
@@ -34,7 +33,7 @@ spin_device_impl!(
 
 impl NetworkDevice {
     pub fn create(_name: &str) -> Box<Device> {
-        box NetworkDevice::default()
+        Box::new(NetworkDevice::default())
     }
 
     fn init(&mut self) -> SpinResult<()> {

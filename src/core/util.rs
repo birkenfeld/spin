@@ -10,8 +10,9 @@ use std::path::Path;
 use zmq;
 use url;
 
-use db;
 use error::{SpinResult, ADDRESS_ERROR};
+
+pub const DEFAULT_DB_PORT: u16 = 9999;
 
 /// Make it easier to write our signatures.
 pub type ZmqResult<T> = Result<T, zmq::Error>;
@@ -90,7 +91,7 @@ impl ServerAddress {
             }
         };
         if let Some((host, port)) = ServerAddress::parse_host_port(&db_spec, "localhost",
-                                                                   db::DEFAULT_DB_PORT) {
+                                                                   DEFAULT_DB_PORT) {
             addr.db_hostport = format!("{}:{}", host, port);
         }
         if let Some(arg) = addr_arg {

@@ -2,8 +2,8 @@
 
 //! Echo device.
 
-use device::Device;
-use error::SpinResult;
+use spin::device::Device;
+use spin::error::SpinResult;
 
 #[derive(Default)]
 pub struct EchoDevice {
@@ -29,7 +29,7 @@ spin_device_impl!(
 
 impl EchoDevice {
     pub fn create(_name: &str) -> Box<Device> {
-        box EchoDevice::default()
+        Box::new(EchoDevice::default())
     }
 
     fn init(&mut self) -> SpinResult<()> {
