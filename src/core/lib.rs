@@ -11,7 +11,6 @@ extern crate zmq;
 extern crate fnv;
 extern crate toml;
 extern crate prost;
-extern crate bytes;
 extern crate mlzlog;
 extern crate argparse;
 extern crate daemonize;

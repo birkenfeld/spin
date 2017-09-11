@@ -7,6 +7,7 @@ use std::fmt;
 use std::io;
 
 use zmq;
+use prost;
 
 use spin_proto as pr;
 
@@ -69,6 +70,8 @@ macro_rules! error_impl {
 
 error_impl!(io::Error => IO_ERROR);
 error_impl!(zmq::Error => ZMQ_ERROR);
+error_impl!(prost::DecodeError => PROTO_ERROR);
+error_impl!(prost::EncodeError => PROTO_ERROR);
 
 pub type SpinResult<T> = Result<T, Error>;
 

@@ -2,7 +2,6 @@
 
 //! Protocol buffers: definition of message format sent over 0MQ.
 
-extern crate prost;
 #[macro_use]
 extern crate prost_derive;
 
