@@ -3,19 +3,19 @@
 spin_base_trait!(
     cmds = [
         Communicate => ("Send string, receive string.", String, String, cmd_communicate),
-        Flush       => ("Flush all data.", Void, Void, cmd_flush),
-        Read        => ("Read at most N chars.", Uint32, String, cmd_read),
-        Write       => ("Write a string.", String, Uint32, cmd_write),
-        ReadLine    => ("Read a line.", Void, String, cmd_readline),
-        WriteLine   => ("Write a line.", String, Uint32, cmd_writeline),
+        Flush       => ("Flush all data.", (), (), cmd_flush),
+        Read        => ("Read at most N chars.", u32, String, cmd_read),
+        Write       => ("Write a string.", String, u32, cmd_write),
+        ReadLine    => ("Read a line.", (), String, cmd_readline),
+        WriteLine   => ("Write a line.", String, u32, cmd_writeline),
     ],
     attrs = [
-        timeout     => ("Timeout for communication.", Double, read_timeout, write_timeout),
+        timeout     => ("Timeout for communication.", f64, read_timeout, write_timeout),
     ],
     props = [
         sol         => ("Start-of-line string.", String, String::new()),
         eol         => ("End-of-line string.", String, String::from("\n")),
-        timeout     => ("Initial timeout.", Double, 2.0),
+        timeout     => ("Initial timeout.", f64, 2.0),
     ],
 );
 

@@ -27,7 +27,7 @@ spin_device_impl!(
     attrs = [ ],
     props = [
         host        => ("Host to connect to.", String, String::new()),
-        port        => ("Port to connect to.", Uint32, 0),
+        port        => ("Port to connect to.", u32, 0),
     ],
 );
 

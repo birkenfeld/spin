@@ -20,10 +20,10 @@ spin_device_impl!(
         Echo  => ("Sends back the same string.", String, String, cmd_echo),
     ],
     attrs = [
-        value => ("A double value.", Double, read_value, write_value),
+        value => ("A double value.", f64, read_value, write_value),
     ],
     props = [
-        default_value => ("Default for 'value' attribute.", Double, 42.0),
+        default_value => ("Default for 'value' attribute.", f64, 42.0),
     ]
 );
 

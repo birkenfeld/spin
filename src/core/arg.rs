@@ -267,6 +267,7 @@ impl fmt::Debug for Value {
 }
 
 pub trait FromValue: Default where Self: Sized {
+    const DATA_TYPE: DataType;
     fn from_value(Value) -> SpinResult<Self>;
 }
 
@@ -278,11 +279,12 @@ impl From<()> for Value {
 }
 
 impl FromValue for () {
+    const DATA_TYPE: DataType = DataType::Void;
     fn from_value(v: Value) -> SpinResult<()> {
         if v.0.val.is_none() {
             Ok(())
         } else {
-            v.invalid_type(DataType::Void)
+            v.invalid_type(Self::DATA_TYPE)
         }
     }
 }
@@ -302,11 +304,12 @@ impl From<(Vec<i64>, Vec<String>)> for Value {
 }
 
 impl FromValue for (Vec<i64>, Vec<String>) {
+    const DATA_TYPE: DataType = DataType::Int64StringArray;
     fn from_value(v: Value) -> SpinResult<(Vec<i64>, Vec<String>)> {
         if let Some(Val::Int64StringArray(pr::Int64StringArray { intarray, strarray })) = v.0.val {
             Ok((intarray, strarray))
         } else {
-            v.invalid_type(DataType::Int64StringArray)
+            v.invalid_type(Self::DATA_TYPE)
         }
     }
 }
@@ -320,11 +323,12 @@ impl From<(Vec<f64>, Vec<String>)> for Value {
 }
 
 impl FromValue for (Vec<f64>, Vec<String>) {
+    const DATA_TYPE: DataType = DataType::DoubleStringArray;
     fn from_value(v: Value) -> SpinResult<(Vec<f64>, Vec<String>)> {
         if let Some(Val::DoubleStringArray(pr::DoubleStringArray { dblarray, strarray })) = v.0.val {
             Ok((dblarray, strarray))
         } else {
-            v.invalid_type(DataType::DoubleStringArray)
+            v.invalid_type(Self::DATA_TYPE)
         }
     }
 }
@@ -336,11 +340,12 @@ impl From<Vec<u8>> for Value {
 }
 
 impl FromValue for Vec<u8> {
+    const DATA_TYPE: DataType = DataType::ByteArray;
     fn from_value(v: Value) -> SpinResult<Vec<u8>> {
         if let Some(Val::ByteArray(bytes)) = v.0.val {
             Ok(bytes)
         } else {
-            v.invalid_type(DataType::ByteArray)
+            v.invalid_type(Self::DATA_TYPE)
         }
     }
 }
@@ -353,11 +358,12 @@ macro_rules! impl_traits {
             }
         }
         impl FromValue for $ty {
+            const DATA_TYPE: DataType = DataType::$dtype;
             fn from_value(v: Value) -> SpinResult<$ty> {
                 if let Some(Val::$dtype(content)) = v.0.val {
                     Ok(content)
                 } else {
-                    v.invalid_type(DataType::$dtype)
+                    v.invalid_type(Self::DATA_TYPE)
                 }
             }
         }
@@ -374,11 +380,12 @@ macro_rules! impl_traits {
             }
         }
         impl FromValue for Vec<$ty> {
+            const DATA_TYPE: DataType = DataType::$vectype;
             fn from_value(v: Value) -> SpinResult<Vec<$ty>> {
                 if let Some(Val::$vectype(pr::$vectype { array })) = v.0.val {
                     Ok(array)
                 } else {
-                    v.invalid_type(DataType::$vectype)
+                    v.invalid_type(Self::DATA_TYPE)
                 }
             }
         }

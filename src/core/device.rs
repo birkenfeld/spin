@@ -123,29 +123,15 @@ pub fn general_error_reply(reason: &str, desc: &str, req: &[u8]) -> SpinResult<V
     Ok(buf)
 }
 
-// Returns the Rust type for a given DataType type.
 #[macro_export]
-macro_rules! rust_type_for_data_type {
-    (Void) => (());
-    (Bool) => (bool);
-    (Double) => (f64);
-    (Float) => (f32);
-    (Int32) => (i32);
-    (Int64) => (i64);
-    (Uint32) => (u32);
-    (Uint64) => (u64);
-    (String) => (String);
-    (ByteArray) => (Vec<u8>);
-    (BoolArray) => (Vec<bool>);
-    (DoubleArray) => (Vec<f64>);
-    (FloatArray) => (Vec<f32>);
-    (Int32Array) => (Vec<i32>);
-    (Int64Array) => (Vec<i64>);
-    (Uint32Array) => (Vec<u32>);
-    (Uint64Array) => (Vec<u64>);
-    (StringArray) => (Vec<String>);
-    (Int64StringArray) => ((Vec<i64>, Vec<String>));
-    (DoubleStringArray) => ((Vec<f64>, Vec<String>));
+macro_rules! _data_type_ {
+    ($ty:ty) => { <<$ty as $crate::validate::CanValidate>::Base
+                    as $crate::arg::FromValue>::DATA_TYPE }
+}
+
+#[macro_export]
+macro_rules! _rust_type_ {
+    ($ty:ty) => { <$ty as $crate::validate::CanValidate>::Base }
 }
 
 #[macro_export]
@@ -153,9 +139,9 @@ macro_rules! spin_device_impl {
     ($clsname:ident,
      $propstruct:ident,
      bases = [$($base:ident),* $(,)*],
-     cmds = [$($cname:ident => ($cdoc:expr, $cintype:ident, $couttype:ident, $cfunc:ident)),* $(,)*],
-     attrs = [$($aname:ident => ($adoc:expr, $atype:ident, $arfunc:ident, $awfunc:ident)),* $(,)*],
-     props = [$($pname:ident => ($pdoc:expr, $ptype:ident, $pdef:expr)),* $(,)*] $(,)*) => {
+     cmds = [$($cname:ident => ($cdoc:expr, $cintype:ty, $couttype:ty, $cfunc:ident)),* $(,)*],
+     attrs = [$($aname:ident => ($adoc:expr, $atype:ty, $arfunc:ident, $awfunc:ident)),* $(,)*],
+     props = [$($pname:ident => ($pdoc:expr, $ptype:ty, $pdef:expr)),* $(,)*] $(,)*) => {
         #[derive(Default)]
         struct $propstruct {
             _name: String,
@@ -165,7 +151,7 @@ macro_rules! spin_device_impl {
                 $base: $crate::base::$base::Props,
             )*
             $(
-                $pname: rust_type_for_data_type!($ptype),
+                $pname: <$ptype as $crate::validate::CanValidate>::Base,
             )*
         }
 
@@ -197,8 +183,8 @@ macro_rules! spin_device_impl {
                 )*
                 // XXX correct handling of overrides
                 res.append(&mut vec![$($crate::arg::cmd_info(stringify!($cname), $cdoc,
-                                                             $crate::arg::DataType::$cintype,
-                                                             $crate::arg::DataType::$couttype),)*]);
+                                                             _data_type_!($cintype),
+                                                             _data_type_!($couttype)),)*]);
                 res
             }
 
@@ -208,8 +194,8 @@ macro_rules! spin_device_impl {
                     res.append(&mut <Self as $crate::base::$base::Base>::query_attr_descs());
                 )*
                 // XXX correct handling of overrides
-                res.append(&mut vec![$($crate::arg::attr_info(stringify!($aname), $adoc,
-                                                              $crate::arg::DataType::$atype),)*]);
+                    res.append(&mut vec![$($crate::arg::attr_info(stringify!($aname), $adoc,
+                                                                  _data_type_!($atype)),)*]);
                 res
             }
 
@@ -296,12 +282,16 @@ macro_rules! spin_device_impl {
                 $(
                     self.props._descriptions.push(
                         $crate::arg::prop_info(stringify!($pname), $pdoc,
-                                               $crate::arg::DataType::$ptype,
+                                               _data_type_!($ptype),
                                                $crate::Value::from($pdef)));
                     self.props.$pname = $pdef;
+                    // TODO: mandatory props
                     if let Some(cfg_value) = cfg_prop_map.remove(stringify!($pname)) {
-                        if let Some(value) = cfg_value.convert($crate::arg::DataType::$ptype) {
-                            self.props.$pname = value.extract().unwrap();
+                        if let Some(value) = cfg_value.convert(_data_type_!($ptype)) {
+                            match <$ptype as $crate::validate::CanValidate>::validate(value) {
+                                Ok(v) => self.props.$pname = v,
+                                Err(e) => warn!("XXX property validation failure"),
+                            }
                             debug!("property {} from config: {:?}",
                                    stringify!($pname), self.props.$pname);
                         } else {
@@ -342,8 +332,11 @@ macro_rules! spin_device_impl {
                 debug!("set property {} = {:?}", prop, val);
                 $(
                     if prop == stringify!($pname) {
-                        if let Some(val) = val.convert($crate::arg::DataType::$ptype) {
-                            self.props.$pname = val.extract().unwrap();
+                        if let Some(val) = val.convert(_data_type_!($ptype)) {
+                            match <$ptype as $crate::validate::CanValidate>::validate(val) {
+                                Ok(v) => self.props.$pname = v,
+                                Err(e) => warn!("XXX property validation failure"),
+                            }
                             self.delete_device();
                             self.init_device()?;
                             return Ok(());
@@ -351,7 +344,8 @@ macro_rules! spin_device_impl {
                             return spin_err!(
                                 $crate::error::ARG_ERROR,
                                 &format!("Wrong property type, expected {:?}",
-                                         $crate::arg::DataType::$ptype));
+                                         _data_type_!($ptype))
+                            );
                         }
                     }
                 )*;

@@ -28,7 +28,7 @@ spin_device_impl!(
     attrs = [ ],
     props = [
         devfile  => ("Device file name.", String, String::new()),
-        baudrate => ("Baud rate.", Uint32, 9600),
+        baudrate => ("Baud rate.", u32, 9600),
     ],
 );
 

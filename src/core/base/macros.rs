@@ -2,14 +2,14 @@
 
 #[macro_export]
 macro_rules! spin_base_trait {
-    (cmds = [$($cname:ident => ($cdoc:expr, $cintype:ident, $couttype:ident, $cfunc:ident)),* $(,)*],
-     attrs = [$($aname:ident => ($adoc:expr, $atype:ident, $arfunc:ident, $awfunc:ident)),* $(,)*],
-     props = [$($pname:ident => ($pdoc:expr, $ptype:ident, $pdef:expr)),* $(,)*] $(,)*) => {
+    (cmds = [$($cname:ident => ($cdoc:expr, $cintype:ty, $couttype:ty, $cfunc:ident)),* $(,)*],
+     attrs = [$($aname:ident => ($adoc:expr, $atype:ty, $arfunc:ident, $awfunc:ident)),* $(,)*],
+     props = [$($pname:ident => ($pdoc:expr, $ptype:ty, $pdef:expr)),* $(,)*] $(,)*) => {
         #[derive(Default)]
         pub struct Props {
             _descriptions: Vec<$crate::arg::PropDesc>,
             $(
-                pub $pname: rust_type_for_data_type!($ptype),
+                pub $pname: <$ptype as $crate::validate::CanValidate>::Base,
             )*
         }
 
@@ -20,13 +20,13 @@ macro_rules! spin_base_trait {
         pub trait Base : $crate::device::Device + GetProps {
             fn query_cmd_descs() -> Vec<$crate::arg::CmdDesc> {
                 vec![$($crate::arg::cmd_info(stringify!($cname), $cdoc,
-                                             $crate::arg::DataType::$cintype,
-                                             $crate::arg::DataType::$couttype),)*]
+                                             _data_type_!($cintype),
+                                             _data_type_!($couttype)),)*]
             }
 
             fn query_attr_descs() -> Vec<$crate::arg::AttrDesc> {
                 vec![$($crate::arg::attr_info(stringify!($aname), $adoc,
-                                              $crate::arg::DataType::$atype),)*]
+                                              _data_type_!($atype)),)*]
             }
 
             fn query_prop_descs(props: &Props) -> Vec<$crate::arg::PropDesc> {
@@ -74,12 +74,15 @@ macro_rules! spin_base_trait {
                 $(
                     props._descriptions.push(
                         $crate::arg::prop_info(stringify!($pname), $pdoc,
-                                               $crate::arg::DataType::$ptype,
+                                               _data_type_!($ptype),
                                                $crate::Value::from($pdef)));
                     props.$pname = $pdef;
                     if let Some(cfg_value) = cfg_prop_map.remove(stringify!($pname)) {
-                        if let Some(value) = cfg_value.convert($crate::arg::DataType::$ptype) {
-                            props.$pname = value.extract().unwrap();
+                        if let Some(value) = cfg_value.convert(_data_type_!($ptype)) {
+                            match <$ptype as $crate::validate::CanValidate>::validate(value) {
+                                Ok(v) => props.$pname = v,
+                                Err(e) => warn!("XXX property validation failure"),
+                            }
                             debug!("property {} from config: {:?}",
                                    stringify!($pname), props.$pname);
                         } else {
@@ -108,14 +111,18 @@ macro_rules! spin_base_trait {
             fn set_prop(props: &mut Props, prop: &str, val: $crate::Value) -> Option<$crate::SpinResult<()>> {
                 $(
                     if prop == stringify!($pname) {
-                        if let Some(val) = val.convert($crate::arg::DataType::$ptype) {
-                            props.$pname = val.extract().unwrap();
+                        if let Some(val) = val.convert(_data_type_!($ptype)) {
+                            match <$ptype as $crate::validate::CanValidate>::validate(val) {
+                                Ok(v) => props.$pname = v,
+                                Err(e) => warn!("XXX property validation failure"),
+                            }
                             return Some(Ok(()));
                         } else {
                             return Some(spin_err!(
                                 $crate::error::ARG_ERROR,
                                 &format!("Wrong property type, expected {:?}",
-                                         $crate::arg::DataType::$ptype)));
+                                         _data_type_!($ptype)))
+                            );
                         }
                     }
                 )*;
@@ -123,20 +130,20 @@ macro_rules! spin_base_trait {
             }
 
             $(
-                fn $cfunc(&mut self, val: rust_type_for_data_type!($cintype))
-                          -> $crate::SpinResult<rust_type_for_data_type!($couttype)> {
+                fn $cfunc(&mut self, val: _rust_type_!($cintype))
+                          -> $crate::SpinResult<_rust_type_!($couttype)> {
                     self::default::$cfunc(self, val)
                 }
             )*
 
             $(
-                fn $arfunc(&mut self) -> $crate::SpinResult<rust_type_for_data_type!($atype)> {
+                fn $arfunc(&mut self) -> $crate::SpinResult<_rust_type_!($atype)> {
                     self::default::$arfunc(self)
                 }
             )*
 
             $(
-                fn $awfunc(&mut self, val: rust_type_for_data_type!($atype)) -> $crate::SpinResult<()> {
+                fn $awfunc(&mut self, val: _rust_type_!($atype)) -> $crate::SpinResult<()> {
                     self::default::$awfunc(self, val)
                 }
             )*

@@ -11,6 +11,7 @@ extern crate zmq;
 extern crate fnv;
 extern crate toml;
 extern crate prost;
+extern crate regex;
 extern crate mlzlog;
 extern crate argparse;
 extern crate daemonize;
@@ -30,6 +31,7 @@ pub mod server;
 pub mod client;
 pub mod base;
 pub mod support;
+pub mod validate;
 mod util;
 
 // For client use, re-export the needed API here.

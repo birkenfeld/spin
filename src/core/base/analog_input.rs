@@ -4,7 +4,7 @@ spin_base_trait!(
     cmds = [
     ],
     attrs = [
-        value       => ("Main device value.", Double, read_value, write_value),
+        value       => ("Main device value.", f64, read_value, write_value),
     ],
     props = [
     ],
