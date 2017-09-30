@@ -217,7 +217,11 @@ macro_rules! spin_device_impl {
                 }
                 debug!("executing command {}({:?})", cmd, arg);
                 let res = match cmd {
-                    $(stringify!($cname) => self.$cfunc(arg.extract()?).map($crate::Value::from),)*
+                    $(
+                        stringify!($cname) => self.$cfunc(
+                            <$cintype as $crate::validate::CanValidate>::validate(arg)?
+                        ).map($crate::Value::from),
+                    )*
                     _ => {
                         // try base trait methods
                         $(
@@ -261,7 +265,11 @@ macro_rules! spin_device_impl {
                 }
                 debug!("writing attribute {} = {:?}", attr, val);
                 let res = match attr {
-                    $(stringify!($aname) => self.$awfunc(val.extract()?),)*
+                    $(
+                        stringify!($aname) => self.$awfunc(
+                            <$atype as $crate::validate::CanValidate>::validate(val)?
+                        ),
+                    )*
                     _ => {
                         // try base trait attributes
                         $(

@@ -38,7 +38,7 @@ macro_rules! spin_base_trait {
                         -> Option<$crate::SpinResult<$crate::Value>> {
                 match cmd {
                     $(stringify!($cname) =>
-                        match arg.extract() {
+                        match <$cintype as $crate::validate::CanValidate>::validate(arg) {
                             Ok(arg) => Some(self.$cfunc(arg).map($crate::Value::from)),
                             Err(err) => Some(Err(err)),
                         },
@@ -59,7 +59,7 @@ macro_rules! spin_base_trait {
             fn write_attr(&mut self, attr: &str, val: $crate::Value) -> Option<$crate::SpinResult<()>> {
                 match attr {
                     $(stringify!($aname) =>
-                        match val.extract() {
+                        match <$atype as $crate::validate::CanValidate>::validate(val) {
                             Ok(val) => Some(self.$awfunc(val)),
                             Err(err) => Some(Err(err)),
                         },
