@@ -141,7 +141,7 @@ macro_rules! spin_device_impl {
      bases = [$($base:ident),* $(,)*],
      cmds = [$($cname:ident => ($cdoc:expr, $cintype:ty, $couttype:ty, $cfunc:ident)),* $(,)*],
      attrs = [$($aname:ident => ($adoc:expr, $atype:ty, $arfunc:ident, $awfunc:ident)),* $(,)*],
-     props = [$($pname:ident => ($pdoc:expr, $ptype:ty, $pdef:expr)),* $(,)*] $(,)*) => {
+     props = [$($pname:ident => ($pdoc:expr, $ptype:ty, $pdefault:expr)),* $(,)*] $(,)*) => {
         #[derive(Default)]
         struct $propstruct {
             _name: String,
@@ -291,9 +291,7 @@ macro_rules! spin_device_impl {
                     self.props._descriptions.push(
                         $crate::arg::prop_info(stringify!($pname), $pdoc,
                                                _data_type_!($ptype),
-                                               $crate::Value::from($pdef)));
-                    self.props.$pname = $pdef;
-                    // TODO: mandatory props
+                                               $crate::Value::from($pdefault)));
                     if let Some(cfg_value) = cfg_prop_map.remove(stringify!($pname)) {
                         if let Some(value) = cfg_value.convert(_data_type_!($ptype)) {
                             match <$ptype as $crate::validate::CanValidate>::validate(value) {
@@ -310,6 +308,10 @@ macro_rules! spin_device_impl {
                     } else {
                         debug!("property {} from default: {:?}",
                                stringify!($pname), self.props.$pname);
+                        match $crate::validate::IntoDefault::into_default(&$pdefault) {
+                            Ok(v) => self.props.$pname = v.extract().unwrap(),
+                            Err(e) => warn!("XXX property default validation failure"),
+                        }
                     }
                 )*
                 $(

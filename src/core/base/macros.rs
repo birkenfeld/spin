@@ -4,7 +4,7 @@
 macro_rules! spin_base_trait {
     (cmds = [$($cname:ident => ($cdoc:expr, $cintype:ty, $couttype:ty, $cfunc:ident)),* $(,)*],
      attrs = [$($aname:ident => ($adoc:expr, $atype:ty, $arfunc:ident, $awfunc:ident)),* $(,)*],
-     props = [$($pname:ident => ($pdoc:expr, $ptype:ty, $pdef:expr)),* $(,)*] $(,)*) => {
+     props = [$($pname:ident => ($pdoc:expr, $ptype:ty, $pdefault:expr)),* $(,)*] $(,)*) => {
         #[derive(Default)]
         pub struct Props {
             _descriptions: Vec<$crate::arg::PropDesc>,
@@ -75,8 +75,7 @@ macro_rules! spin_base_trait {
                     props._descriptions.push(
                         $crate::arg::prop_info(stringify!($pname), $pdoc,
                                                _data_type_!($ptype),
-                                               $crate::Value::from($pdef)));
-                    props.$pname = $pdef;
+                                               $crate::Value::from($pdefault)));
                     if let Some(cfg_value) = cfg_prop_map.remove(stringify!($pname)) {
                         if let Some(value) = cfg_value.convert(_data_type_!($ptype)) {
                             match <$ptype as $crate::validate::CanValidate>::validate(value) {
@@ -93,6 +92,10 @@ macro_rules! spin_base_trait {
                     } else {
                         debug!("property {} from default: {:?}",
                                stringify!($pname), props.$pname);
+                        match $crate::validate::IntoDefault::into_default(&$pdefault) {
+                            Ok(v) => props.$pname = v.extract().unwrap(),
+                            Err(e) => warn!("XXX property default validation failure"),
+                        }
                     }
                 )*
             }

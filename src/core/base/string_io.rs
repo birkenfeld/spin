@@ -13,8 +13,8 @@ spin_base_trait!(
         timeout     => ("Timeout for communication.", f64, read_timeout, write_timeout),
     ],
     props = [
-        sol         => ("Start-of-line string.", String, String::new()),
-        eol         => ("End-of-line string.", String, String::from("\n")),
+        sol         => ("Start-of-line string.", String, ""),
+        eol         => ("End-of-line string.", String, "\n"),
         timeout     => ("Initial timeout.", f64, 2.0),
     ],
 );

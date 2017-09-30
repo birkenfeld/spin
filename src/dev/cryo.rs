@@ -6,7 +6,7 @@ use spin::client::Client;
 use spin::device::Device;
 use spin::error::{CONFIG_ERROR, IO_ERROR, API_ERROR, COMM_ERROR, SpinResult};
 use spin::base::AnalogInput;
-use spin::validate::Subdev;
+use spin::validate::{Subdev, Mandatory};
 
 #[derive(Default)]
 pub struct CryoDevice {
@@ -23,7 +23,7 @@ spin_device_impl!(
     cmds = [ ],
     attrs = [ ],
     props = [
-        iodev       => ("Network device.", Subdev, String::new())
+        iodev       => ("Network device.", Subdev, Mandatory)
     ]
 );
 

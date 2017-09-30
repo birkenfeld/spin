@@ -10,6 +10,7 @@ use spin::device::Device;
 use spin::error::{Error as SpinError, SpinResult, CONFIG_ERROR, IO_ERROR};
 use spin::base::StringIO;
 use spin::support::comm::{CommThread, CommClient};
+use spin::validate::Mandatory;
 
 #[derive(Default)]
 pub struct SerialDevice {
@@ -27,7 +28,7 @@ spin_device_impl!(
     cmds = [ ],
     attrs = [ ],
     props = [
-        devfile  => ("Device file name.", String, String::new()),
+        devfile  => ("Device file name.", String, Mandatory),
         baudrate => ("Baud rate.", u32, 9600),
     ],
 );

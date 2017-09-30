@@ -9,6 +9,7 @@ use spin::device::Device;
 use spin::error::{CONFIG_ERROR, IO_ERROR, SpinResult};
 use spin::base::StringIO;
 use spin::support::comm::{CommThread, CommClient};
+use spin::validate::Mandatory;
 
 #[derive(Default)]
 pub struct NetworkDevice {
@@ -26,7 +27,7 @@ spin_device_impl!(
     cmds = [ ],
     attrs = [ ],
     props = [
-        host        => ("Host to connect to.", String, String::new()),
+        host        => ("Host to connect to.", String, Mandatory),
         port        => ("Port to connect to.", u32, 0),
     ],
 );

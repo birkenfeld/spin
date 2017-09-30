@@ -5,7 +5,7 @@
 use regex;
 
 use arg::{Value, FromValue};
-use error::{SpinResult, ARG_ERROR};
+use error::{SpinResult, ARG_ERROR, CONFIG_ERROR};
 
 pub trait CanValidate {
     type Base;
@@ -31,5 +31,29 @@ impl CanValidate for Subdev {
         } else {
             Ok(v)
         }
+    }
+}
+
+pub trait IntoDefault {
+    fn into_default(&self) -> SpinResult<Value>;
+}
+
+impl<T: Clone> IntoDefault for T where Value: From<T> {
+    fn into_default(&self) -> SpinResult<Value> {
+        Ok(Value::from(self.clone()))
+    }
+}
+
+pub struct Mandatory;
+
+impl IntoDefault for Mandatory {
+    fn into_default(&self) -> SpinResult<Value> {
+       spin_err!(CONFIG_ERROR, "this property is mandatory")
+    }
+}
+
+impl From<Mandatory> for Value {
+    fn from(_: Mandatory) -> Value {
+        Value::from(())
     }
 }
