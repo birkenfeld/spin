@@ -197,7 +197,9 @@ impl Server {
             dev.set_name(devconfig.name);
             let prop_map = HashMap::from_iter(devconfig.props.into_iter()
                                               .map(|p| (p.name, p.value)));
-            dev.init_props(prop_map);
+            // try to init properties -- if this fails cancel everything
+            // XXX we don't have the device name in the error message
+            dev.init_props(prop_map)?;
             // init the device proper -- ignore init failures here, we have a
             // chance to retry on each RPC call
             let _ = dev.init_device();

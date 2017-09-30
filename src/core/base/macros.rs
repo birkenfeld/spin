@@ -69,8 +69,8 @@ macro_rules! spin_base_trait {
             }
 
             #[allow(unused_variables, unused_mut)]
-            fn init_props(props: &mut Props,
-                          cfg_prop_map: &mut ::fnv::FnvHashMap<String, $crate::Value>) {
+            fn init_props(props: &mut Props, cfg_prop_map: &mut ::fnv::FnvHashMap<String, $crate::Value>)
+                -> $crate::SpinResult<()> {
                 $(
                     props._descriptions.push(
                         $crate::arg::prop_info(stringify!($pname), $pdoc,
@@ -78,26 +78,21 @@ macro_rules! spin_base_trait {
                                                $crate::Value::from($pdefault)));
                     if let Some(cfg_value) = cfg_prop_map.remove(stringify!($pname)) {
                         if let Some(value) = cfg_value.convert(_data_type_!($ptype)) {
-                            match <$ptype as $crate::validate::CanValidate>::validate(value) {
-                                Ok(v) => props.$pname = v,
-                                Err(e) => warn!("XXX property validation failure"),
-                            }
+                            props.$pname = <$ptype as $crate::validate::CanValidate>::validate(value)?;
                             debug!("property {} from config: {:?}",
                                    stringify!($pname), props.$pname);
                         } else {
-                            warn!("XXX property conversion failure");
-                            debug!("property {} from default: {:?}",
-                                   stringify!($pname), props.$pname);
+                            return spin_err!($crate::error::CONFIG_ERROR,
+                                             &format!("Wrong configured type for {}, expected {:?}",
+                                                      stringify!($pname), _data_type_!($ptype)));
                         }
                     } else {
+                        props.$pname = $crate::validate::IntoDefault::into_default(&$pdefault)?.extract()?;
                         debug!("property {} from default: {:?}",
                                stringify!($pname), props.$pname);
-                        match $crate::validate::IntoDefault::into_default(&$pdefault) {
-                            Ok(v) => props.$pname = v.extract().unwrap(),
-                            Err(e) => warn!("XXX property default validation failure"),
-                        }
                     }
                 )*
+                Ok(())
             }
 
             #[allow(unused_variables)]

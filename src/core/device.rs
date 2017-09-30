@@ -19,7 +19,7 @@ use error::SpinResult;
 
 
 pub trait Device : Send {
-    fn init_props(&mut self, HashMap<String, Value>);
+    fn init_props(&mut self, HashMap<String, Value>) -> SpinResult<()>;
 
     fn init_device(&mut self) -> SpinResult<()>;
     fn delete_device(&mut self);
@@ -285,7 +285,8 @@ macro_rules! spin_device_impl {
             }
 
             #[allow(unused_variables, unused_mut)]
-            fn init_props(&mut self, mut cfg_prop_map: ::fnv::FnvHashMap<String, $crate::Value>) {
+            fn init_props(&mut self, mut cfg_prop_map: ::fnv::FnvHashMap<String, $crate::Value>)
+                -> $crate::SpinResult<()> {
                 debug!("init properties");
                 $(
                     self.props._descriptions.push(
@@ -294,30 +295,25 @@ macro_rules! spin_device_impl {
                                                $crate::Value::from($pdefault)));
                     if let Some(cfg_value) = cfg_prop_map.remove(stringify!($pname)) {
                         if let Some(value) = cfg_value.convert(_data_type_!($ptype)) {
-                            match <$ptype as $crate::validate::CanValidate>::validate(value) {
-                                Ok(v) => self.props.$pname = v,
-                                Err(e) => warn!("XXX property validation failure"),
-                            }
+                            self.props.$pname = <$ptype as $crate::validate::CanValidate>::validate(value)?;
                             debug!("property {} from config: {:?}",
                                    stringify!($pname), self.props.$pname);
                         } else {
-                            warn!("XXX property conversion failure");
-                            debug!("property {} from default: {:?}",
-                                   stringify!($pname), self.props.$pname);
+                            return spin_err!($crate::error::CONFIG_ERROR,
+                                             &format!("Wrong configured type for {}, expected {:?}",
+                                                      stringify!($pname), _data_type_!($ptype)));
                         }
                     } else {
+                        self.props.$pname = $crate::validate::IntoDefault::into_default(&$pdefault)?.extract()?;
                         debug!("property {} from default: {:?}",
                                stringify!($pname), self.props.$pname);
-                        match $crate::validate::IntoDefault::into_default(&$pdefault) {
-                            Ok(v) => self.props.$pname = v.extract().unwrap(),
-                            Err(e) => warn!("XXX property default validation failure"),
-                        }
                     }
                 )*
                 $(
                     <Self as $crate::base::$base::Base>::init_props(&mut self.props.$base,
-                                                                    &mut cfg_prop_map);
+                                                                    &mut cfg_prop_map)?;
                 )*
+                Ok(())
             }
 
             #[allow(unused_variables)]

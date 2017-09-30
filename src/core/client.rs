@@ -26,7 +26,8 @@ pub struct Client {
 
 impl Client {
     pub fn new(uri: &str) -> SpinResult<Client> {
-        let sock = util::create_socket(zmq::REQ)?;
+        // XXX using REQ fails with timeouts
+        let socket = util::create_socket(zmq::REQ)?;
         let addr = util::DeviceAddress::parse_uri(uri)?;
 
         let (local, endpoint) = if Self::query_responder(&addr.devname)? {
@@ -36,11 +37,11 @@ impl Client {
         } else {
             (false, addr.endpoint)
         };
-        sock.connect(&endpoint)?;
-        Ok(Client { socket:  sock,
-                    local:   local,
+        socket.connect(&endpoint)?;
+        Ok(Client { socket,
+                    local,
                     devname: addr.devname.into_bytes(),
-                    seqno:   0,
+                    seqno: 0,
                     timeout: 1000, })
     }
 
