@@ -18,6 +18,7 @@ use util;
 
 pub struct Client {
     socket: zmq::Socket,
+    endpoint: String,
     local: bool,
     devname: Vec<u8>,
     seqno: u32,
@@ -26,7 +27,6 @@ pub struct Client {
 
 impl Client {
     pub fn new(uri: &str) -> SpinResult<Client> {
-        // XXX using REQ fails with timeouts
         let socket = util::create_socket(zmq::REQ)?;
         let addr = util::DeviceAddress::parse_uri(uri)?;
 
@@ -38,7 +38,8 @@ impl Client {
             (false, addr.endpoint)
         };
         socket.connect(&endpoint)?;
-        Ok(Client { socket,
+        Ok(Client { socket: socket,
+                    endpoint,
                     local,
                     devname: addr.devname.into_bytes(),
                     seqno: 0,
@@ -69,6 +70,19 @@ impl Client {
     }
 
     fn do_request(&mut self, req_type: Option<ReqType>) -> SpinResult<Option<RspType>> {
+        self.do_request_inner(req_type).map_err(|error| {
+            // Recreate the socket to avoid getting stuck due to state machine.
+            // We let it potentially fail here; the next request will yield the
+            // appropriate error.
+            if let Ok(sock) = util::create_socket(zmq::REQ) {
+                let _ = sock.connect(&self.endpoint);
+                self.socket = sock;
+            }
+            error
+        })
+    }
+
+    fn do_request_inner(&mut self, req_type: Option<ReqType>) -> SpinResult<Option<RspType>> {
         let req = Request {
             seqno: self.seqno,
             req_type: req_type,
