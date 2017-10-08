@@ -2,8 +2,6 @@
 
 //! Client library.
 
-use std::io::Cursor;
-
 use zmq;
 use prost::Message;
 
@@ -102,7 +100,7 @@ impl Client {
             return spin_err!(TIMEOUT_ERROR, "no reply within client timeout");
         }
         let reply = util::recv_final_message_part(&mut self.socket)?;
-        let rsp = Response::decode_length_delimited(&mut Cursor::new(reply))?;
+        let rsp = Response::decode_length_delimited(reply)?;
 
         if rsp.seqno != req.seqno {
             return spin_err!(API_ERROR, "sequence numbers do not match");

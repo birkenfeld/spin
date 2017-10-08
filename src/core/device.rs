@@ -2,7 +2,6 @@
 
 //! Device trait.
 
-use std::io::Cursor;
 use std::ops::DerefMut;
 
 use fnv::FnvHashMap as HashMap;
@@ -42,7 +41,7 @@ pub trait Device : Send {
 fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()> {
     let msg = sock.recv_multipart(0)?;
 
-    let req = Request::decode_length_delimited(&mut Cursor::new(&msg[3]))?;
+    let req = Request::decode_length_delimited(&msg[3])?;
     let mut rsp = Response {
         seqno: req.seqno,
         rsp_type: None,
@@ -109,7 +108,7 @@ pub fn run_device(mut sock: zmq::Socket, mut dev: Box<Device>) {
 
 
 pub fn general_error_reply(reason: &str, desc: &str, req: &[u8]) -> SpinResult<Vec<u8>> {
-    let req = Request::decode_length_delimited(&mut Cursor::new(req))?;
+    let req = Request::decode_length_delimited(req)?;
     let rsp = Response {
         seqno: req.seqno,
         rsp_type: Some(RspType::Error(Error {
