@@ -36,7 +36,7 @@ impl ServerConfig {
                     warn!("could not read config: {}", e.description());
                     ServerConfig { devices: vec![] }
                 }
-            }
+            },
         }
     }
 
@@ -55,17 +55,21 @@ impl ServerConfig {
                         continue;
                     }
                     if let Some(arg_value) = Value::from_toml(value) {
-                        devprops.push(DevProp { name: prop.to_owned(),
-                                                value: arg_value });
+                        devprops.push(DevProp {
+                            name: prop.to_owned(),
+                            value: arg_value,
+                        });
                     }
                 }
             } else {
-                continue;  // Shouldn't happen.
+                continue; // Shouldn't happen.
             }
             if let Some(devtype) = devtype {
-                devices.push(DevConfig { name: key.to_owned(),
-                                         devtype,
-                                         props: devprops })
+                devices.push(DevConfig {
+                    name: key.to_owned(),
+                    devtype,
+                    props: devprops,
+                })
             } else {
                 warn!("ignoring device {}, it has no proper type", key);
             }

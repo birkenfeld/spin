@@ -6,9 +6,9 @@ use std::net::TcpStream;
 use std::time::Duration;
 
 use spin::device::Device;
-use spin::error::{CONFIG_ERROR, IO_ERROR, SpinResult};
+use spin::error::{SpinResult, CONFIG_ERROR, IO_ERROR};
 use spin::base::StringIO;
-use spin::support::comm::{CommThread, CommClient};
+use spin::support::comm::{CommClient, CommThread};
 use spin::validate::Mandatory;
 
 #[derive(Default)]
@@ -55,18 +55,24 @@ impl NetworkDevice {
             Ok((rstream, wstream))
         };
 
-        self.comm = Some(CommThread::spawn(Box::new(connect), self.props.string_io.sol.as_bytes(),
-                                           self.props.string_io.eol.as_bytes(), timeout)?);
+        self.comm = Some(CommThread::spawn(
+            Box::new(connect),
+            self.props.string_io.sol.as_bytes(),
+            self.props.string_io.eol.as_bytes(),
+            timeout,
+        )?);
         Ok(())
     }
 
     fn delete(&mut self) {
-        self.comm.take();  // close the connection and join the thread if it exists
+        self.comm.take(); // close the connection and join the thread if it exists
     }
 
     fn convert(&self, bytes: SpinResult<Vec<u8>>) -> SpinResult<String> {
-        bytes.map(|v| String::from_utf8(v).unwrap_or_else(|e| {
-            String::from_utf8_lossy(&e.into_bytes()).into_owned() }))
+        bytes.map(|v| {
+            String::from_utf8(v)
+                .unwrap_or_else(|e| String::from_utf8_lossy(&e.into_bytes()).into_owned())
+        })
     }
 }
 

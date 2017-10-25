@@ -4,17 +4,17 @@
 
 #![feature(box_syntax)]
 
+extern crate fnv;
 #[macro_use]
 extern crate log;
-extern crate fnv;
 #[macro_use]
 extern crate spin;
 
 use fnv::FnvHashMap as HashMap;
 
-use spin::config::{ServerConfig, DevConfig};
+use spin::config::{DevConfig, ServerConfig};
 use spin::device::Device;
-use spin::error::{DB_ERROR, SpinResult};
+use spin::error::{SpinResult, DB_ERROR};
 
 pub const DEFAULT_DB_PORT: u16 = 9999;
 
@@ -22,8 +22,8 @@ pub const DEFAULT_DB_PORT: u16 = 9999;
 #[derive(Default)]
 struct DbDevice {
     props: DbDeviceProps,
-    devmap: HashMap<String, String>,  // device -> server
-    srvmap: HashMap<String, String>,  // server -> address
+    devmap: HashMap<String, String>, // device -> server
+    srvmap: HashMap<String, String>, // server -> address
 }
 
 spin_device_impl!(
@@ -49,9 +49,11 @@ impl DbDevice {
         box DbDevice::default()
     }
 
-    fn init(&mut self) -> SpinResult<()> { Ok(()) }
+    fn init(&mut self) -> SpinResult<()> {
+        Ok(())
+    }
 
-    fn delete(&mut self) { }
+    fn delete(&mut self) {}
 
     fn cmd_register(&mut self, mut info: Vec<String>) -> SpinResult<()> {
         if info.len() < 3 {
@@ -99,7 +101,7 @@ impl DbDevice {
                     info!("   ... is at {}", srvaddr);
                     Ok(srvaddr.clone())
                 }
-            }
+            },
         }
     }
 
@@ -118,11 +120,13 @@ impl DbDevice {
 
 fn main() {
     let static_config = Some(ServerConfig {
-        devices: vec![DevConfig {
-            name: "sys/spin/db".into(),
-            devtype: "Db".into(),
-            props: vec![],
-        }]
+        devices: vec![
+            DevConfig {
+                name: "sys/spin/db".into(),
+                devtype: "Db".into(),
+                props: vec![],
+            },
+        ],
     });
     spin_server_main!(
         use_db = false,

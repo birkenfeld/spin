@@ -4,12 +4,12 @@
 
 use std::error;
 use std::time::Duration;
-use serialport::{self, SerialPort, BaudRate};
+use serialport::{self, BaudRate, SerialPort};
 
 use spin::device::Device;
 use spin::error::{Error as SpinError, SpinResult, CONFIG_ERROR, IO_ERROR};
 use spin::base::StringIO;
-use spin::support::comm::{CommThread, CommClient};
+use spin::support::comm::{CommClient, CommThread};
 use spin::validate::Mandatory;
 
 #[derive(Default)]
@@ -37,9 +37,11 @@ struct Error(serialport::Error);
 
 impl From<Error> for SpinError {
     fn from(e: Error) -> SpinError {
-        SpinError::with(IO_ERROR.into(),
-                        error::Error::description(&e.0).into(),
-                        module_path!().into())
+        SpinError::with(
+            IO_ERROR.into(),
+            error::Error::description(&e.0).into(),
+            module_path!().into(),
+        )
     }
 }
 
@@ -68,18 +70,24 @@ impl SerialDevice {
             Ok((rport, port))
         };
 
-        self.comm = Some(CommThread::spawn(Box::new(connect), self.props.string_io.sol.as_bytes(),
-                                           self.props.string_io.eol.as_bytes(), timeout)?);
+        self.comm = Some(CommThread::spawn(
+            Box::new(connect),
+            self.props.string_io.sol.as_bytes(),
+            self.props.string_io.eol.as_bytes(),
+            timeout,
+        )?);
         Ok(())
     }
 
     fn delete(&mut self) {
-        self.comm.take();  // close the connection and join the thread if it exists
+        self.comm.take(); // close the connection and join the thread if it exists
     }
 
     fn convert(&self, bytes: SpinResult<Vec<u8>>) -> SpinResult<String> {
-        bytes.map(|v| String::from_utf8(v).unwrap_or_else(|e| {
-            String::from_utf8_lossy(&e.into_bytes()).into_owned() }))
+        bytes.map(|v| {
+            String::from_utf8(v)
+                .unwrap_or_else(|e| String::from_utf8_lossy(&e.into_bytes()).into_owned())
+        })
     }
 }
 

@@ -60,7 +60,7 @@ pub fn send_full_message(sock: &mut zmq::Socket, parts: &[Vec<u8>]) -> ZmqResult
     for part in parts.iter().take(parts.len() - 1) {
         sock.send(part, zmq::SNDMORE)?;
     }
-    sock.send(&parts[parts.len()-1], 0)
+    sock.send(&parts[parts.len() - 1], 0)
 }
 
 
@@ -88,10 +88,11 @@ impl ServerAddress {
             None => match env::var("SPINDB") {
                 Ok(val) => val,
                 Err(_) => "".into(),
-            }
+            },
         };
-        if let Some((host, port)) = ServerAddress::parse_host_port(&db_spec, "localhost",
-                                                                   DEFAULT_DB_PORT) {
+        if let Some((host, port)) =
+            ServerAddress::parse_host_port(&db_spec, "localhost", DEFAULT_DB_PORT)
+        {
             addr.db_hostport = format!("{}:{}", host, port);
         }
         if let Some(arg) = addr_arg {
@@ -114,10 +115,13 @@ impl ServerAddress {
         let mut parts_iter = arg.splitn(2, ':');
         match parts_iter.next() {
             Some(mut host) => {
-                let port = parts_iter.next()
+                let port = parts_iter
+                    .next()
                     .and_then(|v| v.parse().ok())
                     .unwrap_or(defaultport);
-                if host == "" { host = defaulthost; }
+                if host == "" {
+                    host = defaulthost;
+                }
                 Some((host.into(), port))
             }
             None => None,

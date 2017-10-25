@@ -13,8 +13,8 @@ use mlzlog;
 use zmq;
 
 use arg::Value;
-use config::{ServerConfig, DevConfig};
-use device::{Device, run_device, general_error_reply};
+use config::{DevConfig, ServerConfig};
+use device::{general_error_reply, run_device, Device};
 use error::{SpinResult, SOCKET_ERROR};
 use client::Client;
 use util;
@@ -29,10 +29,14 @@ pub struct Server {
 }
 
 impl Server {
-
     /// Construct a new "empty" server.
-    pub fn new(name: &str, config: ServerConfig, addr: Option<String>,
-               db_addr: Option<String>, use_db: bool) -> Server {
+    pub fn new(
+        name: &str,
+        config: ServerConfig,
+        addr: Option<String>,
+        db_addr: Option<String>,
+        use_db: bool,
+    ) -> Server {
         Server {
             name: name.into(),
             address: util::ServerAddress::new(addr, db_addr, use_db),
@@ -58,33 +62,54 @@ impl Server {
             let mut ap = ArgumentParser::new();
             ap.set_description("Starts a spin server.");
             ap.refer(&mut name)
-              .add_argument("name", Store, "server name (name/instance)").required();
+                .add_argument("name", Store, "server name (name/instance)")
+                .required();
             ap.refer(&mut configfile)
-              .add_argument("config", StoreOption, "config file path");
+                .add_argument("config", StoreOption, "config file path");
             ap.refer(&mut debug)
-              .add_option(&["-v"], StoreTrue, "if given, log debug messages");
+                .add_option(&["-v"], StoreTrue, "if given, log debug messages");
             ap.refer(&mut address)
-              .add_option(&["--bind"], StoreOption, "bind address (default is a random port)")
-              .metavar("[HOST]:[PORT]");
+                .add_option(
+                    &["--bind"],
+                    StoreOption,
+                    "bind address (default is a random port)",
+                )
+                .metavar("[HOST]:[PORT]");
             ap.refer(&mut database)
-              .envvar("SPIN_DB")
-              .add_option(&["--db"], Store, "database address (default is $SPIN_DB)")
-              .metavar("[HOST]:[PORT]");
-            ap.refer(&mut arg_use_db)
-              .add_option(&["-n"], StoreFalse, "if given, don't register with database");
-            ap.refer(&mut log_path)
-              .envvar("SPIN_LOGPATH")
-              .add_option(&["--log"], Store, "path for logfiles (default is ./log)");
-            ap.refer(&mut pid_path)
-              .envvar("SPIN_PIDPATH")
-              .add_option(&["--pid"], Store, "path for PID files when damonized \
-                                              (default is ./pid)");
-            ap.refer(&mut daemonize)
-              .add_option(&["-d"], StoreTrue, "if given, daemonize at startup");
-            ap.refer(&mut user)
-              .add_option(&["--user"], StoreOption, "name of user to become as daemon");
-            ap.refer(&mut group)
-              .add_option(&["--group"], StoreOption, "name of group to become as daemon");
+                .envvar("SPIN_DB")
+                .add_option(&["--db"], Store, "database address (default is $SPIN_DB)")
+                .metavar("[HOST]:[PORT]");
+            ap.refer(&mut arg_use_db).add_option(
+                &["-n"],
+                StoreFalse,
+                "if given, don't register with database",
+            );
+            ap.refer(&mut log_path).envvar("SPIN_LOGPATH").add_option(
+                &["--log"],
+                Store,
+                "path for logfiles (default is ./log)",
+            );
+            ap.refer(&mut pid_path).envvar("SPIN_PIDPATH").add_option(
+                &["--pid"],
+                Store,
+                "path for PID files when damonized \
+                 (default is ./pid)",
+            );
+            ap.refer(&mut daemonize).add_option(
+                &["-d"],
+                StoreTrue,
+                "if given, daemonize at startup",
+            );
+            ap.refer(&mut user).add_option(
+                &["--user"],
+                StoreOption,
+                "name of user to become as daemon",
+            );
+            ap.refer(&mut group).add_option(
+                &["--group"],
+                StoreOption,
+                "name of group to become as daemon",
+            );
             ap.parse_args()
         };
         let log_path = current_dir().unwrap().join(log_path).join(name.replace("/", "-"));
@@ -148,8 +173,7 @@ impl Server {
             let db_uri = format!("spin://{}/sys/spin/db", self.address.db_hostport);
             info!("registering to database: {:?}", db_uri);
             let mut db_cl = Client::new(&db_uri)?;
-            let mut my_devs = vec![self.address.get_ext_endpoint(),
-                                   self.name.clone()];
+            let mut my_devs = vec![self.address.get_ext_endpoint(), self.name.clone()];
             for &(ref devconfig, _) in &self.devcons {
                 my_devs.push(devconfig.name.clone());
             }
@@ -164,12 +188,14 @@ impl Server {
         let devnames = HashSet::from_iter(self.devcons.iter().map(|v| v.0.name.clone().into_bytes()));
         let sock = util::create_socket(zmq::REP)?;
         sock.bind("inproc://device_responder")?;
-        thread::spawn(move || {
-            loop {
-                if let Ok(devname) = sock.recv_bytes(0) {
-                    let rep = if devnames.contains(&devname) { b"1" } else { b"0" };
-                    sock.send(rep, 0).unwrap();
-                }
+        thread::spawn(move || loop {
+            if let Ok(devname) = sock.recv_bytes(0) {
+                let rep = if devnames.contains(&devname) {
+                    b"1"
+                } else {
+                    b"0"
+                };
+                sock.send(rep, 0).unwrap();
             }
         });
         Ok(())
@@ -183,7 +209,7 @@ impl Server {
             // create an in-process socket pair
             let inproc_addr = format!("inproc://{}", devconfig.name);
             let dev_sock = util::create_socket(zmq::REP)?;
-            dev_sock.bind(&inproc_addr)?;  // must bind before connect
+            dev_sock.bind(&inproc_addr)?; // must bind before connect
 
             let local_sock = util::create_socket(zmq::REQ)?;
             local_sock.connect(&inproc_addr)?;
@@ -231,11 +257,11 @@ impl Server {
                 warn!("device not found: {}", String::from_utf8_lossy(devname));
                 let rsp = general_error_reply("DeviceError", "no such device", &msg[3])?;
                 pollsockets[0].send_multipart(&[&msg[0], &[], devname, &rsp], 0)?;
-            },
+            }
             Some(&sindex) => {
                 // send request on to the device thread
                 util::send_full_message(&mut pollsockets[sindex], &msg)?;
-            },
+            }
         }
         Ok(())
     }

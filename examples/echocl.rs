@@ -2,8 +2,8 @@
 
 //! Echo client.
 
-extern crate time;
 extern crate spin;
+extern crate time;
 
 fn main() {
     // Connect

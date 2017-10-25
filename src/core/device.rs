@@ -9,7 +9,7 @@ use prost::Message;
 use mlzlog;
 use zmq;
 
-use spin_proto::{Request, Response, NameValue, ApiDesc, Error};
+use spin_proto::{ApiDesc, Error, NameValue, Request, Response};
 use spin_proto::request::ReqType;
 use spin_proto::response::RspType;
 
@@ -17,7 +17,7 @@ use arg::{self, Value};
 use error::SpinResult;
 
 
-pub trait Device : Send {
+pub trait Device: Send {
     fn init_props(&mut self, HashMap<String, Value>) -> SpinResult<()>;
 
     fn init_device(&mut self) -> SpinResult<()>;

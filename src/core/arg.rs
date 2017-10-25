@@ -77,7 +77,7 @@ impl Value {
             toml::Value::Float(f) => Some(Value::from(f)),
             toml::Value::Boolean(b) => Some(Value::from(b)),
             toml::Value::Array(mut arr) => match arr.pop() {
-                None => Some(Value::from(())),  // we don't know a type
+                None => Some(Value::from(())), // we don't know a type
                 // All Array elements have the same TOML type. (This is not
                 // encoded in the datatype.) Therefore we can just switch on
                 // the last value.
@@ -86,10 +86,10 @@ impl Value {
                     toml::Value::Integer(i) => arr_impl!(arr, i, Integer),
                     toml::Value::Float(f) => arr_impl!(arr, f, Float),
                     toml::Value::Boolean(b) => arr_impl!(arr, b, Boolean),
-                    _ => None
+                    _ => None,
                 },
             },
-            _ => None
+            _ => None,
         }
     }
 
@@ -114,11 +114,11 @@ impl Value {
         match inner.val {
             Some(Val::Double(v)) => match newtype {
                 DataType::Float => Some(Value::from(v as f32)),
-                _ => None
+                _ => None,
             },
             Some(Val::Float(v)) => match newtype {
                 DataType::Double => Some(Value::from(v as f64)),
-                _ => None
+                _ => None,
             },
             Some(Val::Int32(v)) => match newtype {
                 DataType::Int64  => Some(Value::from(v as i64)),
@@ -126,7 +126,7 @@ impl Value {
                 DataType::Uint64 => Some(Value::from(v as u64)),
                 DataType::Float  => Some(Value::from(v as f32)),
                 DataType::Double => Some(Value::from(v as f64)),
-                _ => None
+                _ => None,
             },
             Some(Val::Int64(v)) => match newtype {
                 DataType::Int32  => Some(Value::from(v as i32)),
@@ -134,7 +134,7 @@ impl Value {
                 DataType::Uint64 => Some(Value::from(v as u64)),
                 DataType::Float  => Some(Value::from(v as f32)),
                 DataType::Double => Some(Value::from(v as f64)),
-                _ => None
+                _ => None,
             },
             Some(Val::Uint32(v)) => match newtype {
                 DataType::Int32  => Some(Value::from(v as i32)),
@@ -142,7 +142,7 @@ impl Value {
                 DataType::Uint64 => Some(Value::from(v as u64)),
                 DataType::Float  => Some(Value::from(v as f32)),
                 DataType::Double => Some(Value::from(v as f64)),
-                _ => None
+                _ => None,
             },
             Some(Val::Uint64(v)) => match newtype {
                 DataType::Int32  => Some(Value::from(v as i32)),
@@ -150,15 +150,15 @@ impl Value {
                 DataType::Uint32 => Some(Value::from(v as u32)),
                 DataType::Float  => Some(Value::from(v as f32)),
                 DataType::Double => Some(Value::from(v as f64)),
-                _ => None
+                _ => None,
             },
             Some(Val::DoubleArray(pr::DoubleArray { array })) => match newtype {
                 DataType::FloatArray => conv_arr!(array, f32),
-                _ => None
+                _ => None,
             },
             Some(Val::FloatArray(pr::FloatArray { array })) => match newtype {
                 DataType::DoubleArray => conv_arr!(array, f64),
-                _ => None
+                _ => None,
             },
             Some(Val::Int32Array(pr::Int32Array { array })) => match newtype {
                 DataType::Int64Array  => conv_arr!(array, i64),
@@ -166,7 +166,7 @@ impl Value {
                 DataType::Uint64Array => conv_arr!(array, u64),
                 DataType::FloatArray  => conv_arr!(array, f32),
                 DataType::DoubleArray => conv_arr!(array, f64),
-                _ => None
+                _ => None,
             },
             Some(Val::Int64Array(pr::Int64Array { array })) => match newtype {
                 DataType::Int32Array  => conv_arr!(array, i32),
@@ -174,7 +174,7 @@ impl Value {
                 DataType::Uint64Array => conv_arr!(array, u64),
                 DataType::FloatArray  => conv_arr!(array, f32),
                 DataType::DoubleArray => conv_arr!(array, f64),
-                _ => None
+                _ => None,
             },
             Some(Val::Uint32Array(pr::Uint32Array { array })) => match newtype {
                 DataType::Int32Array  => conv_arr!(array, i32),
@@ -182,7 +182,7 @@ impl Value {
                 DataType::Uint64Array => conv_arr!(array, u64),
                 DataType::FloatArray  => conv_arr!(array, f32),
                 DataType::DoubleArray => conv_arr!(array, f64),
-                _ => None
+                _ => None,
             },
             Some(Val::Uint64Array(pr::Uint64Array { array })) => match newtype {
                 DataType::Int32Array  => conv_arr!(array, i32),
@@ -190,9 +190,9 @@ impl Value {
                 DataType::Uint32Array => conv_arr!(array, u32),
                 DataType::FloatArray  => conv_arr!(array, f32),
                 DataType::DoubleArray => conv_arr!(array, f64),
-                _ => None
+                _ => None,
             },
-            _ => None
+            _ => None,
         }
     }
 
@@ -266,7 +266,10 @@ impl fmt::Debug for Value {
     }
 }
 
-pub trait FromValue: Default where Self: Sized {
+pub trait FromValue: Default
+where
+    Self: Sized,
+{
     const DATA_TYPE: DataType;
     fn from_value(Value) -> SpinResult<Self>;
 }
@@ -297,9 +300,12 @@ impl<'a> From<&'a str> for Value {
 
 impl From<(Vec<i64>, Vec<String>)> for Value {
     fn from((ival, sval): (Vec<i64>, Vec<String>)) -> Value {
-        Value(pr::Value { val: Some(Val::Int64StringArray(
-            pr::Int64StringArray { intarray: ival, strarray: sval }
-        ))})
+        Value(pr::Value {
+            val: Some(Val::Int64StringArray(pr::Int64StringArray {
+                intarray: ival,
+                strarray: sval,
+            })),
+        })
     }
 }
 
@@ -316,9 +322,12 @@ impl FromValue for (Vec<i64>, Vec<String>) {
 
 impl From<(Vec<f64>, Vec<String>)> for Value {
     fn from((fval, sval): (Vec<f64>, Vec<String>)) -> Value {
-        Value(pr::Value { val: Some(Val::DoubleStringArray(
-            pr::DoubleStringArray { dblarray: fval, strarray: sval }
-        ))})
+        Value(pr::Value {
+            val: Some(Val::DoubleStringArray(pr::DoubleStringArray {
+                dblarray: fval,
+                strarray: sval,
+            })),
+        })
     }
 }
 
@@ -335,7 +344,9 @@ impl FromValue for (Vec<f64>, Vec<String>) {
 
 impl From<Vec<u8>> for Value {
     fn from(val: Vec<u8>) -> Value {
-        Value(pr::Value { val: Some(Val::ByteArray(val)) })
+        Value(pr::Value {
+            val: Some(Val::ByteArray(val)),
+        })
     }
 }
 

@@ -1,7 +1,7 @@
 // Spin RPC library, copyright 2015-2017 Georg Brandl.
 
-extern crate time;
 extern crate spin;
+extern crate time;
 
 fn main() {
     // Connect

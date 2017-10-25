@@ -4,20 +4,20 @@
 
 #![feature(box_syntax)]
 
-#[macro_use]
-extern crate log;
-extern crate url;
-extern crate zmq;
-extern crate fnv;
-extern crate toml;
-extern crate prost;
-extern crate regex;
-extern crate mlzlog;
 extern crate argparse;
 extern crate daemonize;
-extern crate parking_lot;
+extern crate fnv;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate log;
+extern crate mlzlog;
+extern crate parking_lot;
+extern crate prost;
+extern crate regex;
+extern crate toml;
+extern crate url;
+extern crate zmq;
 
 extern crate spin_proto;
 
@@ -35,6 +35,6 @@ pub mod validate;
 mod util;
 
 // For client use, re-export the needed API here.
-pub use arg::{Value, FromValue};
+pub use arg::{FromValue, Value};
 pub use error::{Error, SpinResult};
 pub use client::Client;

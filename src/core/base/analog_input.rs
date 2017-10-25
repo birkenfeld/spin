@@ -15,10 +15,16 @@ pub mod default {
     use super::Base;
 
     pub fn read_value<B: Base + ?Sized>(this: &mut B) -> SpinResult<f64> {
-        spin_err!(MISSING_ERROR, &format!("read_timeout() for {} not implemented", this.get_name()))
+        spin_err!(
+            MISSING_ERROR,
+            &format!("read_timeout() for {} not implemented", this.get_name())
+        )
     }
 
     pub fn write_value<B: Base + ?Sized>(this: &mut B, _: f64) -> SpinResult<()> {
-        spin_err!(MISSING_ERROR, &format!("write_timeout() for {} not implemented", this.get_name()))
+        spin_err!(
+            MISSING_ERROR,
+            &format!("write_timeout() for {} not implemented", this.get_name())
+        )
     }
 }

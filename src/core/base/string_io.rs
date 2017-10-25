@@ -38,22 +38,37 @@ pub mod default {
     }
 
     pub fn cmd_read<B: Base + ?Sized>(this: &mut B, _: u32) -> SpinResult<String> {
-        spin_err!(MISSING_ERROR, &format!("cmd_read() for {} not implemented", this.get_name()))
+        spin_err!(
+            MISSING_ERROR,
+            &format!("cmd_read() for {} not implemented", this.get_name())
+        )
     }
 
     pub fn cmd_write<B: Base + ?Sized>(this: &mut B, _: String) -> SpinResult<u32> {
-        spin_err!(MISSING_ERROR, &format!("cmd_write() for {} not implemented", this.get_name()))
+        spin_err!(
+            MISSING_ERROR,
+            &format!("cmd_write() for {} not implemented", this.get_name())
+        )
     }
 
     pub fn cmd_readline<B: Base + ?Sized>(this: &mut B, _: ()) -> SpinResult<String> {
-        spin_err!(MISSING_ERROR, &format!("cmd_readline() for {} not implemented", this.get_name()))
+        spin_err!(
+            MISSING_ERROR,
+            &format!("cmd_readline() for {} not implemented", this.get_name())
+        )
     }
 
     pub fn read_timeout<B: Base + ?Sized>(this: &mut B) -> SpinResult<f64> {
-        spin_err!(MISSING_ERROR, &format!("read_timeout() for {} not implemented", this.get_name()))
+        spin_err!(
+            MISSING_ERROR,
+            &format!("read_timeout() for {} not implemented", this.get_name())
+        )
     }
 
     pub fn write_timeout<B: Base + ?Sized>(this: &mut B, _: f64) -> SpinResult<()> {
-        spin_err!(MISSING_ERROR, &format!("write_timeout() for {} not implemented", this.get_name()))
+        spin_err!(
+            MISSING_ERROR,
+            &format!("write_timeout() for {} not implemented", this.get_name())
+        )
     }
 }

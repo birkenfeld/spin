@@ -9,7 +9,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
 
-use parking_lot::{Mutex, Condvar, MutexGuard};
+use parking_lot::{Condvar, Mutex, MutexGuard};
 
 use error::{SpinResult, COMM_ERROR};
 
@@ -40,7 +40,10 @@ pub struct CommClient<W> {
 impl<W: Write> CommClient<W> {
     fn get_line(&self, mut buffer: MutexGuard<Vec<u8>>) -> SpinResult<Vec<u8>> {
         let neol = self.eol.len();
-        let end = buffer.windows(neol).position(|ch| ch == &self.eol[..]).unwrap() + neol;
+        let end = buffer
+            .windows(neol)
+            .position(|ch| ch == &self.eol[..])
+            .unwrap() + neol;
         let res = buffer.drain(0..end).collect();
         Ok(res)
     }
@@ -113,7 +116,12 @@ impl<R: Read + Send + 'static, W: Write + Send + 'static> CommThread<R, W> {
             shared: shared.clone(),
         };
         thread::spawn(move || comm.thread());
-        Ok(CommClient { shared, timeout, sol: sol.into(), eol: eol.into() })
+        Ok(CommClient {
+            shared,
+            timeout,
+            sol: sol.into(),
+            eol: eol.into(),
+        })
     }
 
     fn thread(&mut self) {

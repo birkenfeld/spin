@@ -3,10 +3,10 @@
 //! Universal server executable.
 
 #[macro_use]
+extern crate log;
+#[macro_use]
 extern crate spin;
 extern crate spin_devices;
-#[macro_use]
-extern crate log;
 
 use spin_devices::*;
 

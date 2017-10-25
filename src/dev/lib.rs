@@ -2,12 +2,12 @@
 
 //! Device implementations submodule.
 
-#[macro_use]
-extern crate spin;
+extern crate fnv;
 #[macro_use]
 extern crate log;
-extern crate fnv;
 extern crate serialport;
+#[macro_use]
+extern crate spin;
 
 pub mod echo;
 pub mod network;

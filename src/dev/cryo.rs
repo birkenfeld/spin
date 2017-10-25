@@ -4,9 +4,9 @@
 
 use spin::client::Client;
 use spin::device::Device;
-use spin::error::{CONFIG_ERROR, IO_ERROR, API_ERROR, COMM_ERROR, SpinResult};
+use spin::error::{SpinResult, API_ERROR, COMM_ERROR, CONFIG_ERROR, IO_ERROR};
 use spin::base::AnalogInput;
-use spin::validate::{Subdev, Mandatory};
+use spin::validate::{Mandatory, Subdev};
 
 #[derive(Default)]
 pub struct CryoDevice {
@@ -56,7 +56,7 @@ impl AnalogInput for CryoDevice {
         let num = reply.split_whitespace().next().unwrap_or("");
         match num.parse() {
             Ok(val) => Ok(val),
-            Err(_) => spin_err!(COMM_ERROR, format!("invalid response: {:?}", reply))
+            Err(_) => spin_err!(COMM_ERROR, format!("invalid response: {:?}", reply)),
         }
     }
 

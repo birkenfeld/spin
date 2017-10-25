@@ -5,12 +5,12 @@
 use zmq;
 use prost::Message;
 
-use spin_proto::{Request, Response, NameValue, ApiDesc};
+use spin_proto::{ApiDesc, NameValue, Request, Response};
 use spin_proto::request::ReqType;
 use spin_proto::response::RspType;
 
-use arg::{self, Value, FromValue};
-use error::{SpinResult, Error, TIMEOUT_ERROR, API_ERROR};
+use arg::{self, FromValue, Value};
+use error::{Error, SpinResult, API_ERROR, TIMEOUT_ERROR};
 use util;
 
 
@@ -20,7 +20,7 @@ pub struct Client {
     local: bool,
     devname: Vec<u8>,
     seqno: u32,
-    timeout: i64,  // in ms
+    timeout: i64, // in ms
 }
 
 impl Client {
@@ -36,12 +36,14 @@ impl Client {
             (false, addr.endpoint)
         };
         socket.connect(&endpoint)?;
-        Ok(Client { socket: socket,
-                    endpoint,
-                    local,
-                    devname: addr.devname.into_bytes(),
-                    seqno: 0,
-                    timeout: 1000, })
+        Ok(Client {
+            socket: socket,
+            endpoint,
+            local,
+            devname: addr.devname.into_bytes(),
+            seqno: 0,
+            timeout: 1000,
+        })
     }
 
     pub fn set_timeout(&mut self, timeout: i64) {
@@ -123,7 +125,9 @@ impl Client {
     }
 
     pub fn exec_cmd_as<I, O>(&mut self, cmd: &str, arg: I) -> SpinResult<O>
-        where I: Into<Value>, O: FromValue
+    where
+        I: Into<Value>,
+        O: FromValue,
     {
         self.exec_cmd(cmd, arg).and_then(FromValue::from_value)
     }
@@ -177,11 +181,10 @@ impl Client {
     pub fn query_api(&mut self) -> SpinResult<(Vec<arg::CmdDesc>, Vec<arg::AttrDesc>,
                                                Vec<arg::PropDesc>)> {
         let rsp = self.do_request(Some(ReqType::QueryApi(0)))?;
-        if let Some(RspType::ApiDesc(ApiDesc { cmds, attrs, props})) = rsp {
+        if let Some(RspType::ApiDesc(ApiDesc { cmds, attrs, props })) = rsp {
             Ok((cmds, attrs, props))
         } else {
             spin_err!(API_ERROR, "wrong type of response received")
         }
     }
-
 }

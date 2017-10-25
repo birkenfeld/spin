@@ -37,8 +37,7 @@ impl EchoDevice {
         Ok(())
     }
 
-    fn delete(&mut self) {
-    }
+    fn delete(&mut self) {}
 
     fn cmd_echo(&self, arg: String) -> SpinResult<String> {
         Ok(arg)
