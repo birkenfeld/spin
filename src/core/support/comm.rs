@@ -113,7 +113,7 @@ impl<R: Read + Send + 'static, W: Write + Send + 'static> CommThread<R, W> {
             connect: connect,
             reader: reader,
             eol: eol.into(),
-            shared: shared.clone(),
+            shared: Arc::clone(&shared),
         };
         thread::spawn(move || comm.thread());
         Ok(CommClient {
@@ -138,7 +138,7 @@ impl<R: Read + Send + 'static, W: Write + Send + 'static> CommThread<R, W> {
                         let mut buffer = self.shared.buffer.lock();
                         debug!("reader got: {:?}", &buf[..n]);
                         buffer.extend(&buf[..n]);
-                        if buffer.windows(self.eol.len()).position(|ch| ch == &self.eol[..]).is_some() {
+                        if buffer.windows(self.eol.len()).any(|ch| ch == &self.eol[..]) {
                             self.shared.seen_eol.notify_one();
                         }
                     }
