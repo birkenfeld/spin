@@ -11,7 +11,7 @@ path = "lib.rs"
 [dependencies]
 fnv = "*"
 log = "*"
-serialport = {git = "https://gitlab.com/susurrus/serialport-rs"}
+serialport = "*"
 
 [dependencies.spin_core]
 path = "../core"
