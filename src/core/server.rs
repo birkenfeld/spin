@@ -1,4 +1,4 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2018 Georg Brandl.
 
 //! Server framework.
 
@@ -115,7 +115,7 @@ impl Server {
         let log_path = current_dir().unwrap().join(log_path).join(name.replace("/", "-"));
         let pid_path = current_dir().unwrap().join(pid_path);
         let _ = util::ensure_dir(&pid_path);
-        let _ = mlzlog::init(&log_path, &name, true, debug, !daemonize);
+        let _ = mlzlog::init(Some(&log_path), &name, true, debug, !daemonize);
         if daemonize {
             let pid_file = pid_path.join(name.replace("/", "-") + ".pid");
             let mut daemon = daemonize::Daemonize::new().pid_file(pid_file);
