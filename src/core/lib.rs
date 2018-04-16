@@ -4,7 +4,8 @@
 
 #![feature(box_syntax)]
 
-extern crate argparse;
+#[macro_use]
+extern crate structopt;
 extern crate daemonize;
 extern crate fnv;
 #[macro_use]

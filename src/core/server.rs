@@ -2,12 +2,12 @@
 
 //! Server framework.
 
-use std::env::current_dir;
 use std::iter::FromIterator;
+use std::path::PathBuf;
 use std::thread;
 use fnv::FnvHashMap as HashMap;
 use fnv::FnvHashSet as HashSet;
-use argparse::*;
+use structopt::{StructOpt, clap};
 use daemonize;
 use mlzlog;
 use zmq;
@@ -20,6 +20,39 @@ use client::Client;
 use util;
 
 pub type DevConstructor = fn(&str) -> Box<Device>;
+
+#[derive(StructOpt)]
+#[structopt(author="")]
+#[structopt(about="Starts a spin server.")]
+#[structopt(raw(setting="clap::AppSettings::UnifiedHelpMessage"))]
+struct ServerArgs {
+    #[structopt(help="server name (name/instance)")]
+    name: String,
+    #[structopt(help="config file path")]
+    configfile: Option<String>,
+    #[structopt(short="v", help="if given, log debug messages")]
+    verbose: bool,
+    #[structopt(long="bind", value_name="[HOST]:[PORT]",
+                help="bind address (default is a random port)")]
+    bind: Option<String>,
+    #[structopt(long="db", env="SPIN_DB", value_name="[HOST]:[PORT]",
+                help="database address")]
+    database: Option<String>,
+    #[structopt(short="n", help="if given, don't register with database")]
+    no_db: bool,
+    #[structopt(long="log", env="SPIN_LOGPATH", default_value="./log",
+                help="path for logfiles")]
+    log_path: PathBuf,
+    #[structopt(long="pid", env="SPIN_PIDPATH", default_value="./pid",
+                help="path for PID files when daemonized")]
+    pid_path: PathBuf,
+    #[structopt(short="d", help="if given, daemonize at startup")]
+    daemonize: bool,
+    #[structopt(long="user", help="user name for daemon process")]
+    user: Option<String>,
+    #[structopt(long="group", help="group name for daemon process")]
+    group: Option<String>,
+}
 
 pub struct Server {
     pub name: String,
@@ -46,93 +79,26 @@ impl Server {
     }
 
     /// Construct a new server from command-line args.
-    pub fn from_args(use_db: bool, config: Option<ServerConfig>) -> Option<Server> {
-        let mut name = String::new();
-        let mut configfile = None;
-        let mut address = None;
-        let mut database = String::new();
-        let mut debug = false;
-        let mut arg_use_db = true;
-        let mut log_path = String::from("log");
-        let mut pid_path = String::from("pid");
-        let mut daemonize = false;
-        let mut user = None::<String>;
-        let mut group = None::<String>;
-        let result = {
-            let mut ap = ArgumentParser::new();
-            ap.set_description("Starts a spin server.");
-            ap.refer(&mut name)
-                .add_argument("name", Store, "server name (name/instance)")
-                .required();
-            ap.refer(&mut configfile)
-                .add_argument("config", StoreOption, "config file path");
-            ap.refer(&mut debug)
-                .add_option(&["-v"], StoreTrue, "if given, log debug messages");
-            ap.refer(&mut address)
-                .add_option(
-                    &["--bind"],
-                    StoreOption,
-                    "bind address (default is a random port)",
-                )
-                .metavar("[HOST]:[PORT]");
-            ap.refer(&mut database)
-                .envvar("SPIN_DB")
-                .add_option(&["--db"], Store, "database address (default is $SPIN_DB)")
-                .metavar("[HOST]:[PORT]");
-            ap.refer(&mut arg_use_db).add_option(
-                &["-n"],
-                StoreFalse,
-                "if given, don't register with database",
-            );
-            ap.refer(&mut log_path).envvar("SPIN_LOGPATH").add_option(
-                &["--log"],
-                Store,
-                "path for logfiles (default is ./log)",
-            );
-            ap.refer(&mut pid_path).envvar("SPIN_PIDPATH").add_option(
-                &["--pid"],
-                Store,
-                "path for PID files when damonized \
-                 (default is ./pid)",
-            );
-            ap.refer(&mut daemonize).add_option(
-                &["-d"],
-                StoreTrue,
-                "if given, daemonize at startup",
-            );
-            ap.refer(&mut user).add_option(
-                &["--user"],
-                StoreOption,
-                "name of user to become as daemon",
-            );
-            ap.refer(&mut group).add_option(
-                &["--group"],
-                StoreOption,
-                "name of group to become as daemon",
-            );
-            ap.parse_args()
-        };
-        let log_path = current_dir().unwrap().join(log_path).join(name.replace("/", "-"));
-        let pid_path = current_dir().unwrap().join(pid_path);
-        let _ = util::ensure_dir(&pid_path);
-        let _ = mlzlog::init(Some(&log_path), &name, true, debug, !daemonize);
-        if daemonize {
-            let pid_file = pid_path.join(name.replace("/", "-") + ".pid");
+    pub fn from_args(use_db: bool, config: Option<ServerConfig>) -> Server {
+        let args = ServerArgs::from_args();
+        let log_path = args.log_path.join(args.name.replace("/", "-"));
+        let _ = util::ensure_dir(&args.pid_path);
+        let _ = mlzlog::init(Some(&log_path), &args.name, true, args.verbose, !args.daemonize);
+        if args.daemonize {
+            let pid_file = args.pid_path.join(args.name.replace("/", "-") + ".pid");
             let mut daemon = daemonize::Daemonize::new().pid_file(pid_file);
-            if let Some(user) = user {
+            if let Some(ref user) = args.user {
                 daemon = daemon.user(user.as_str());
             }
-            if let Some(group) = group {
+            if let Some(ref group) = args.group {
                 daemon = daemon.group(group.as_str());
             }
             if let Err(err) = daemon.start() {
                 error!("could not daemonize process: {}", err);
             }
         }
-        let server_config = config.unwrap_or_else(|| ServerConfig::from_file(configfile));
-        let database = if database.is_empty() { None } else { Some(database) };
-        result.ok().map(|_| Server::new(&name, server_config, address, database,
-                                        use_db && arg_use_db))
+        let config = config.unwrap_or_else(|| ServerConfig::from_file(&args.configfile));
+        Server::new(&args.name, config, args.bind, args.database, use_db && !args.no_db)
     }
 
     /// Add a constructed device.
@@ -307,26 +273,22 @@ macro_rules! spin_server_main {
     (use_db = $use_db:expr,
      static_config = $staticconfig:expr,
      devtypes = [$($dtype:ident => $dconstr:expr),* $(,)*]) => {
-        match $crate::server::Server::from_args($use_db, $staticconfig) {
-            None => return,
-            Some(mut server) => {
-                info!("creating devices...");
-                for device in ::std::mem::replace(&mut server.config.devices, vec![]) {
-                    $(
-                        if device.devtype == stringify!($dtype) {
-                            server.add_device(device, $dconstr);
-                            continue;
-                        }
-                    )*;
-                    warn!("device type {} for device {} not handled by this server",
-                          device.devtype, device.name);
+        let mut server = $crate::server::Server::from_args($use_db, $staticconfig);
+        info!("creating devices...");
+        for device in ::std::mem::replace(&mut server.config.devices, vec![]) {
+            $(
+                if device.devtype == stringify!($dtype) {
+                    server.add_device(device, $dconstr);
+                    continue;
                 }
+            )*;
+            warn!("device type {} for device {} not handled by this server",
+                  device.devtype, device.name);
+        }
 
-                info!("server running...");
-                if let Err(e) = server.run() {
-                    error!("server stopped: {}", e);
-                }
-            }
+        info!("server running...");
+        if let Err(e) = server.run() {
+            error!("server stopped: {}", e);
         }
     };
 }

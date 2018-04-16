@@ -27,10 +27,10 @@ pub struct ServerConfig {
 }
 
 impl ServerConfig {
-    pub fn from_file(filename: Option<String>) -> ServerConfig {
+    pub fn from_file(filename: &Option<String>) -> ServerConfig {
         match filename {
             None => ServerConfig { devices: vec![] },
-            Some(filename) => match ServerConfig::parse(&filename) {
+            Some(filename) => match ServerConfig::parse(filename) {
                 Ok(config) => config,
                 Err(e) => {
                     warn!("could not read config: {}", e.description());
