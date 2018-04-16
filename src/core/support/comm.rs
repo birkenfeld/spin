@@ -2,7 +2,6 @@
 
 //! A generic "communicator" thread.
 
-use std::cmp;
 use std::io::{Read, Write};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -44,15 +43,14 @@ impl<W: Write> CommClient<W> {
             .windows(neol)
             .position(|ch| ch == &self.eol[..])
             .unwrap() + neol;
-        let res = buffer.drain(0..end).collect();
-        Ok(res)
+        Ok(buffer.drain(0..end).collect())
     }
 
     pub fn read(&self, max: u32) -> SpinResult<Vec<u8>> {
         let mut buffer = self.shared.buffer.lock();
-        let n = buffer.len();
-        let res = buffer.drain(0..cmp::min(max as usize, n)).collect();
-        Ok(res)
+        let cur = buffer.len();
+        let drain = buffer.drain(0..cur.min(max as usize));
+        Ok(drain.collect())
     }
 
     pub fn write(&self, input: &[u8], line: bool) -> SpinResult<u32> {
@@ -70,25 +68,24 @@ impl<W: Write> CommClient<W> {
 
     pub fn readline(&self) -> SpinResult<Vec<u8>> {
         let mut buffer = self.shared.buffer.lock();
-        if self.shared.seen_eol.wait_for(&mut buffer, self.timeout).timed_out() {
-            return spin_err!(COMM_ERROR, "no response");
-        }
+        self.wait_eol(&mut buffer)?;
         self.get_line(buffer)
     }
 
     pub fn communicate(&self, input: &[u8]) -> SpinResult<Vec<u8>> {
         let mut buffer = self.shared.buffer.lock();
         buffer.clear();
-        {
-            let mut writer = self.shared.writer.lock();
-            writer.write_all(&self.sol)?;
-            writer.write_all(input)?;
-            writer.write_all(&self.eol)?;
-        }
-        if self.shared.seen_eol.wait_for(&mut buffer, self.timeout).timed_out() {
-            return spin_err!(COMM_ERROR, "no response");
-        }
+        self.write(input, true)?;
+        self.wait_eol(&mut buffer)?;
         self.get_line(buffer)
+    }
+
+    fn wait_eol<T>(&self, lock: &mut MutexGuard<T>) -> SpinResult<()> {
+        if self.shared.seen_eol.wait_for(lock, self.timeout).timed_out() {
+            spin_err!(COMM_ERROR, "no response")
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -124,11 +121,15 @@ impl<R: Read + Send + 'static, W: Write + Send + 'static> CommThread<R, W> {
         })
     }
 
+    fn stopped(&self) -> bool {
+        self.shared.stop.load(Ordering::Relaxed)
+    }
+
     fn thread(&mut self) {
         debug!("reader thread started");
         let mut buf = [0; 1024];
-        while !self.shared.stop.load(Ordering::Relaxed) {
-            while !self.shared.stop.load(Ordering::Relaxed) {
+        while !self.stopped() {
+            while !self.stopped() {
                 match self.reader.read(&mut buf) {
                     Ok(n) if n == 0 => {
                         warn!("reader connection closed");
@@ -149,7 +150,7 @@ impl<R: Read + Send + 'static, W: Write + Send + 'static> CommThread<R, W> {
                 }
             }
             self.shared.connected.store(false, Ordering::SeqCst);
-            while !self.shared.stop.load(Ordering::Relaxed) {
+            while !self.stopped() {
                 match (self.connect)() {
                     Ok((reader, writer)) => {
                         self.reader = reader;

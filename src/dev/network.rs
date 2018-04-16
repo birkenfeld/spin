@@ -74,15 +74,19 @@ impl NetworkDevice {
                 .unwrap_or_else(|e| String::from_utf8_lossy(&e.into_bytes()).into_owned())
         })
     }
+
+    fn get_comm(&self) -> SpinResult<&CommClient<TcpStream>> {
+        if let Some(ref comm) = self.comm {
+            Ok(comm)
+        } else {
+            spin_err!(IO_ERROR, "connection not open")
+        }
+    }
 }
 
 impl StringIO for NetworkDevice {
     fn cmd_communicate(&mut self, arg: String) -> SpinResult<String> {
-        if let Some(ref comm) = self.comm {
-            self.convert(comm.communicate(arg.as_bytes()))
-        } else {
-            spin_err!(IO_ERROR, "connection not open")
-        }
+        self.convert(self.get_comm()?.communicate(arg.as_bytes()))
     }
 
     fn cmd_flush(&mut self, _: ()) -> SpinResult<()> {
@@ -90,35 +94,19 @@ impl StringIO for NetworkDevice {
     }
 
     fn cmd_read(&mut self, arg: u32) -> SpinResult<String> {
-        if let Some(ref comm) = self.comm {
-            self.convert(comm.read(arg))
-        } else {
-            spin_err!(IO_ERROR, "connection not open")
-        }
+        self.convert(self.get_comm()?.read(arg))
     }
 
     fn cmd_write(&mut self, arg: String) -> SpinResult<u32> {
-        if let Some(ref comm) = self.comm {
-            comm.write(arg.as_bytes(), false)
-        } else {
-            spin_err!(IO_ERROR, "connection not open")
-        }
+        self.get_comm()?.write(arg.as_bytes(), false)
     }
 
     fn cmd_readline(&mut self, _: ()) -> SpinResult<String> {
-        if let Some(ref comm) = self.comm {
-            self.convert(comm.readline())
-        } else {
-            spin_err!(IO_ERROR, "connection not open")
-        }
+        self.convert(self.get_comm()?.readline())
     }
 
     fn cmd_writeline(&mut self, arg: String) -> SpinResult<u32> {
-        if let Some(ref comm) = self.comm {
-            comm.write(arg.as_bytes(), true)
-        } else {
-            spin_err!(IO_ERROR, "connection not open")
-        }
+        self.get_comm()?.write(arg.as_bytes(), true)
     }
 
     fn read_timeout(&mut self) -> SpinResult<f64> {
