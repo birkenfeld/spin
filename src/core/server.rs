@@ -5,8 +5,8 @@
 use std::iter::FromIterator;
 use std::path::PathBuf;
 use std::thread;
-use fnv::FnvHashMap as HashMap;
-use fnv::FnvHashSet as HashSet;
+use fxhash::FxHashMap as HashMap;
+use fxhash::FxHashSet as HashSet;
 use structopt::{StructOpt, clap};
 use daemonize;
 use mlzlog;

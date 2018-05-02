@@ -1,4 +1,4 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2018 Georg Brandl.
 
 //! Main library module; just re-exports the public API.
 
@@ -7,7 +7,7 @@
 #[macro_use]
 extern crate structopt;
 extern crate daemonize;
-extern crate fnv;
+extern crate fxhash;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]

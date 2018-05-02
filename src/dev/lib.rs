@@ -1,8 +1,8 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2018 Georg Brandl.
 
 //! Device implementations submodule.
 
-extern crate fnv;
+extern crate fxhash;
 #[macro_use]
 extern crate log;
 extern crate serialport;

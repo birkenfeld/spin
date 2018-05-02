@@ -1,16 +1,16 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2018 Georg Brandl.
 
 //! Database server executable.
 
 #![feature(box_syntax)]
 
-extern crate fnv;
+extern crate fxhash;
 #[macro_use]
 extern crate log;
 #[macro_use]
 extern crate spin;
 
-use fnv::FnvHashMap as HashMap;
+use fxhash::FxHashMap as HashMap;
 
 use spin::config::{DevConfig, ServerConfig};
 use spin::device::Device;

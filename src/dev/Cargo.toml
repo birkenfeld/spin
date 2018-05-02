@@ -9,8 +9,8 @@ name = "spin_devices"
 path = "lib.rs"
 
 [dependencies]
-fnv = "*"
 log = "*"
+fxhash = "*"
 serialport = "*"
 
 [dependencies.spin_core]

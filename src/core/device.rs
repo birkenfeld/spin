@@ -1,10 +1,10 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2018 Georg Brandl.
 
 //! Device trait.
 
 use std::ops::DerefMut;
 
-use fnv::FnvHashMap as HashMap;
+use fxhash::FxHashMap as HashMap;
 use prost::Message;
 use mlzlog;
 use zmq;
@@ -284,7 +284,7 @@ macro_rules! spin_device_impl {
             }
 
             #[allow(unused_variables, unused_mut)]
-            fn init_props(&mut self, mut cfg_prop_map: ::fnv::FnvHashMap<String, $crate::Value>)
+            fn init_props(&mut self, mut cfg_prop_map: ::fxhash::FxHashMap<String, $crate::Value>)
                 -> $crate::SpinResult<()> {
                 debug!("init properties");
                 $(

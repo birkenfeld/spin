@@ -1,4 +1,4 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2018 Georg Brandl.
 
 #[macro_export]
 macro_rules! spin_base_trait {
@@ -69,7 +69,7 @@ macro_rules! spin_base_trait {
             }
 
             #[allow(unused_variables, unused_mut)]
-            fn init_props(props: &mut Props, cfg_prop_map: &mut ::fnv::FnvHashMap<String, $crate::Value>)
+            fn init_props(props: &mut Props, cfg_prop_map: &mut ::fxhash::FxHashMap<String, $crate::Value>)
                 -> $crate::SpinResult<()> {
                 $(
                     props._descriptions.push(
