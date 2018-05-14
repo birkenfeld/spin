@@ -3,7 +3,6 @@
 //! Server framework.
 
 use std::iter::FromIterator;
-use std::path::PathBuf;
 use std::thread;
 use fxhash::FxHashMap as HashMap;
 use fxhash::FxHashSet as HashSet;
@@ -42,10 +41,10 @@ struct ServerArgs {
     no_db: bool,
     #[structopt(long="log", env="SPIN_LOGPATH", default_value="./log",
                 help="path for logfiles")]
-    log_path: PathBuf,
+    log_path: String,
     #[structopt(long="pid", env="SPIN_PIDPATH", default_value="./pid",
                 help="path for PID files when daemonized")]
-    pid_path: PathBuf,
+    pid_path: String,
     #[structopt(short="d", help="if given, daemonize at startup")]
     daemonize: bool,
     #[structopt(long="user", help="user name for daemon process")]
@@ -81,11 +80,11 @@ impl Server {
     /// Construct a new server from command-line args.
     pub fn from_args(use_db: bool, config: Option<ServerConfig>) -> Server {
         let args = ServerArgs::from_args();
-        let log_path = args.log_path.join(args.name.replace("/", "-"));
+        let log_path = format!("{}/{}", args.log_path, args.name.replace("/", "-"));
         let _ = util::ensure_dir(&args.pid_path);
         let _ = mlzlog::init(Some(&log_path), &args.name, true, args.verbose, !args.daemonize);
         if args.daemonize {
-            let pid_file = args.pid_path.join(args.name.replace("/", "-") + ".pid");
+            let pid_file = format!("{}/{}.pid", args.pid_path, args.name.replace("/", "-"));
             let mut daemon = daemonize::Daemonize::new().pid_file(pid_file);
             if let Some(ref user) = args.user {
                 daemon = daemon.user(user.as_str());
