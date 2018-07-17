@@ -107,8 +107,8 @@ impl<R: Read + Send + 'static, W: Write + Send + 'static> CommThread<R, W> {
             stop: AtomicBool::new(false),
         });
         let mut comm = CommThread {
-            connect: connect,
-            reader: reader,
+            connect,
+            reader,
             eol: eol.into(),
             shared: Arc::clone(&shared),
         };

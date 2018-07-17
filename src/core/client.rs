@@ -37,7 +37,7 @@ impl Client {
         };
         socket.connect(&endpoint)?;
         Ok(Client {
-            socket: socket,
+            socket,
             endpoint,
             local,
             devname: addr.devname.into_bytes(),
@@ -85,7 +85,7 @@ impl Client {
     fn do_request_inner(&mut self, req_type: Option<ReqType>) -> SpinResult<Option<RspType>> {
         let req = Request {
             seqno: self.seqno,
-            req_type: req_type,
+            req_type,
         };
         self.seqno += 1;
 

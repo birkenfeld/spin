@@ -202,7 +202,7 @@ impl Server {
         Ok(devsockets)
     }
 
-    fn msg_from_extern(&mut self, msg: Vec<Vec<u8>>,
+    fn msg_from_extern(&mut self, msg: &[Vec<u8>],
                        devsockets: &HashMap<Vec<u8>, usize>,
                        pollsockets: &mut Vec<zmq::Socket>) -> SpinResult<()> {
         // check number of message parts:
@@ -255,7 +255,7 @@ impl Server {
                 let msg = pollsockets[index].recv_multipart(0)?;
                 if index == 0 {
                     // if it came from outside, forward it
-                    self.msg_from_extern(msg, &devsockets, &mut pollsockets)?;
+                    self.msg_from_extern(&msg, &devsockets, &mut pollsockets)?;
                 } else {
                     // else it is a reply, send it back to outside
                     util::send_full_message(&mut pollsockets[0], &msg)?;
