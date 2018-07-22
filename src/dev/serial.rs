@@ -4,7 +4,7 @@
 
 use std::error;
 use std::time::Duration;
-use serialport::{self, BaudRate, SerialPort};
+use serialport::{self, SerialPort};
 
 use spin::device::Device;
 use spin::error::{Error as SpinError, SpinResult, CONFIG_ERROR, IO_ERROR};
@@ -63,7 +63,7 @@ impl SerialDevice {
             info!("opening {}...", devfile);
             let mut port = serialport::open(&devfile).map_err(Error)?;
             let mut settings = port.settings();
-            settings.baud_rate = BaudRate::BaudOther(baudrate);
+            settings.baud_rate = baudrate;
             port.set_all(&settings).unwrap();
             let mut rport = serialport::open(&devfile).map_err(Error)?;
             rport.set_all(&settings).unwrap();
