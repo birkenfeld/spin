@@ -4,7 +4,6 @@
 
 #![feature(box_syntax)]
 
-#[macro_use]
 extern crate structopt;
 extern crate daemonize;
 extern crate fxhash;

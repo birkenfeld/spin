@@ -36,7 +36,7 @@ pub fn poll_sockets(sockets: &[zmq::Socket], timeout: i64) -> Result<Vec<usize>,
     let mut rv = Vec::new();
     if num_items > 0 {
         for (i, item) in items.iter().enumerate() {
-            if item.get_revents() & zmq::POLLIN > 0 {
+            if item.get_revents().contains(zmq::POLLIN) {
                 rv.push(i);
             }
         }
@@ -46,7 +46,7 @@ pub fn poll_sockets(sockets: &[zmq::Socket], timeout: i64) -> Result<Vec<usize>,
 
 /// Get the final multipart from a socket.
 pub fn recv_final_message_part(sock: &mut zmq::Socket) -> ZmqResult<Vec<u8>> {
-    let mut msg = zmq::Message::new()?;
+    let mut msg = zmq::Message::new();
     loop {
         sock.recv(&mut msg, 0)?;
         if !sock.get_rcvmore()? {

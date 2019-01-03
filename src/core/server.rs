@@ -160,7 +160,7 @@ impl Server {
                 } else {
                     b"0"
                 };
-                sock.send(rep, 0).unwrap();
+                sock.send(&rep[..], 0).unwrap();
             }
         });
         Ok(())
@@ -213,7 +213,7 @@ impl Server {
         if msg.len() != 4 {
             warn!("ill formed message");
             // no need to send a serialized error response; client doesn't observe our protocol
-            pollsockets[0].send_multipart(&[&msg[0], &[], &[], &[]], 0)?;
+            pollsockets[0].send_multipart(&[&msg[0][..], &[], &[], &[]], 0)?;
             return Ok(());
         }
         let devname = &msg[2];
@@ -221,7 +221,7 @@ impl Server {
             None => {
                 warn!("device not found: {}", String::from_utf8_lossy(devname));
                 let rsp = general_error_reply("DeviceError", "no such device", &msg[3])?;
-                pollsockets[0].send_multipart(&[&msg[0], &[], devname, &rsp], 0)?;
+                pollsockets[0].send_multipart(&[&msg[0][..], &[], devname, &rsp], 0)?;
             }
             Some(&sindex) => {
                 // send request on to the device thread

@@ -92,7 +92,7 @@ impl Client {
         let mut buf = Vec::new();
         req.encode_length_delimited(&mut buf)?;
         if self.local {
-            self.socket.send_multipart(&[b"", b"", &self.devname, &buf], 0)?;
+            self.socket.send_multipart(&[&b""[..], b"", &self.devname, &buf], 0)?;
         } else {
             self.socket.send_multipart(&[&self.devname, &buf], 0)?;
         }

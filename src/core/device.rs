@@ -91,7 +91,7 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
 
     let mut buf = Vec::new();
     rsp.encode_length_delimited(&mut buf)?;
-    sock.send_multipart(&[&msg[0], &[], &msg[2], &buf], 0)?;
+    sock.send_multipart(&[&msg[0][..], &[], &msg[2], &buf], 0)?;
     Ok(())
 }
 

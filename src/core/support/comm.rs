@@ -154,8 +154,7 @@ impl<R: Read + Send + 'static, W: Write + Send + 'static> CommThread<R, W> {
                 match (self.connect)() {
                     Ok((reader, writer)) => {
                         self.reader = reader;
-                        let mut writer_lock = self.shared.writer.lock();
-                        *writer_lock = writer;
+                        *self.shared.writer.lock() = writer;
                         self.shared.connected.store(true, Ordering::SeqCst);
                         break;
                     }
