@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use parking_lot::{Condvar, Mutex, MutexGuard};
 
-use error::{SpinResult, COMM_ERROR};
+use crate::error::{SpinResult, COMM_ERROR};
 
 pub type Connector<R, W> = Box<FnMut() -> SpinResult<(R, W)> + Send + 'static>;
 

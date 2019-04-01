@@ -20,7 +20,7 @@ spin_base_trait!(
 );
 
 pub mod default {
-    use error::{SpinResult, MISSING_ERROR};
+    use crate::error::{SpinResult, MISSING_ERROR};
     use super::Base;
 
     pub fn cmd_communicate<B: Base + ?Sized>(this: &mut B, arg: String) -> SpinResult<String> {

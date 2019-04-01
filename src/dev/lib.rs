@@ -2,10 +2,8 @@
 
 //! Device implementations submodule.
 
-extern crate fxhash;
 #[macro_use]
 extern crate log;
-extern crate serialport;
 #[macro_use]
 extern crate spin;
 

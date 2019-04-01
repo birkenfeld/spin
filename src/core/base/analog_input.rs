@@ -11,7 +11,7 @@ spin_base_trait!(
 );
 
 pub mod default {
-    use error::{SpinResult, MISSING_ERROR};
+    use crate::error::{SpinResult, MISSING_ERROR};
     use super::Base;
 
     pub fn read_value<B: Base + ?Sized>(this: &mut B) -> SpinResult<f64> {

@@ -9,9 +9,9 @@ use spin_proto::{ApiDesc, NameValue, Request, Response};
 use spin_proto::request::ReqType;
 use spin_proto::response::RspType;
 
-use arg::{self, FromValue, Value};
-use error::{Error, SpinResult, API_ERROR, TIMEOUT_ERROR};
-use util;
+use crate::arg::{self, FromValue, Value};
+use crate::error::{Error, SpinResult, API_ERROR, TIMEOUT_ERROR};
+use crate::util;
 
 
 pub struct Client {

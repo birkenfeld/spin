@@ -4,7 +4,6 @@
 
 #![feature(box_syntax)]
 
-extern crate fxhash;
 #[macro_use]
 extern crate log;
 #[macro_use]

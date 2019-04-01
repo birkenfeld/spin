@@ -2,7 +2,4 @@
 
 //! Protocol buffers: definition of message format sent over 0MQ.
 
-#[macro_use]
-extern crate prost_derive;
-
 include!(concat!(env!("OUT_DIR"), "/spin_proto.rs"));

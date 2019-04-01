@@ -14,7 +14,7 @@ pub use spin_proto::PropDesc;
 
 use spin_proto::value::Val;
 
-use error::{SpinResult, ARG_ERROR};
+use crate::error::{SpinResult, ARG_ERROR};
 
 
 pub fn cmd_info(name: &str, doc: &str, intype: DataType, outtype: DataType) -> CmdDesc {
@@ -32,7 +32,7 @@ pub fn attr_info(name: &str, doc: &str, dtype: DataType) -> AttrDesc {
     AttrDesc {
         name: name.into(),
         doc: doc.into(),
-        type_: dtype.into(),
+        r#type: dtype.into(),
         unit: "".into(),
     }
 }
@@ -41,7 +41,7 @@ pub fn prop_info(name: &str, doc: &str, dtype: DataType, default: Value) -> Prop
     PropDesc {
         name: name.into(),
         doc: doc.into(),
-        type_: dtype.into(),
+        r#type: dtype.into(),
         default: default.0,
     }
 }
@@ -271,7 +271,7 @@ where
     Self: Sized,
 {
     const DATA_TYPE: DataType;
-    fn from_value(Value) -> SpinResult<Self>;
+    fn from_value(v: Value) -> SpinResult<Self>;
 }
 
 

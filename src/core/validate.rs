@@ -4,8 +4,8 @@
 
 use regex;
 
-use arg::{FromValue, Value};
-use error::{SpinResult, ARG_ERROR, CONFIG_ERROR};
+use crate::arg::{FromValue, Value};
+use crate::error::{SpinResult, ARG_ERROR, CONFIG_ERROR};
 
 pub trait CanValidate {
     type Base;

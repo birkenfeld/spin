@@ -4,22 +4,8 @@
 
 #![feature(box_syntax)]
 
-extern crate structopt;
-extern crate daemonize;
-extern crate fxhash;
-#[macro_use]
-extern crate lazy_static;
 #[macro_use]
 extern crate log;
-extern crate mlzlog;
-extern crate parking_lot;
-extern crate prost;
-extern crate regex;
-extern crate toml;
-extern crate url;
-extern crate zmq;
-
-extern crate spin_proto;
 
 #[macro_use]
 pub mod error;

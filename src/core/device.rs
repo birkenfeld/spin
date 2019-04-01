@@ -13,17 +13,17 @@ use spin_proto::{ApiDesc, Error, NameValue, Request, Response};
 use spin_proto::request::ReqType;
 use spin_proto::response::RspType;
 
-use arg::{self, Value};
-use error::SpinResult;
+use crate::arg::{self, Value};
+use crate::error::SpinResult;
 
 
 pub trait Device: Send {
-    fn init_props(&mut self, HashMap<String, Value>) -> SpinResult<()>;
+    fn init_props(&mut self, m: HashMap<String, Value>) -> SpinResult<()>;
 
     fn init_device(&mut self) -> SpinResult<()>;
     fn delete_device(&mut self);
 
-    fn set_name(&mut self, String);
+    fn set_name(&mut self, n: String);
     fn get_name(&self) -> &str;
 
     fn query_cmd_descs(&self) -> Vec<arg::CmdDesc>;

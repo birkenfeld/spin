@@ -11,12 +11,12 @@ use daemonize;
 use mlzlog;
 use zmq;
 
-use arg::Value;
-use config::{DevConfig, ServerConfig};
-use device::{general_error_reply, run_device, Device};
-use error::{SpinResult, SOCKET_ERROR};
-use client::Client;
-use util;
+use crate::arg::Value;
+use crate::config::{DevConfig, ServerConfig};
+use crate::device::{general_error_reply, run_device, Device};
+use crate::error::{SpinResult, SOCKET_ERROR};
+use crate::client::Client;
+use crate::util;
 
 pub type DevConstructor = fn(&str) -> Box<Device>;
 

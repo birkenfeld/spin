@@ -9,8 +9,9 @@ use std::path::Path;
 
 use zmq;
 use url;
+use lazy_static::lazy_static;
 
-use error::{SpinResult, ADDRESS_ERROR};
+use crate::error::{SpinResult, ADDRESS_ERROR};
 
 pub const DEFAULT_DB_PORT: u16 = 9999;
 

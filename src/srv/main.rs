@@ -6,7 +6,6 @@
 extern crate log;
 #[macro_use]
 extern crate spin;
-extern crate spin_devices;
 
 use spin_devices::*;
 
