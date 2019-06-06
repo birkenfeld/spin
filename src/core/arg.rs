@@ -116,15 +116,15 @@ impl Value {
                 _ => None,
             },
             Some(Val::Float(v)) => match newtype {
-                DataType::Double => Some(Value::from(v as f64)),
+                DataType::Double => Some(Value::from(f64::from(v))),
                 _ => None,
             },
             Some(Val::Int32(v)) => match newtype {
-                DataType::Int64  => Some(Value::from(v as i64)),
+                DataType::Int64  => Some(Value::from(i64::from(v))),
                 DataType::Uint32 => Some(Value::from(v as u32)),
                 DataType::Uint64 => Some(Value::from(v as u64)),
                 DataType::Float  => Some(Value::from(v as f32)),
-                DataType::Double => Some(Value::from(v as f64)),
+                DataType::Double => Some(Value::from(f64::from(v))),
                 _ => None,
             },
             Some(Val::Int64(v)) => match newtype {
@@ -137,10 +137,10 @@ impl Value {
             },
             Some(Val::Uint32(v)) => match newtype {
                 DataType::Int32  => Some(Value::from(v as i32)),
-                DataType::Int64  => Some(Value::from(v as i64)),
-                DataType::Uint64 => Some(Value::from(v as u64)),
+                DataType::Int64  => Some(Value::from(i64::from(v))),
+                DataType::Uint64 => Some(Value::from(u64::from(v))),
                 DataType::Float  => Some(Value::from(v as f32)),
-                DataType::Double => Some(Value::from(v as f64)),
+                DataType::Double => Some(Value::from(f64::from(v))),
                 _ => None,
             },
             Some(Val::Uint64(v)) => match newtype {

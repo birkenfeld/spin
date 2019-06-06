@@ -2,8 +2,6 @@
 
 //! Database server executable.
 
-#![feature(box_syntax)]
-
 use log::info;
 use fxhash::FxHashMap as HashMap;
 
@@ -42,7 +40,7 @@ spin_device_impl!(
 
 impl DbDevice {
     fn create(_name: &str) -> Box<dyn Device> {
-        box DbDevice::default()
+        Box::new(DbDevice::default())
     }
 
     fn init(&mut self) -> SpinResult<()> {

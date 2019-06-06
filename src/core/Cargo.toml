@@ -20,8 +20,8 @@ fxhash = "*"
 mlzlog = "*"
 daemonize = "*"
 structopt = "*"
+once_cell = "*"
 parking_lot = "*"
-lazy_static = "*"
 
 [dependencies.spin_proto]
 path = "../proto"

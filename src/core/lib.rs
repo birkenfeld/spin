@@ -2,8 +2,6 @@
 
 //! Main library module; just re-exports the public API.
 
-#![feature(box_syntax)]
-
 #[macro_use]
 pub mod error;
 pub mod arg;

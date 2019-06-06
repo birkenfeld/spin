@@ -7,7 +7,7 @@ use std::env;
 use std::fs::DirBuilder;
 use std::path::Path;
 
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 
 use crate::error::{SpinResult, ADDRESS_ERROR};
 
@@ -16,9 +16,7 @@ pub const DEFAULT_DB_PORT: u16 = 9999;
 /// Make it easier to write our signatures.
 pub type ZmqResult<T> = Result<T, zmq::Error>;
 
-lazy_static! {
-    static ref CONTEXT: zmq::Context = zmq::Context::new();
-}
+static CONTEXT: Lazy<zmq::Context> = Lazy::new(zmq::Context::new);
 
 
 /// Create a new Zmq socket from a thread-shared Context
