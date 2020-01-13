@@ -1,11 +1,11 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! Serial port device.
 
-use std::error;
 use std::time::Duration;
 use serialport::{self, SerialPort};
 
+use spin::{spin_device_impl, spin_err};
 use spin::device::Device;
 use spin::error::{Error as SpinError, SpinResult, CONFIG_ERROR, IO_ERROR};
 use spin::base::StringIO;
@@ -16,7 +16,7 @@ use spin::validate::Mandatory;
 pub struct SerialDevice {
     props: SerialDeviceProps,
     timeout: f64,
-    comm: Option<CommClient<Box<SerialPort>>>,
+    comm: Option<CommClient<Box<dyn SerialPort>>>,
 }
 
 spin_device_impl!(
@@ -39,14 +39,14 @@ impl From<Error> for SpinError {
     fn from(e: Error) -> SpinError {
         SpinError::with(
             IO_ERROR.into(),
-            error::Error::description(&e.0).into(),
+            (e.0).to_string(),
             module_path!().into(),
         )
     }
 }
 
 impl SerialDevice {
-    pub fn create(_name: &str) -> Box<Device> {
+    pub fn create(_name: &str) -> Box<dyn Device> {
         Box::new(SerialDevice::default())
     }
 
@@ -59,8 +59,8 @@ impl SerialDevice {
         let devfile = self.props.devfile.clone();
         let baudrate = self.props.baudrate;
 
-        let connect = move || -> SpinResult<(Box<SerialPort>, Box<SerialPort>)> {
-            info!("opening {}...", devfile);
+        let connect = move || -> SpinResult<(Box<dyn SerialPort>, Box<dyn SerialPort>)> {
+            log::info!("opening {}...", devfile);
             let mut port = serialport::open(&devfile).map_err(Error)?;
             let mut settings = port.settings();
             settings.baud_rate = baudrate;
@@ -90,7 +90,7 @@ impl SerialDevice {
         })
     }
 
-    fn get_comm(&self) -> SpinResult<&CommClient<Box<SerialPort>>> {
+    fn get_comm(&self) -> SpinResult<&CommClient<Box<dyn SerialPort>>> {
         if let Some(ref comm) = self.comm {
             Ok(comm)
         } else {

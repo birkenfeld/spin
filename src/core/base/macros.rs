@@ -1,4 +1,4 @@
-// Spin RPC library, copyright 2015-2018 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 #[macro_export]
 macro_rules! spin_base_trait {
@@ -20,13 +20,13 @@ macro_rules! spin_base_trait {
         pub trait Base : $crate::device::Device + GetProps {
             fn query_cmd_descs() -> Vec<$crate::arg::CmdDesc> {
                 vec![$($crate::arg::cmd_info(stringify!($cname), $cdoc,
-                                             _data_type_!($cintype),
-                                             _data_type_!($couttype)),)*]
+                                             $crate::_data_type_!($cintype),
+                                             $crate::_data_type_!($couttype)),)*]
             }
 
             fn query_attr_descs() -> Vec<$crate::arg::AttrDesc> {
                 vec![$($crate::arg::attr_info(stringify!($aname), $adoc,
-                                              _data_type_!($atype)),)*]
+                                              $crate::_data_type_!($atype)),)*]
             }
 
             fn query_prop_descs(props: &Props) -> Vec<$crate::arg::PropDesc> {
@@ -74,22 +74,22 @@ macro_rules! spin_base_trait {
                 $(
                     props._descriptions.push(
                         $crate::arg::prop_info(stringify!($pname), $pdoc,
-                                               _data_type_!($ptype),
+                                               $crate::_data_type_!($ptype),
                                                $crate::Value::from($pdefault)));
                     if let Some(cfg_value) = cfg_prop_map.remove(stringify!($pname)) {
-                        if let Some(value) = cfg_value.convert(_data_type_!($ptype)) {
+                        if let Some(value) = cfg_value.convert($crate::_data_type_!($ptype)) {
                             props.$pname = <$ptype as $crate::validate::CanValidate>::validate(value)?;
-                            debug!("property {} from config: {:?}",
-                                   stringify!($pname), props.$pname);
+                            log::debug!("property {} from config: {:?}",
+                                        stringify!($pname), props.$pname);
                         } else {
-                            return spin_err!($crate::error::CONFIG_ERROR,
-                                             &format!("Wrong configured type for {}, expected {:?}",
-                                                      stringify!($pname), _data_type_!($ptype)));
+                            return $crate::spin_err!($crate::error::CONFIG_ERROR,
+                                                     &format!("Wrong configured type for {}, expected {:?}",
+                                                              stringify!($pname), $crate::_data_type_!($ptype)));
                         }
                     } else {
                         props.$pname = $crate::validate::IntoDefault::into_default(&$pdefault)?.extract()?;
-                        debug!("property {} from default: {:?}",
-                               stringify!($pname), props.$pname);
+                        log::debug!("property {} from default: {:?}",
+                                    stringify!($pname), props.$pname);
                     }
                 )*
                 Ok(())
@@ -101,7 +101,7 @@ macro_rules! spin_base_trait {
                     if prop == stringify!($pname) {
                         return Some(Ok($crate::Value::from(props.$pname.clone())));
                     }
-                )*;
+                )*
                 None
             }
 
@@ -109,21 +109,21 @@ macro_rules! spin_base_trait {
             fn set_prop(props: &mut Props, prop: &str, val: $crate::Value) -> Option<$crate::SpinResult<()>> {
                 $(
                     if prop == stringify!($pname) {
-                        if let Some(val) = val.convert(_data_type_!($ptype)) {
+                        if let Some(val) = val.convert($crate::_data_type_!($ptype)) {
                             match <$ptype as $crate::validate::CanValidate>::validate(val) {
                                 Ok(v) => props.$pname = v,
-                                Err(e) => warn!("XXX property validation failure"),
+                                Err(e) => log::warn!("XXX property validation failure"),
                             }
                             return Some(Ok(()));
                         } else {
-                            return Some(spin_err!(
+                            return Some($crate::spin_err!(
                                 $crate::error::ARG_ERROR,
                                 &format!("Wrong property type, expected {:?}",
-                                         _data_type_!($ptype)))
+                                         $crate::_data_type_!($ptype)))
                             );
                         }
                     }
-                )*;
+                )*
                 None
             }
 

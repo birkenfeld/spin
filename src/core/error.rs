@@ -1,13 +1,10 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! Error and Result types for Spin.
 
 use std::error;
 use std::fmt;
 use std::io;
-
-use zmq;
-use prost;
 
 use spin_proto as pr;
 
@@ -60,7 +57,7 @@ macro_rules! error_impl {
             fn from(e: $errcls) -> Error {
                 Error(pr::Error {
                     reason: $errconst.into(),
-                    desc:   error::Error::description(&e).into(),
+                    desc:   e.to_string(),
                     origin: String::new(),
                 })
             }

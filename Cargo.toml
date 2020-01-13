@@ -17,7 +17,6 @@ path = "src/db/main.rs"
 
 [dependencies]
 log = "*"
-time = "*"
 fxhash = "*"
 
 [dependencies.spin_core]

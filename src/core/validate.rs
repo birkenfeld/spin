@@ -1,8 +1,6 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! Validators for property/attribute/argument values.
-
-use regex;
 
 use crate::arg::{FromValue, Value};
 use crate::error::{SpinResult, ARG_ERROR, CONFIG_ERROR};

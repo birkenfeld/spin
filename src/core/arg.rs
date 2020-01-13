@@ -1,10 +1,9 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! Argument type library, wrapper around some protobuf types.
 
 use std::fmt;
 
-use toml;
 use spin_proto as pr;
 
 pub use spin_proto::DataType;

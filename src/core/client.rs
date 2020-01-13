@@ -1,8 +1,7 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! Client library.
 
-use zmq;
 use prost::Message;
 
 use spin_proto::{ApiDesc, NameValue, Request, Response};
@@ -102,7 +101,7 @@ impl Client {
             return spin_err!(TIMEOUT_ERROR, "no reply within client timeout");
         }
         let reply = util::recv_final_message_part(&mut self.socket)?;
-        let rsp = Response::decode_length_delimited(reply)?;
+        let rsp = Response::decode_length_delimited(reply.as_slice())?;
 
         if rsp.seqno != req.seqno {
             return spin_err!(API_ERROR, "sequence numbers do not match");

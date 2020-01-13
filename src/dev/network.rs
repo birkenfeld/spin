@@ -1,10 +1,11 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! Network device.
 
 use std::net::TcpStream;
 use std::time::Duration;
 
+use spin::{spin_device_impl, spin_err};
 use spin::device::Device;
 use spin::error::{SpinResult, CONFIG_ERROR, IO_ERROR};
 use spin::base::StringIO;
@@ -33,7 +34,7 @@ spin_device_impl!(
 );
 
 impl NetworkDevice {
-    pub fn create(_name: &str) -> Box<Device> {
+    pub fn create(_name: &str) -> Box<dyn Device> {
         Box::new(NetworkDevice::default())
     }
 
@@ -46,12 +47,12 @@ impl NetworkDevice {
         let timeout = Duration::from_millis((self.timeout * 1000.) as u64);
 
         let connect = move || -> SpinResult<(TcpStream, TcpStream)> {
-            info!("connecting to {}...", address);
+            log::info!("connecting to {}...", address);
             let wstream = TcpStream::connect(address.as_str())?;
             wstream.set_write_timeout(Some(timeout))?;
             wstream.set_nodelay(true)?;
             let rstream = wstream.try_clone()?;
-            info!("connection established to {}", address);
+            log::info!("connection established to {}", address);
             Ok((rstream, wstream))
         };
 

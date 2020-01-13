@@ -1,4 +1,4 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! Utilities.
 
@@ -7,8 +7,6 @@ use std::env;
 use std::fs::DirBuilder;
 use std::path::Path;
 
-use zmq;
-use url;
 use lazy_static::lazy_static;
 
 use crate::error::{SpinResult, ADDRESS_ERROR};

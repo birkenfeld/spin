@@ -1,14 +1,9 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! Universal server executable.
 
-#[macro_use]
-extern crate log;
-#[macro_use]
-extern crate spin;
-
+use spin::spin_server_main;
 use spin_devices::*;
-
 
 fn main() {
     spin_server_main!(devtypes = [

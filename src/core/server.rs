@@ -1,15 +1,13 @@
-// Spin RPC library, copyright 2015-2018 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! Server framework.
 
 use std::iter::FromIterator;
 use std::thread;
+use log::{debug, info, warn, error};
 use fxhash::FxHashMap as HashMap;
 use fxhash::FxHashSet as HashSet;
 use structopt::{StructOpt, clap};
-use daemonize;
-use mlzlog;
-use zmq;
 
 use crate::arg::Value;
 use crate::config::{DevConfig, ServerConfig};
@@ -18,12 +16,11 @@ use crate::error::{SpinResult, SOCKET_ERROR};
 use crate::client::Client;
 use crate::util;
 
-pub type DevConstructor = fn(&str) -> Box<Device>;
+pub type DevConstructor = fn(&str) -> Box<dyn Device>;
 
 #[derive(StructOpt)]
-#[structopt(author="")]
 #[structopt(about="Starts a spin server.")]
-#[structopt(raw(setting="clap::AppSettings::UnifiedHelpMessage"))]
+#[structopt(setting=clap::AppSettings::UnifiedHelpMessage)]
 struct ServerArgs {
     #[structopt(help="server name (name/instance)")]
     name: String,
@@ -213,7 +210,7 @@ impl Server {
         if msg.len() != 4 {
             warn!("ill formed message");
             // no need to send a serialized error response; client doesn't observe our protocol
-            pollsockets[0].send_multipart(&[&msg[0][..], &[], &[], &[]], 0)?;
+            pollsockets[0].send_multipart(&[msg[0].as_slice(), &[], &[], &[]], 0)?;
             return Ok(());
         }
         let devname = &msg[2];
@@ -221,7 +218,7 @@ impl Server {
             None => {
                 warn!("device not found: {}", String::from_utf8_lossy(devname));
                 let rsp = general_error_reply("DeviceError", "no such device", &msg[3])?;
-                pollsockets[0].send_multipart(&[&msg[0][..], &[], devname, &rsp], 0)?;
+                pollsockets[0].send_multipart(&[msg[0].as_slice(), &[], devname, &rsp], 0)?;
             }
             Some(&sindex) => {
                 // send request on to the device thread
@@ -273,7 +270,7 @@ macro_rules! spin_server_main {
      static_config = $staticconfig:expr,
      devtypes = [$($dtype:ident => $dconstr:expr),* $(,)*]) => {
         let mut server = $crate::server::Server::from_args($use_db, $staticconfig);
-        info!("creating devices...");
+        log::info!("creating devices...");
         for device in ::std::mem::replace(&mut server.config.devices, vec![]) {
             $(
                 if device.devtype == stringify!($dtype) {
@@ -281,13 +278,13 @@ macro_rules! spin_server_main {
                     continue;
                 }
             )*;
-            warn!("device type {} for device {} not handled by this server",
-                  device.devtype, device.name);
+            log::warn!("device type {} for device {} not handled by this server",
+                       device.devtype, device.name);
         }
 
-        info!("server running...");
+        log::info!("server running...");
         if let Err(e) = server.run() {
-            error!("server stopped: {}", e);
+            log::error!("server stopped: {}", e);
         }
     };
 }

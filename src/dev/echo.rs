@@ -1,7 +1,8 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! Echo device.
 
+use spin::spin_device_impl;
 use spin::device::Device;
 use spin::error::SpinResult;
 
@@ -28,7 +29,7 @@ spin_device_impl!(
 );
 
 impl EchoDevice {
-    pub fn create(_name: &str) -> Box<Device> {
+    pub fn create(_name: &str) -> Box<dyn Device> {
         Box::new(EchoDevice::default())
     }
 

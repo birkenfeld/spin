@@ -1,9 +1,6 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! Echo client.
-
-extern crate spin;
-extern crate time;
 
 fn main() {
     // Connect
@@ -41,11 +38,11 @@ fn main() {
     println!("query_api:  {:?} {:?} {:?}", cnames, anames, pnames);
 
     // Time the simple Echo call
-    let t1 = time::get_time();
+    let t1 = std::time::Instant::now();
     for _i in 0..10000 {
         clnt.exec_cmd("Echo", "Hello!").unwrap();
     }
-    let t2 = time::get_time();
-    println!("timing:     10000 calls -> {} us/call",
-             ((t2 - t1).num_microseconds().unwrap() as f64) / 10000.);
+    let dur = t1.elapsed();
+    println!("timing:     10000 calls -> {:.2} us/call",
+             dur.as_secs_f64() * 100.);
 }

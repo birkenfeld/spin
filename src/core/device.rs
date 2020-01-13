@@ -1,13 +1,12 @@
-// Spin RPC library, copyright 2015-2018 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! Device trait.
 
 use std::ops::DerefMut;
 
+use log::warn;
 use fxhash::FxHashMap as HashMap;
 use prost::Message;
-use mlzlog;
-use zmq;
 
 use spin_proto::{ApiDesc, Error, NameValue, Request, Response};
 use spin_proto::request::ReqType;
@@ -38,10 +37,10 @@ pub trait Device: Send {
 }
 
 
-fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()> {
+fn handle_one_message(sock: &mut zmq::Socket, dev: &mut dyn Device) -> SpinResult<()> {
     let msg = sock.recv_multipart(0)?;
 
-    let req = Request::decode_length_delimited(&msg[3])?;
+    let req = Request::decode_length_delimited(msg[3].as_slice())?;
     let mut rsp = Response {
         seqno: req.seqno,
         rsp_type: None,
@@ -96,7 +95,7 @@ fn handle_one_message(sock: &mut zmq::Socket, dev: &mut Device) -> SpinResult<()
 }
 
 
-pub fn run_device(mut sock: zmq::Socket, mut dev: Box<Device>) {
+pub fn run_device(mut sock: zmq::Socket, mut dev: Box<dyn Device>) {
     let dev = dev.deref_mut();
     mlzlog::set_thread_prefix(format!("{}: ", dev.get_name()));
     loop {
@@ -157,9 +156,9 @@ macro_rules! spin_device_impl {
         impl $crate::device::Device for $clsname {
 
             fn init_device(&mut self) -> $crate::SpinResult<()> {
-                debug!("initializing device");
+                log::debug!("initializing device");
                 if let Err(err) = $clsname::init(self) {
-                    error!("could not initialize: {}", err);
+                    log::error!("could not initialize: {}", err);
                     return Err(err);
                 }
                 self.props._initialized = true;
@@ -167,7 +166,7 @@ macro_rules! spin_device_impl {
             }
 
             fn delete_device(&mut self) {
-                debug!("deleting device");
+                log::debug!("deleting device");
                 self.props._initialized = false;
                 $clsname::delete(self);
             }
@@ -182,8 +181,8 @@ macro_rules! spin_device_impl {
                 )*
                 // XXX correct handling of overrides
                 res.append(&mut vec![$($crate::arg::cmd_info(stringify!($cname), $cdoc,
-                                                             _data_type_!($cintype),
-                                                             _data_type_!($couttype)),)*]);
+                                                             $crate::_data_type_!($cintype),
+                                                             $crate::_data_type_!($couttype)),)*]);
                 res
             }
 
@@ -194,7 +193,7 @@ macro_rules! spin_device_impl {
                 )*
                 // XXX correct handling of overrides
                     res.append(&mut vec![$($crate::arg::attr_info(stringify!($aname), $adoc,
-                                                                  _data_type_!($atype)),)*]);
+                                                                  $crate::_data_type_!($atype)),)*]);
                 res
             }
 
@@ -214,7 +213,7 @@ macro_rules! spin_device_impl {
                 if !self.props._initialized {
                     self.init_device()?;
                 }
-                debug!("executing command {}({:?})", cmd, arg);
+                log::debug!("executing command {}({:?})", cmd, arg);
                 let res = match cmd {
                     $(
                         stringify!($cname) => self.$cfunc(
@@ -228,10 +227,10 @@ macro_rules! spin_device_impl {
                                 return res;
                             }
                         )*
-                        spin_err!($crate::error::API_ERROR, "No such command")
+                        $crate::spin_err!($crate::error::API_ERROR, "No such command")
                     }
                 };
-                debug!("   ... result: {:?}", res);
+                log::debug!("   ... result: {:?}", res);
                 res
             }
 
@@ -240,7 +239,7 @@ macro_rules! spin_device_impl {
                 if !self.props._initialized {
                     self.init_device()?;
                 }
-                debug!("reading attribute {}", attr);
+                log::debug!("reading attribute {}", attr);
                 let res = match attr {
                     $(stringify!($aname) => self.$arfunc().map($crate::Value::from),)*
                     _ => {
@@ -250,10 +249,10 @@ macro_rules! spin_device_impl {
                                 return res;
                             }
                         )*
-                        spin_err!($crate::error::API_ERROR, "No such attribute")
+                        $crate::spin_err!($crate::error::API_ERROR, "No such attribute")
                     }
                 };
-                debug!("   ... result: {:?}", res);
+                log::debug!("   ... result: {:?}", res);
                 res
             }
 
@@ -262,7 +261,7 @@ macro_rules! spin_device_impl {
                 if !self.props._initialized {
                     self.init_device()?;
                 }
-                debug!("writing attribute {} = {:?}", attr, val);
+                log::debug!("writing attribute {} = {:?}", attr, val);
                 let res = match attr {
                     $(
                         stringify!($aname) => self.$awfunc(
@@ -276,36 +275,36 @@ macro_rules! spin_device_impl {
                                 return res;
                             }
                         )*
-                        spin_err!($crate::error::API_ERROR, "No such attribute")
+                        $crate::spin_err!($crate::error::API_ERROR, "No such attribute")
                     }
                 };
-                debug!("   ... result: {:?}", res);
+                log::debug!("   ... result: {:?}", res);
                 res
             }
 
             #[allow(unused_variables, unused_mut)]
             fn init_props(&mut self, mut cfg_prop_map: ::fxhash::FxHashMap<String, $crate::Value>)
                 -> $crate::SpinResult<()> {
-                debug!("init properties");
+                log::debug!("init properties");
                 $(
                     self.props._descriptions.push(
                         $crate::arg::prop_info(stringify!($pname), $pdoc,
-                                               _data_type_!($ptype),
+                                               $crate::_data_type_!($ptype),
                                                $crate::Value::from($pdefault)));
                     if let Some(cfg_value) = cfg_prop_map.remove(stringify!($pname)) {
-                        if let Some(value) = cfg_value.convert(_data_type_!($ptype)) {
+                        if let Some(value) = cfg_value.convert($crate::_data_type_!($ptype)) {
                             self.props.$pname = <$ptype as $crate::validate::CanValidate>::validate(value)?;
-                            debug!("property {} from config: {:?}",
-                                   stringify!($pname), self.props.$pname);
+                            log::debug!("property {} from config: {:?}",
+                                        stringify!($pname), self.props.$pname);
                         } else {
-                            return spin_err!($crate::error::CONFIG_ERROR,
-                                             &format!("Wrong configured type for {}, expected {:?}",
-                                                      stringify!($pname), _data_type_!($ptype)));
+                            return $crate::spin_err!($crate::error::CONFIG_ERROR,
+                                                     &format!("Wrong configured type for {}, expected {:?}",
+                                                              stringify!($pname), $crate::_data_type_!($ptype)));
                         }
                     } else {
                         self.props.$pname = $crate::validate::IntoDefault::into_default(&$pdefault)?.extract()?;
-                        debug!("property {} from default: {:?}",
-                               stringify!($pname), self.props.$pname);
+                        log::debug!("property {} from default: {:?}",
+                                    stringify!($pname), self.props.$pname);
                     }
                 )*
                 $(
@@ -317,7 +316,7 @@ macro_rules! spin_device_impl {
 
             #[allow(unused_variables)]
             fn get_prop(&mut self, prop: &str) -> $crate::SpinResult<$crate::Value> {
-                debug!("get property {}", prop);
+                log::debug!("get property {}", prop);
                 $(
                     if prop == stringify!($pname) {
                         return Ok($crate::Value::from(self.props.$pname.clone()));
@@ -329,27 +328,27 @@ macro_rules! spin_device_impl {
                         return res;
                     }
                 )*
-                spin_err!($crate::error::API_ERROR, "No such property")
+                $crate::spin_err!($crate::error::API_ERROR, "No such property")
             }
 
             #[allow(unused_variables)]
             fn set_prop(&mut self, prop: &str, val: $crate::Value) -> $crate::SpinResult<()> {
-                debug!("set property {} = {:?}", prop, val);
+                log::debug!("set property {} = {:?}", prop, val);
                 $(
                     if prop == stringify!($pname) {
-                        if let Some(val) = val.convert(_data_type_!($ptype)) {
+                        if let Some(val) = val.convert($crate::_data_type_!($ptype)) {
                             match <$ptype as $crate::validate::CanValidate>::validate(val) {
                                 Ok(v) => self.props.$pname = v,
-                                Err(e) => warn!("XXX property validation failure"),
+                                Err(e) => log::warn!("XXX property validation failure"),
                             }
                             self.delete_device();
                             self.init_device()?;
                             return Ok(());
                         } else {
-                            return spin_err!(
+                            return $crate::spin_err!(
                                 $crate::error::ARG_ERROR,
                                 &format!("Wrong property type, expected {:?}",
-                                         _data_type_!($ptype))
+                                         $crate::_data_type_!($ptype))
                             );
                         }
                     }
@@ -366,7 +365,7 @@ macro_rules! spin_device_impl {
                         return res;
                     }
                 )*
-                spin_err!($crate::error::API_ERROR, "No such property")
+                $crate::spin_err!($crate::error::API_ERROR, "No such property")
             }
         }
 

@@ -1,4 +1,4 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! A generic "communicator" thread.
 
@@ -8,11 +8,12 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
 
+use log::{debug, warn};
 use parking_lot::{Condvar, Mutex, MutexGuard};
 
 use crate::error::{SpinResult, COMM_ERROR};
 
-pub type Connector<R, W> = Box<FnMut() -> SpinResult<(R, W)> + Send + 'static>;
+pub type Connector<R, W> = Box<dyn FnMut() -> SpinResult<(R, W)> + Send + 'static>;
 
 struct CommShared<W> {
     writer: Mutex<W>,

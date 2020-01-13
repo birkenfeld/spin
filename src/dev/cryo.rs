@@ -1,7 +1,8 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! Test "cryo" device.
 
+use spin::{spin_device_impl, spin_err};
 use spin::client::Client;
 use spin::device::Device;
 use spin::error::{SpinResult, API_ERROR, COMM_ERROR, CONFIG_ERROR, IO_ERROR};
@@ -28,7 +29,7 @@ spin_device_impl!(
 );
 
 impl CryoDevice {
-    pub fn create(_name: &str) -> Box<Device> {
+    pub fn create(_name: &str) -> Box<dyn Device> {
         Box::new(CryoDevice::default())
     }
 

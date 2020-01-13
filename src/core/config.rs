@@ -1,4 +1,4 @@
-// Spin RPC library, copyright 2015-2017 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! Server config file handling.
 
@@ -6,7 +6,8 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::io::Read;
-use toml;
+
+use log::warn;
 
 use crate::arg::Value;
 
@@ -33,14 +34,14 @@ impl ServerConfig {
             Some(filename) => match ServerConfig::parse(filename) {
                 Ok(config) => config,
                 Err(e) => {
-                    warn!("could not read config: {}", e.description());
+                    warn!("could not read config: {}", e);
                     ServerConfig { devices: vec![] }
                 }
             },
         }
     }
 
-    fn parse(filename: &str) -> Result<ServerConfig, Box<Error>> {
+    fn parse(filename: &str) -> Result<ServerConfig, Box<dyn Error>> {
         let mut text = String::new();
         fs::File::open(filename)?.read_to_string(&mut text)?;
         let parsed: HashMap<String, toml::Value> = toml::from_str(&text)?;

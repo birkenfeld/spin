@@ -1,16 +1,13 @@
-// Spin RPC library, copyright 2015-2018 Georg Brandl.
+// Spin RPC library, copyright 2015-2020 Georg Brandl.
 
 //! Database server executable.
 
 #![feature(box_syntax)]
 
-#[macro_use]
-extern crate log;
-#[macro_use]
-extern crate spin;
-
+use log::info;
 use fxhash::FxHashMap as HashMap;
 
+use spin::{spin_device_impl, spin_server_main, spin_err};
 use spin::config::{DevConfig, ServerConfig};
 use spin::device::Device;
 use spin::error::{SpinResult, DB_ERROR};
@@ -44,7 +41,7 @@ spin_device_impl!(
 );
 
 impl DbDevice {
-    fn create(_name: &str) -> Box<Device> {
+    fn create(_name: &str) -> Box<dyn Device> {
         box DbDevice::default()
     }
 
