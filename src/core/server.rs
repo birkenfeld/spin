@@ -79,7 +79,11 @@ impl Server {
         let args = ServerArgs::from_args();
         let log_path = format!("{}/{}", args.log_path, args.name.replace("/", "-"));
         let _ = util::ensure_dir(&args.pid_path);
-        let _ = mlzlog::init(Some(&log_path), &args.name, true, args.verbose, !args.daemonize);
+        let _ = mlzlog::init(Some(&log_path), &args.name, mlzlog::Settings {
+            debug: args.verbose,
+            use_stdout: !args.daemonize,
+            .. Default::default()
+        });
         if args.daemonize {
             let pid_file = format!("{}/{}.pid", args.pid_path, args.name.replace("/", "-"));
             let mut daemon = daemonize::Daemonize::new().pid_file(pid_file);
